@@ -235,6 +235,56 @@
 		);
 	}
 
+	// The colour of each style, shown when its picture does not load.
+	var STYLE_COLOURS = {
+		positron: '#e6e8ea',
+		bright: '#f3ede2',
+		liberty: '#e9e2d3',
+		dark: '#2a2a2a',
+		fiord: '#45516e',
+	};
+
+	/**
+	 * The styles as small pictures of the same part of the map.
+	 *
+	 * props: value (the style in use), onChange( name ).
+	 */
+	function StylePicker( props ) {
+		return el(
+			'div',
+			{ className: 'waymorphic-styles', role: 'group', 'aria-label': __( 'Map style', 'waymorphic-map' ) },
+			Object.keys( settings.styles ).map( function ( name ) {
+				var selected = name === props.value;
+				return el(
+					'button',
+					{
+						key: name,
+						type: 'button',
+						className: 'waymorphic-styles__item' + ( selected ? ' is-selected' : '' ),
+						'aria-pressed': selected,
+						title: settings.styles[ name ],
+						onClick: function () {
+							props.onChange( name );
+						},
+					},
+					el(
+						'span',
+						{ className: 'waymorphic-styles__picture', style: { background: STYLE_COLOURS[ name ] || '#ddd' } },
+						el( 'img', {
+							src: settings.tilesUrl + '/static/' + name + '/-0.1246,51.5007,11/132x80@2x.png',
+							alt: '',
+							loading: 'lazy',
+							onError: function ( event ) {
+								event.target.style.display = 'none';
+							},
+						} )
+					),
+					el( 'span', { className: 'waymorphic-styles__name' }, name.charAt( 0 ).toUpperCase() + name.slice( 1 ) )
+				);
+			} )
+		);
+	}
+
 	function Edit( props ) {
 		var attributes = props.attributes;
 		var setAttributes = props.setAttributes;
@@ -247,6 +297,12 @@
 		// The marker whose text field opens after the next draw of the markers.
 		var editRef = useRef( -1 );
 		attributesRef.current = attributes;
+		// The popup that offers a marker at the point of a click.
+		var offerRef = useRef( null );
+		var addRef = useRef( null );
+		var locateState = useState( 'idle' );
+		var locating = locateState[ 0 ];
+		var setLocating = locateState[ 1 ];
 
 		var readyState = useState( false );
 		var ready = readyState[ 0 ];
@@ -307,6 +363,39 @@
 						lat: round( centre.lat, 5 ),
 						lng: round( centre.lng, 5 ),
 						zoom: round( map.getZoom(), 2 ),
+					} );
+				} );
+				// A click on the map offers a marker at that point.
+				map.on( 'click', function ( event ) {
+					var target = event.originalEvent && event.originalEvent.target;
+					if ( target && target.closest && target.closest( '.maplibregl-marker, .maplibregl-popup' ) ) {
+						return;
+					}
+					if ( offerRef.current ) {
+						offerRef.current.remove();
+						offerRef.current = null;
+					} else if ( node.querySelector( '.maplibregl-popup' ) ) {
+						// This click closes the form of a marker.
+						return;
+					}
+					var point = event.lngLat.wrap();
+					var button = node.ownerDocument.createElement( 'button' );
+					button.type = 'button';
+					button.className = 'waymorphic-map-editor__here';
+					button.textContent = __( 'Add a marker here', 'waymorphic-map' );
+					var popup = new view.maplibregl.Popup( { closeOnClick: false, focusAfterOpen: false, offset: 4 } )
+						.setLngLat( point )
+						.setDOMContent( button )
+						.addTo( map );
+					popup.on( 'close', function () {
+						if ( offerRef.current === popup ) {
+							offerRef.current = null;
+						}
+					} );
+					offerRef.current = popup;
+					button.addEventListener( 'click', function () {
+						popup.remove();
+						addRef.current( { lat: point.lat, lng: point.lng, name: '' } );
 					} );
 				} );
 				mapRef.current = map;
@@ -483,7 +572,22 @@
 			setAttributes( change );
 		}
 
-		// Go to a search result. The first place gets a marker without a question.
+		addRef.current = addMarker;
+
+		// Show a place. The first place gets a marker without a question.
+		function showPlace( found, newZoom ) {
+			var change = { lat: found.lat, lng: found.lng, zoom: round( newZoom, 2 ) };
+			var list = attributesRef.current.markers || [];
+			if ( list.length === 0 ) {
+				change.markers = [ { lat: found.lat, lng: found.lng, label: found.name, open: false } ];
+				setPlace( null );
+			} else {
+				setPlace( found );
+			}
+			setAttributes( change );
+		}
+
+		// Go to a search result.
 		function goTo( feature ) {
 			var point = feature.geometry.coordinates;
 			var properties = feature.properties || {};
@@ -501,16 +605,30 @@
 					newZoom = camera.zoom;
 				}
 			}
-			var found = { lat: round( point[ 1 ], 5 ), lng: round( point[ 0 ], 5 ), name: properties.name || '' };
-			var change = { lat: found.lat, lng: found.lng, zoom: round( newZoom, 2 ) };
-			var list = attributesRef.current.markers || [];
-			if ( list.length === 0 ) {
-				change.markers = [ { lat: found.lat, lng: found.lng, label: found.name, open: false } ];
-				setPlace( null );
-			} else {
-				setPlace( found );
+			showPlace( { lat: round( point[ 1 ], 5 ), lng: round( point[ 0 ], 5 ), name: properties.name || '' }, newZoom );
+		}
+
+		// Go to the position that the browser gives.
+		function locate() {
+			var geolocation = window.navigator && window.navigator.geolocation;
+			if ( ! geolocation ) {
+				setLocating( 'error' );
+				return;
 			}
-			setAttributes( change );
+			setLocating( 'busy' );
+			geolocation.getCurrentPosition(
+				function ( position ) {
+					setLocating( 'idle' );
+					showPlace(
+						{ lat: round( position.coords.latitude, 5 ), lng: round( position.coords.longitude, 5 ), name: '' },
+						15
+					);
+				},
+				function () {
+					setLocating( 'error' );
+				},
+				{ enableHighAccuracy: true, timeout: 15000 }
+			);
 		}
 
 		function getFocus() {
@@ -538,21 +656,6 @@
 				} )
 			);
 		}
-
-		var styleOptions = [
-			{
-				value: '',
-				label: sprintf(
-					/* translators: %s: the name of a map style. */
-					__( 'Default (%s)', 'waymorphic-map' ),
-					settings.styles[ settings.defaultStyle ] || settings.defaultStyle
-				),
-			},
-		].concat(
-			Object.keys( settings.styles ).map( function ( name ) {
-				return { value: name, label: settings.styles[ name ] };
-			} )
-		);
 
 		var toolbar = el(
 			wp.blockEditor.BlockControls,
@@ -635,23 +738,18 @@
 				el(
 					'p',
 					{ style: { margin: '12px 0 0', color: '#757575' } },
-					__( 'To find a place, use the search field on the map. A new marker goes to the centre of the map. To move a marker, drag it. To change its text, click it.', 'waymorphic-map' )
+					__( 'To find a place, use the search field on the map. To add a marker, click the map at the point. To move a marker, drag it. To change its text, click it.', 'waymorphic-map' )
 				)
 			),
 			el(
 				components.PanelBody,
 				{ title: __( 'Map', 'waymorphic-map' ), initialOpen: true },
-				el(
-					components.SelectControl,
-					next( {
-						label: __( 'Style', 'waymorphic-map' ),
-						value: attributes.mapStyle || '',
-						options: styleOptions,
-						onChange: function ( value ) {
-							setAttributes( { mapStyle: value } );
-						},
-					} )
-				),
+				el( StylePicker, {
+					value: attributes.mapStyle || settings.defaultStyle,
+					onChange: function ( value ) {
+						setAttributes( { mapStyle: value } );
+					},
+				} ),
 				el( 'div', { style: { height: '16px' } } ),
 				el(
 					components.TextControl,
@@ -745,6 +843,25 @@
 						__( 'Type an address, a town or a postcode, then select it from the list. The map goes there and gets a marker.', 'waymorphic-map' )
 					),
 					el( PlaceSearch, { onPick: goTo, getFocus: getFocus } ),
+					el(
+						'button',
+						{
+							type: 'button',
+							className: 'waymorphic-setup__locate',
+							disabled: locating === 'busy',
+							onClick: locate,
+						},
+						locating === 'busy'
+							? __( 'Finding your location…', 'waymorphic-map' )
+							: __( 'Use my location', 'waymorphic-map' )
+					),
+					locating === 'error'
+						? el(
+								'p',
+								{ className: 'waymorphic-setup__error', role: 'alert' },
+								__( 'The browser did not give your location. Use the search field.', 'waymorphic-map' )
+						  )
+						: null,
 					el(
 						'button',
 						{

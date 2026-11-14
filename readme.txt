@@ -14,7 +14,7 @@ Free OpenStreetMap vector maps for WordPress. A block and a shortcode, five styl
 
 Waymorphic Map adds interactive maps to your posts and pages. The maps are vector maps of the whole planet, made from OpenStreetMap data and served by [Waymorphic Map](https://waymorphic.com/). They are free. You do not need an account, an API key or a payment card.
 
-* **A block for the editor.** Type an address and select it from the suggestions: the map goes there and gets a marker. Drag the markers into position and click a marker to change its text. The editor shows the map as your visitors will see it.
+* **A block for the editor.** Type an address and select it from the suggestions: the map goes there and gets a marker. Click the map to add more markers, drag them into position, and click a marker to change its text. Select the map style from pictures. The editor shows the map as your visitors will see it.
 * **A shortcode** for the classic editor, widgets and templates.
 * **Five map styles:** Positron, Bright, Liberty, Dark and Fiord.
 * **Markers with popups.** Add as many as you want. The map can fit its view to them.
@@ -64,6 +64,7 @@ This plugin shows maps from the Waymorphic Map tile server, `https://tiles.waymo
 * When a visitor sees a map, the browser of the visitor gets the map style, map tiles, fonts and icons from that server. As with all web requests, the server sees the IP address and the browser of the visitor, and the tiles requested.
 * When you use an `address` in a shortcode, your WordPress site sends that address to the search of the server one time and keeps the answer.
 * When you search for a place in the block editor, your browser sends the search text to the server.
+* The block editor shows a small picture of each map style. Your browser gets these pictures from the server.
 
 The server has no accounts, no cookies and no analytics. See the [fair use and privacy notes](https://waymorphic.com/#fair). The service is free and best effort: there is no uptime guarantee. If you run your own Waymorphic Map server, you can set its URL in Settings > Waymorphic Map.
 

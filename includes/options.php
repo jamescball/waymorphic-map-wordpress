@@ -16,11 +16,11 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 function waymorphic_map_styles() {
 	return array(
-		'positron' => __( 'Positron (light, muted)', 'waymorphic-map' ),
-		'bright'   => __( 'Bright (full colour)', 'waymorphic-map' ),
-		'liberty'  => __( 'Liberty (classic OpenStreetMap look)', 'waymorphic-map' ),
-		'dark'     => __( 'Dark', 'waymorphic-map' ),
-		'fiord'    => __( 'Fiord (dark, blue)', 'waymorphic-map' ),
+		'positron' => __( 'Positron (light, muted)', 'wp-free-maps' ),
+		'bright'   => __( 'Bright (full colour)', 'wp-free-maps' ),
+		'liberty'  => __( 'Liberty (classic OpenStreetMap look)', 'wp-free-maps' ),
+		'dark'     => __( 'Dark', 'wp-free-maps' ),
+		'fiord'    => __( 'Fiord (dark, blue)', 'wp-free-maps' ),
 	);
 }
 
@@ -152,4 +152,68 @@ function waymorphic_map_sanitize_options( $input ) {
 		'height'    => waymorphic_map_clean_length( isset( $input['height'] ) ? $input['height'] : '', $defaults['height'] ),
 		'zoom'      => null === $zoom ? $defaults['zoom'] : $zoom,
 	);
+}
+
+/**
+ * A hex colour such as #1f6feb or #fff, or the fallback.
+ *
+ * @param mixed  $value    The input.
+ * @param string $fallback The value when the input is not a hex colour.
+ * @return string
+ */
+function waymorphic_map_clean_colour( $value, $fallback = '' ) {
+	$value = is_string( $value ) ? strtolower( trim( $value ) ) : '';
+	return preg_match( '/^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/', $value ) ? $value : $fallback;
+}
+
+/**
+ * The marker animations.
+ *
+ * @param mixed $value The input.
+ * @return string 'drop', 'bounce' or ''.
+ */
+function waymorphic_map_clean_animation( $value ) {
+	$value = is_string( $value ) ? strtolower( trim( $value ) ) : '';
+	return in_array( $value, array( 'drop', 'bounce' ), true ) ? $value : '';
+}
+
+/**
+ * A list of points from text such as "51.5,-0.12; 51.6,-0.1".
+ *
+ * @param mixed $value   Text with "lat,lng" pairs that ; or | divide, or a list of [ lat, lng ] arrays.
+ * @param int   $max     The largest number of points.
+ * @param bool  $weights Keep a third number of a point, 0 to 100: its weight in a heatmap.
+ * @return array<int,array<int,float>> The points as [ lng, lat ] or [ lng, lat, weight ].
+ */
+function waymorphic_map_clean_points( $value, $max = 500, $weights = false ) {
+	$pairs = array();
+	if ( is_string( $value ) ) {
+		foreach ( preg_split( '/[;|]/', $value ) as $pair ) {
+			$pairs[] = array_map( 'trim', explode( ',', $pair ) );
+		}
+	} elseif ( is_array( $value ) ) {
+		$pairs = $value;
+	}
+
+	$points = array();
+	foreach ( $pairs as $pair ) {
+		if ( ! is_array( $pair ) || count( $pair ) < 2 ) {
+			continue;
+		}
+		$pair = array_values( $pair );
+		$lat  = waymorphic_map_clean_number( $pair[0], -85, 85 );
+		$lng  = waymorphic_map_clean_number( $pair[1], -180, 180 );
+		if ( null !== $lat && null !== $lng ) {
+			$point  = array( $lng, $lat );
+			$weight = $weights && isset( $pair[2] ) ? waymorphic_map_clean_number( $pair[2], 0, 100 ) : null;
+			if ( null !== $weight ) {
+				$point[] = $weight;
+			}
+			$points[] = $point;
+		}
+		if ( count( $points ) >= $max ) {
+			break;
+		}
+	}
+	return $points;
 }

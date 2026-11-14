@@ -1,10 +1,10 @@
-=== Waymorphic Map ===
+=== Free Maps - Waymorphic Map & Custom Maps ===
 Contributors: jamesb7
 Tags: map, openstreetmap, maps, maplibre, location
 Requires at least: 6.3
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.0.0
+Stable tag: 1.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -18,6 +18,16 @@ Waymorphic Map adds interactive maps to your posts and pages. The maps are vecto
 * **A shortcode** for the classic editor, widgets and templates.
 * **Five map styles:** Positron, Bright, Liberty, Dark and Fiord.
 * **Markers with popups.** Add as many as you want. The map can fit its view to them.
+* **Marker colours, pictures and animations.** Give each marker a colour or your own picture. Markers can drop or bounce when the map opens.
+* **Shapes.** Polygons, lines, circles and rectangles, each with a popup. Draw them on the map in the block, or use the shortcodes.
+* **Import.** Add the markers, lines and areas of a CSV, GeoJSON, KML or GPX file. A GPX track shows a route on the map.
+* **Groups of markers** (clusters). Markers that are near to each other show as one circle with their number.
+* **Heatmaps.**
+* **A list of the markers** below the map. A click on a name shows that marker.
+* **A search for the nearest markers** (store locator). The visitor types an address or uses the location of the browser, and sees the markers in a distance, nearest first.
+* **Categories.** Give the markers a category, and visitors can show one category at a time.
+* **Directions.** Each popup can have a link to the directions on openstreetmap.org.
+* **A location button** that shows the position of the visitor on the map.
 * **Addresses.** Give the shortcode an address and the plugin finds the coordinates.
 * **Does not take over the scroll wheel.** The page scrolls; ctrl or cmd + scroll zooms the map. You can change this for each map.
 * **Fast.** The map script loads only on pages that have a map, and a map starts only when the visitor scrolls near it.
@@ -54,8 +64,59 @@ Attributes of `[waymorphic_map]`:
 * `scroll_zoom` - `true` lets plain scroll zoom the map.
 * `interactive` - `false` makes a still map.
 * `title` - the name of the map for screen readers.
+* `cluster` - `true` puts markers that are near to each other in a group.
+* `list` - `true` shows the list of the markers below the map.
+* `locator` - `true` shows the search for the nearest markers above the map.
+* `radius` - the first distance of the search. The default is 25.
+* `unit` - `km` or `mi`, for the search and the list.
+* `filter` - `true` shows a button for each marker category.
+* `directions` - `true` adds a directions link to the popups and the list.
+* `locate` - `true` shows the button that goes to the position of the visitor.
+* `animation` - `drop` or `bounce`, for all the markers.
+* `colour` - the colour of the marker at the centre, such as `#d63638`.
 
-Attributes of `[waymorphic_marker]`: `lat` and `lng`, or `address`; `open="true"` shows the popup when the page opens. The text between the tags is the popup.
+Attributes of `[waymorphic_marker]`: `lat` and `lng`, or `address`; `open="true"` shows the popup when the page opens. The text between the tags is the popup. Optional: `title` (the name in the list), `category`, `colour` (such as `#d63638`), `icon` (the URL of a picture to use as the marker) and `animation` (`drop` or `bounce`).
+
+= Shapes =
+
+Put the shape shortcodes in `[waymorphic_map]`. The points are `latitude,longitude` pairs with `;` between them. The text between the tags is the popup of the shape.
+
+`[waymorphic_map]
+[waymorphic_polygon points="51.50,-0.20; 51.55,-0.12; 51.50,-0.05" colour="#008a20"]The area we deliver to[/waymorphic_polygon]
+[waymorphic_line points="51.50,-0.20; 51.52,-0.10; 51.51,0.00" colour="#d63638" width="4"]
+[waymorphic_circle lat="51.5074" lng="-0.1276" radius="500"]
+[waymorphic_rectangle points="51.48,-0.20; 51.49,-0.15"]
+[/waymorphic_map]`
+
+* `[waymorphic_polygon]` - three or more points.
+* `[waymorphic_line]` - two or more points.
+* `[waymorphic_circle]` - `lat` and `lng`, or `address`, and `radius` in metres.
+* `[waymorphic_rectangle]` - two opposite corners.
+* All shapes: `colour` (the outline), `width` (the outline, in pixels). Polygons, circles and rectangles: `fill` (the colour of the inside) and `opacity` (0 to 1).
+* `[waymorphic_heatmap]` - `points`, 5000 at most. A point can have a weight as a third number: `51.5,-0.12,3`. Optional: `radius` in pixels (the default is 30) and `opacity` (0 to 1).
+
+= Files =
+
+`[waymorphic_map cluster="true" list="true"]
+[waymorphic_file url="https://example.com/wp-content/uploads/shops.csv" category="Shops" colour="#008a20"]
+[waymorphic_file url="https://example.com/wp-content/uploads/walk.gpx"]
+[/waymorphic_map]`
+
+`[waymorphic_file]` shows the markers, lines and areas of a CSV, GeoJSON, KML or GPX file. The browser of the visitor gets the file each time the page opens, so a change to the file shows on the map. Ten files for each map at most.
+
+* A CSV file has a first row with the names of the columns: `lat` (or `latitude`), `lng` (or `lon`, `longitude`), and the optional `title` (or `name`), `description`, `category`, `colour` and `icon`.
+* The file must be on your site, or on a server that permits your site to read it (CORS).
+* The text of a file shows as plain text. HTML in a file does not operate.
+* `colour` and `category` on the shortcode are for the markers that have none in the file.
+
+In the block, "Import a file" in the Markers panel reads a file from your computer and adds its markers and shapes to the block. The file is not uploaded.
+
+= A store locator =
+
+`[waymorphic_map locator="true" list="true" filter="true" directions="true" unit="mi" radius="10"]
+[waymorphic_marker address="10 Downing Street, London" title="London shop" category="Shops"]Open 9 to 5[/waymorphic_marker]
+[waymorphic_marker lat="53.4808" lng="-2.2426" title="Manchester depot" category="Depots"]
+[/waymorphic_map]`
 
 = External service =
 
@@ -64,6 +125,9 @@ This plugin shows maps from the Waymorphic Map tile server, `https://tiles.waymo
 * When a visitor sees a map, the browser of the visitor gets the map style, map tiles, fonts and icons from that server. As with all web requests, the server sees the IP address and the browser of the visitor, and the tiles requested.
 * When you use an `address` in a shortcode, your WordPress site sends that address to the search of the server one time and keeps the answer.
 * When you search for a place in the block editor, your browser sends the search text to the server.
+* When a map has the search for the nearest markers (`locator`), the browser of the visitor sends the search text to the server. With "Use my location", the position stays in the browser.
+
+The directions link (`directions`) is a link to `https://www.openstreetmap.org/directions`. The plugin sends nothing to that site. The visitor goes there only with a click on the link. The `waymorphic_map_directions_url` filter changes the link.
 
 The server has no accounts, no cookies and no analytics. See the [fair use and privacy notes](https://waymorphic.com/#fair). The service is free and best effort: there is no uptime guarantee. If you run your own Waymorphic Map server, you can set its URL in Settings > Waymorphic Map.
 
@@ -71,7 +135,7 @@ Map data © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributor
 
 == Installation ==
 
-1. Upload the `waymorphic-map` folder to `/wp-content/plugins/`, or install the plugin from the Plugins screen.
+1. Upload the `wp-free-maps` folder to `/wp-content/plugins/`, or install the plugin from the Plugins screen.
 2. Activate the plugin.
 3. Add the "Waymorphic Map" block to a post or a page, or use the `[waymorphic_map]` shortcode.
 4. Optional: set the default style, height and zoom in Settings > Waymorphic Map.
@@ -94,6 +158,22 @@ Select one of the five styles for each map, or set the default style in the sett
 
 This prevents the map from catching the scroll of the page. Hold ctrl (or cmd on a Mac) and scroll, or use the buttons. To change this, set "Scroll to zoom" on the block, or `scroll_zoom="true"` on the shortcode.
 
+= Can I make a store locator? =
+
+Yes. Set `locator="true"` and `list="true"` on the shortcode, or the same options in the "Features" panel of the block. Visitors type an address and see the nearest markers with their distances.
+
+= Can I draw shapes in the block editor? =
+
+Yes. Open the "Shapes" panel, select a type and click the map. For a heatmap, use the shortcode.
+
+= Can I show a route? =
+
+Yes, as a line. Import a GPX or KML file of the route, or draw a line. The plugin does not calculate a route between two addresses: the directions link opens openstreetmap.org for that.
+
+= Can I import my markers from a different map plugin? =
+
+Export the markers as a CSV file, make sure that the first row has `lat` and `lng` columns, then use "Import a file" in the block.
+
 = Can developers change the map? =
 
 Yes. The `waymorphic_map_config` filter changes the configuration of a map, and `waymorphic_map_tiles_url` changes the tile server. In JavaScript, each map element has its MapLibre map in the `waymorphicMap` property.
@@ -110,6 +190,17 @@ Send an email to contact@waymorphic.com.
 4. The settings page with the defaults for new maps.
 
 == Changelog ==
+
+= 1.1.0 =
+* New: polygons, lines, circles and rectangles, with the `[waymorphic_polygon]`, `[waymorphic_line]`, `[waymorphic_circle]` and `[waymorphic_rectangle]` shortcodes. In the block, draw them on the map.
+* New: import of CSV, GeoJSON, KML and GPX files, in the block and with the `[waymorphic_file]` shortcode.
+* New: groups of markers (clusters).
+* New: heatmaps, with the `[waymorphic_heatmap]` shortcode.
+* New: a colour, a picture, a category and an animation for each marker.
+* New: a list of the markers below the map.
+* New: a search for the nearest markers (store locator), with kilometres or miles.
+* New: category buttons, a directions link and a location button.
+* New: a "Features" panel in the block, and a colour, a category and a picture for each marker.
 
 = 1.0.0 =
 * First release: block, shortcodes, settings page.

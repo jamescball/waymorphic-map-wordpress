@@ -64,7 +64,9 @@ assets/vendor           MapLibre GL JS 5.21.0 (BSD 3-Clause)
 
 1. Set the same version in the plugin header and the `WAYMORPHIC_MAP_VERSION` constant in `waymorphic-map.php`, and in `Stable tag` in `readme.txt`. Add a changelog entry in `readme.txt`.
 2. `bin/build-zip.sh` makes `build/waymorphic-map.zip` from the last commit. The script stops if the three version numbers are different.
-3. Push a tag such as `v1.0.0`. The Release workflow builds the zip and attaches it to a GitHub release.
+3. Push a tag such as `v1.0.0`. The Release workflow builds the zip and attaches it to a GitHub release. The release notes are the changelog entry of that version in `readme.txt`. The workflow stops if the tag and the plugin version are different, or if the changelog has no entry for the version.
+
+The CI workflow runs on each push and pull request: a PHP syntax check on PHP 7.4 and 8.3, and a build of the zip, which it keeps as an artifact.
 
 `.wordpress-org/` holds the icon, banner and screenshots for the WordPress.org plugin directory. These files go in the `assets` folder of the plugin's SVN repository, not in the zip.
 

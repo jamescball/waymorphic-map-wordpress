@@ -1,5 +1,5 @@
 === Waymorphic Map ===
-Contributors: jamescball
+Contributors: jamesb7
 Tags: map, openstreetmap, maps, maplibre, location
 Requires at least: 6.3
 Tested up to: 7.1

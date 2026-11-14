@@ -16,11 +16,11 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 function waymorphic_map_styles() {
 	return array(
-		'positron' => __( 'Positron (light, muted)', 'wp-free-maps' ),
-		'bright'   => __( 'Bright (full colour)', 'wp-free-maps' ),
-		'liberty'  => __( 'Liberty (classic OpenStreetMap look)', 'wp-free-maps' ),
-		'dark'     => __( 'Dark', 'wp-free-maps' ),
-		'fiord'    => __( 'Fiord (dark, blue)', 'wp-free-maps' ),
+		'positron' => __( 'Positron (light, muted)', 'free-maps' ),
+		'bright'   => __( 'Bright (full colour)', 'free-maps' ),
+		'liberty'  => __( 'Liberty (classic OpenStreetMap look)', 'free-maps' ),
+		'dark'     => __( 'Dark', 'free-maps' ),
+		'fiord'    => __( 'Fiord (dark, blue)', 'free-maps' ),
 	);
 }
 

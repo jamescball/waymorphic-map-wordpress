@@ -7,7 +7,7 @@
 	"icon": "location-alt",
 	"description": "A free OpenStreetMap vector map with markers. No API key.",
 	"keywords": [ "map", "openstreetmap", "location", "marker", "maplibre" ],
-	"textdomain": "wp-free-maps",
+	"textdomain": "free-maps",
 	"attributes": {
 		"lat": { "type": "number" },
 		"lng": { "type": "number" },

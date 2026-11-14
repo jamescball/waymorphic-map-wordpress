@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Makes build/wp-free-maps.zip: the plugin as WordPress installs it. Run from anywhere: bin/build-zip.sh
+# Makes build/free-maps.zip: the plugin as WordPress installs it. Run from anywhere: bin/build-zip.sh
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-slug="wp-free-maps"
+slug="free-maps"
 cd "$root"
 
 # The three version numbers must agree.

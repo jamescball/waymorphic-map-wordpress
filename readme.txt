@@ -135,7 +135,7 @@ Map data © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributor
 
 == Installation ==
 
-1. Upload the `wp-free-maps` folder to `/wp-content/plugins/`, or install the plugin from the Plugins screen.
+1. Upload the `free-maps` folder to `/wp-content/plugins/`, or install the plugin from the Plugins screen.
 2. Activate the plugin.
 3. Add the "Waymorphic Map" block to a post or a page, or use the `[waymorphic_map]` shortcode.
 4. Optional: set the default style, height and zoom in Settings > Waymorphic Map.

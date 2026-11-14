@@ -8,7 +8,7 @@ Copy this folder to `wp-content/plugins/waymorphic-map` and activate **Waymorphi
 
 ## Use
 
-**Block.** Add the "Waymorphic Map" block. In the sidebar, search for a place, add markers and select the style. Move the map to set the view. Drag a marker to move it.
+**Block.** Add the "Waymorphic Map" block. A new block asks "Where is your map?": type an address, a town or a postcode and select it from the list. The map goes there and gets a marker. After that, the search field is on the map. Drag the map to set the view. Drag a marker to move it, and click it to change its text or remove it. The style and height are in the sidebar.
 
 **Shortcode.**
 

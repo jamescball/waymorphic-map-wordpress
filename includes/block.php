@@ -22,6 +22,8 @@ function waymorphic_map_register_block() {
 	);
 	wp_set_script_translations( 'waymorphic-map-editor', 'waymorphic-map' );
 
+	wp_register_style( 'waymorphic-map-editor', plugins_url( 'block/editor.css', WAYMORPHIC_MAP_FILE ), array(), WAYMORPHIC_MAP_VERSION );
+
 	$options = waymorphic_map_options();
 	wp_add_inline_script(
 		'waymorphic-map-editor',

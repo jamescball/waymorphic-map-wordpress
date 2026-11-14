@@ -14,7 +14,7 @@ Free OpenStreetMap vector maps for WordPress. A block and a shortcode, five styl
 
 Waymorphic Map adds interactive maps to your posts and pages. The maps are vector maps of the whole planet, made from OpenStreetMap data and served by [Waymorphic Map](https://waymorphic.com/). They are free. You do not need an account, an API key or a payment card.
 
-* **A block for the editor.** Search for a place, move the map, add markers and drag them into position. The editor shows the map as your visitors will see it.
+* **A block for the editor.** Type an address and select it from the suggestions: the map goes there and gets a marker. Drag the markers into position and click a marker to change its text. The editor shows the map as your visitors will see it.
 * **A shortcode** for the classic editor, widgets and templates.
 * **Five map styles:** Positron, Bright, Liberty, Dark and Fiord.
 * **Markers with popups.** Add as many as you want. The map can fit its view to them.

@@ -30,6 +30,7 @@
 		"spacing": { "margin": true }
 	},
 	"editorScript": "waymorphic-map-editor",
+	"editorStyle": "waymorphic-map-editor",
 	"script": "waymorphic-map",
 	"style": "waymorphic-map"
 }

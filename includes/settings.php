@@ -74,7 +74,7 @@ function waymorphic_map_field( $args ) {
 			break;
 
 		case 'height':
-			echo '<input type="text" class="small-text" id="' . esc_attr( $id ) . '" name="' . esc_attr( $input ) . '" value="' . esc_attr( $options['height'] ) . '">';
+			echo '<input type="text" class="small-text" style="width:7em" id="' . esc_attr( $id ) . '" name="' . esc_attr( $input ) . '" value="' . esc_attr( $options['height'] ) . '">';
 			echo '<p class="description">' . esc_html__( 'A CSS length, for example 400px or 60vh. A number without a unit is in pixels.', 'waymorphic-map' ) . '</p>';
 			break;
 
@@ -142,6 +142,10 @@ function waymorphic_map_settings_page() {
 				)
 			);
 			?>
+		</p>
+		<p class="description">
+			<?php esc_html_e( 'Questions or problems? Contact:', 'waymorphic-map' ); ?>
+			<a href="mailto:contact@waymorphic.com">contact@waymorphic.com</a>
 		</p>
 	</div>
 	<?php

@@ -25,7 +25,11 @@
 			}
 			marker.addTo( map );
 			if ( item.popup && item.open ) {
+				// A popup that opens with the page must not take the keyboard focus.
+				var popup = marker.getPopup();
+				popup.options.focusAfterOpen = false;
 				marker.togglePopup();
+				popup.options.focusAfterOpen = true;
 			}
 			return marker;
 		} );

@@ -44,14 +44,3 @@
 	font-size: 14px;
 	color: #50575e;
 }
-
-/* The block editor. */
-.waymorphic-map-editor {
-	position: relative;
-}
-
-.waymorphic-map-editor__shield {
-	position: absolute;
-	inset: 0;
-	z-index: 3;
-}

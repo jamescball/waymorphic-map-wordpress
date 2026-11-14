@@ -1,5 +1,5 @@
 === Waymorphic Map ===
-Contributors: jamescball
+Contributors: jamesb7
 Tags: map, openstreetmap, maps, maplibre, location
 Requires at least: 6.3
 Tested up to: 7.1
@@ -14,7 +14,7 @@ Free OpenStreetMap vector maps for WordPress. A block and a shortcode, five styl
 
 Waymorphic Map adds interactive maps to your posts and pages. The maps are vector maps of the whole planet, made from OpenStreetMap data and served by [Waymorphic Map](https://waymorphic.com/). They are free. You do not need an account, an API key or a payment card.
 
-* **A block for the editor.** Search for a place, move the map, add markers and drag them into position. The editor shows the map as your visitors will see it.
+* **A block for the editor.** Type an address and select it from the suggestions: the map goes there and gets a marker. Click the map to add more markers, drag them into position, and click a marker to change its text. Select the map style from five swatches. The editor shows the map as your visitors will see it.
 * **A shortcode** for the classic editor, widgets and templates.
 * **Five map styles:** Positron, Bright, Liberty, Dark and Fiord.
 * **Markers with popups.** Add as many as you want. The map can fit its view to them.
@@ -98,6 +98,17 @@ This prevents the map from catching the scroll of the page. Hold ctrl (or cmd on
 
 Yes. The `waymorphic_map_config` filter changes the configuration of a map, and `waymorphic_map_tiles_url` changes the tile server. In JavaScript, each map element has its MapLibre map in the `waymorphicMap` property.
 
+= How do I get help or report a problem? =
+
+Send an email to contact@waymorphic.com.
+
+== Screenshots ==
+
+1. A map with a marker and a popup on a page.
+2. A new block asks for the place. The search gives suggestions while you type.
+3. The block in the editor: the search field on the map, the text form of a marker, and the five styles in the sidebar.
+4. The settings page with the defaults for new maps.
+
 == Changelog ==
 
 = 1.0.0 =
@@ -105,4 +116,4 @@ Yes. The `waymorphic_map_config` filter changes the configuration of a map, and 
 
 == Third-party code ==
 
-The plugin includes [MapLibre GL JS](https://maplibre.org/) 5.21.0 (BSD 3-Clause licence) in `assets/vendor/maplibre-gl`.
+The plugin includes [MapLibre GL JS](https://maplibre.org/) 5.21.0 (BSD 3-Clause licence) in `assets/vendor/maplibre-gl`. The file `maplibre-gl.js` is the minified build from the npm package `maplibre-gl`. The source code is at https://github.com/maplibre/maplibre-gl-js/tree/v5.21.0.

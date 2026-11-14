@@ -1,0 +1,52 @@
+name: CI
+
+# Each push and pull request: check the PHP syntax and build the plugin zip.
+on:
+  push:
+    branches:
+      - '**'
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: PHP ${{ matrix.php }} syntax
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['7.4', '8.3']
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+
+      - name: Check the PHP syntax
+        run: find . -name '*.php' -print0 | xargs -0 -n1 php -l
+
+  build:
+    name: Build the zip
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the zip
+        run: bin/build-zip.sh
+
+      - name: Check the contents of the zip
+        run: |
+          unzip -l build/waymorphic-map.zip
+          unzip -l build/waymorphic-map.zip | grep -q ' waymorphic-map/waymorphic-map.php$'
+          unzip -l build/waymorphic-map.zip | grep -q ' waymorphic-map/readme.txt$'
+          ! unzip -l build/waymorphic-map.zip | grep -E ' waymorphic-map/(\.github|\.wordpress-org|bin)/'
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: waymorphic-map
+          path: build/waymorphic-map.zip
+          if-no-files-found: error

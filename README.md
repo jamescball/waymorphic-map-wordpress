@@ -8,7 +8,7 @@ Copy this folder to `wp-content/plugins/waymorphic-map` and activate **Waymorphi
 
 ## Use
 
-**Block.** Add the "Waymorphic Map" block. In the sidebar, search for a place, add markers and select the style. Move the map to set the view. Drag a marker to move it.
+**Block.** Add the "Waymorphic Map" block. A new block asks "Where is your map?": type an address, a town or a postcode and select it from the list. The map goes there and gets a marker. "Use my location" does the same with the position that the browser gives. After that, the search field is on the map. Drag the map to set the view. Click the map to add a marker at that point. Drag a marker to move it, and click it to change its text or remove it. In the sidebar, select the style from the five swatches and set the height.
 
 **Shortcode.**
 
@@ -60,9 +60,23 @@ assets/js, assets/css   front-end script and style
 assets/vendor           MapLibre GL JS 5.21.0 (BSD 3-Clause)
 ```
 
+## Release
+
+1. Set the same version in the plugin header and the `WAYMORPHIC_MAP_VERSION` constant in `waymorphic-map.php`, and in `Stable tag` in `readme.txt`. Add a changelog entry in `readme.txt`.
+2. `bin/build-zip.sh` makes `build/waymorphic-map.zip` from the last commit. The script stops if the three version numbers are different.
+3. Push a tag such as `v1.0.0`. The Release workflow builds the zip and attaches it to a GitHub release. The release notes are the changelog entry of that version in `readme.txt`. The workflow stops if the tag and the plugin version are different, or if the changelog has no entry for the version.
+
+The CI workflow runs on each push and pull request: a PHP syntax check on PHP 7.4 and 8.3, and a build of the zip, which it keeps as an artifact.
+
+`.wordpress-org/` holds the icon, banner and screenshots for the WordPress.org plugin directory. These files go in the `assets` folder of the plugin's SVN repository, not in the zip.
+
 ## Service and credit
 
 Maps come from `https://tiles.waymorphic.com`. The service is free and best effort. Keep the credit on the map: map data © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, schema by [OpenMapTiles](https://openmaptiles.org/). See [fair use](https://waymorphic.com/#fair).
+
+## Contact
+
+Questions and problem reports: [contact@waymorphic.com](mailto:contact@waymorphic.com).
 
 ## Licence
 

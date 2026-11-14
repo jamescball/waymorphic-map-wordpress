@@ -16,6 +16,14 @@
 
 	var WORLD = { lat: 20, lng: 0, zoom: 1 };
 	var MARKER_COLOUR = '#1f6feb';
+	var MARKER_COLOURS = [
+		{ name: __( 'Blue', 'waymorphic-map' ), color: '#1f6feb' },
+		{ name: __( 'Red', 'waymorphic-map' ), color: '#d63638' },
+		{ name: __( 'Green', 'waymorphic-map' ), color: '#008a20' },
+		{ name: __( 'Orange', 'waymorphic-map' ), color: '#e26f00' },
+		{ name: __( 'Purple', 'waymorphic-map' ), color: '#7a3ff2' },
+		{ name: __( 'Black', 'waymorphic-map' ), color: '#1d2327' },
+	];
 
 	function round( value, places ) {
 		var factor = Math.pow( 10, places );
@@ -534,7 +542,7 @@
 				} );
 				markersRef.current = markers.map( function ( item, index ) {
 					var parts = markerForm( node.ownerDocument, item, index );
-					var marker = new view.maplibregl.Marker( { color: MARKER_COLOUR, draggable: true } )
+					var marker = new view.maplibregl.Marker( { color: item.colour || MARKER_COLOUR, draggable: true } )
 						.setLngLat( [ item.lng, item.lat ] )
 						.setPopup( new view.maplibregl.Popup( { maxWidth: '280px', focusAfterOpen: false } ).setDOMContent( parts.form ) )
 						.addTo( map );
@@ -733,6 +741,28 @@
 							} )
 						),
 						el(
+							components.TextControl,
+							next( {
+								label: __( 'Category', 'waymorphic-map' ),
+								help: index === 0 ? __( 'For the category buttons and the list. For example: Shops.', 'waymorphic-map' ) : undefined,
+								value: item.category || '',
+								onChange: function ( value ) {
+									updateMarker( index, { category: value } );
+								},
+							} )
+						),
+						el( 'div', { style: { height: '8px' } } ),
+						el( components.ColorPalette, {
+							'aria-label': __( 'Colour of the marker', 'waymorphic-map' ),
+							colors: MARKER_COLOURS,
+							value: item.colour || MARKER_COLOUR,
+							clearable: false,
+							onChange: function ( value ) {
+								// The page shows hex colours only.
+								updateMarker( index, { colour: /^#[0-9a-f]{6}$/i.test( value || '' ) ? value : undefined } );
+							},
+						} ),
+						el(
 							components.Button,
 							{
 								variant: 'link',
@@ -782,6 +812,102 @@
 							setAttributes( { height: value } );
 						},
 					} )
+				)
+			),
+			el(
+				components.PanelBody,
+				{ title: __( 'Features', 'waymorphic-map' ), initialOpen: false },
+				el(
+					components.ToggleControl,
+					next( {
+						label: __( 'List of the markers below the map', 'waymorphic-map' ),
+						help: __( 'A click on a name shows that marker.', 'waymorphic-map' ),
+						checked: !! attributes.list,
+						onChange: function ( value ) {
+							setAttributes( { list: value } );
+						},
+					} )
+				),
+				el(
+					components.ToggleControl,
+					next( {
+						label: __( 'Search for the nearest markers', 'waymorphic-map' ),
+						help: __( 'Visitors type an address and see the markers in a distance. Their browser sends the address to the map server.', 'waymorphic-map' ),
+						checked: !! attributes.locator,
+						onChange: function ( value ) {
+							setAttributes( { locator: value } );
+						},
+					} )
+				),
+				attributes.locator || attributes.list
+					? el(
+							components.SelectControl,
+							next( {
+								label: __( 'Unit of distance', 'waymorphic-map' ),
+								value: attributes.unit === 'mi' ? 'mi' : 'km',
+								options: [
+									{ label: __( 'Kilometres', 'waymorphic-map' ), value: 'km' },
+									{ label: __( 'Miles', 'waymorphic-map' ), value: 'mi' },
+								],
+								onChange: function ( value ) {
+									setAttributes( { unit: value } );
+								},
+							} )
+					  )
+					: null,
+				attributes.locator || attributes.list ? el( 'div', { style: { height: '16px' } } ) : null,
+				el(
+					components.ToggleControl,
+					next( {
+						label: __( 'Category buttons', 'waymorphic-map' ),
+						help: __( 'Visitors select a category and see only its markers.', 'waymorphic-map' ),
+						checked: !! attributes.filter,
+						onChange: function ( value ) {
+							setAttributes( { filter: value } );
+						},
+					} )
+				),
+				el(
+					components.ToggleControl,
+					next( {
+						label: __( 'Directions link', 'waymorphic-map' ),
+						help: __( 'Each popup gets a link to the directions on openstreetmap.org.', 'waymorphic-map' ),
+						checked: !! attributes.directions,
+						onChange: function ( value ) {
+							setAttributes( { directions: value } );
+						},
+					} )
+				),
+				el(
+					components.ToggleControl,
+					next( {
+						label: __( 'Button for the location of the visitor', 'waymorphic-map' ),
+						checked: !! attributes.locate,
+						disabled: ! attributes.interactive,
+						onChange: function ( value ) {
+							setAttributes( { locate: value } );
+						},
+					} )
+				),
+				el(
+					components.SelectControl,
+					next( {
+						label: __( 'Marker animation', 'waymorphic-map' ),
+						value: attributes.animation || '',
+						options: [
+							{ label: __( 'None', 'waymorphic-map' ), value: '' },
+							{ label: __( 'Drop', 'waymorphic-map' ), value: 'drop' },
+							{ label: __( 'Bounce', 'waymorphic-map' ), value: 'bounce' },
+						],
+						onChange: function ( value ) {
+							setAttributes( { animation: value } );
+						},
+					} )
+				),
+				el(
+					'p',
+					{ style: { margin: '12px 0 0', color: '#757575' } },
+					__( 'These features show on the page, not in the editor. For polygons, lines, circles and rectangles, use the shortcode.', 'waymorphic-map' )
 				)
 			),
 			el(

@@ -44,3 +44,240 @@
 	font-size: 14px;
 	color: #50575e;
 }
+
+/* The directions link in a popup and in the list. */
+.waymorphic-map .waymorphic-map__directions-line {
+	margin: 0.5em 0 0;
+}
+
+.waymorphic-map__directions {
+	font-size: 13px;
+	white-space: nowrap;
+}
+
+/* A marker with a picture. */
+.waymorphic-map__icon {
+	cursor: pointer;
+	line-height: 0;
+}
+
+.waymorphic-map__icon img {
+	display: block;
+	width: auto;
+	max-width: 64px;
+	height: auto;
+	max-height: 48px;
+}
+
+/* The animations move the picture of the marker, not the marker: MapLibre sets the position on the marker. */
+@keyframes waymorphic-map-drop {
+	from {
+		opacity: 0;
+		transform: translateY(-200px);
+	}
+
+	60% {
+		opacity: 1;
+		transform: translateY(0);
+	}
+
+	80% {
+		transform: translateY(-8px);
+	}
+
+	to {
+		transform: translateY(0);
+	}
+}
+
+@keyframes waymorphic-map-bounce {
+	from,
+	to {
+		transform: translateY(0);
+		animation-timing-function: ease-out;
+	}
+
+	50% {
+		transform: translateY(-14px);
+		animation-timing-function: ease-in;
+	}
+}
+
+.waymorphic-map__marker--drop > * {
+	animation: waymorphic-map-drop 0.6s ease-in both;
+	animation-delay: var(--waymorphic-delay, 0ms);
+}
+
+.waymorphic-map__marker--bounce > * {
+	animation: waymorphic-map-bounce 0.7s 6;
+	animation-delay: var(--waymorphic-delay, 0ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.waymorphic-map__marker--drop > *,
+	.waymorphic-map__marker--bounce > * {
+		animation: none;
+	}
+}
+
+/* The search and the category buttons above the map. */
+.waymorphic-map__tools {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin: 0 0 10px;
+	font-size: 14px;
+	line-height: 1.4;
+}
+
+.waymorphic-map__locator {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+	margin: 0;
+}
+
+.waymorphic-map__locator-input,
+.waymorphic-map__locator-radius {
+	box-sizing: border-box;
+	height: 40px;
+	margin: 0;
+	padding: 0 10px;
+	border: 1px solid #8c8f94;
+	border-radius: 4px;
+	background: #fff;
+	color: #1d2327;
+	font: inherit;
+}
+
+.waymorphic-map__locator-input {
+	flex: 1 1 200px;
+	min-width: 0;
+}
+
+.waymorphic-map__button {
+	box-sizing: border-box;
+	height: 40px;
+	margin: 0;
+	padding: 0 14px;
+	border: 1px solid #1f6feb;
+	border-radius: 4px;
+	background: #1f6feb;
+	color: #fff;
+	font: inherit;
+	cursor: pointer;
+}
+
+.waymorphic-map__button--plain {
+	background: #fff;
+	color: #1f6feb;
+}
+
+.waymorphic-map__button[hidden] {
+	display: none;
+}
+
+.waymorphic-map__status {
+	flex: 1 1 100%;
+	margin: 0;
+	color: #50575e;
+}
+
+.waymorphic-map__status:empty {
+	display: none;
+}
+
+.waymorphic-map__filter {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.waymorphic-map__chip {
+	margin: 0;
+	padding: 5px 12px;
+	border: 1px solid #8c8f94;
+	border-radius: 999px;
+	background: #fff;
+	color: #1d2327;
+	font: inherit;
+	cursor: pointer;
+}
+
+.waymorphic-map__chip[aria-pressed="true"] {
+	border-color: #1f6feb;
+	background: #1f6feb;
+	color: #fff;
+}
+
+/* The list of the markers below the map. */
+.waymorphic-map__list {
+	max-height: 320px;
+	margin: 10px 0 0;
+	padding: 0;
+	overflow-y: auto;
+	list-style: none;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
+	background: #fff;
+	font-size: 14px;
+	line-height: 1.4;
+}
+
+.waymorphic-map__list[hidden] {
+	display: none;
+}
+
+.waymorphic-map__list-item {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin: 0;
+	padding: 0 12px 0 0;
+	border-top: 1px solid #f0f0f1;
+}
+
+.waymorphic-map__list-item:first-child {
+	border-top: 0;
+}
+
+.waymorphic-map__list-button {
+	display: flex;
+	flex: 1 1 auto;
+	align-items: center;
+	gap: 10px;
+	min-width: 0;
+	margin: 0;
+	padding: 10px 12px;
+	border: 0;
+	background: none;
+	color: #1d2327;
+	font: inherit;
+	text-align: left;
+	cursor: pointer;
+}
+
+.waymorphic-map__list-button:hover,
+.waymorphic-map__list-button:focus-visible {
+	background: #f6f7f7;
+}
+
+.waymorphic-map__list-dot {
+	flex: 0 0 auto;
+	width: 10px;
+	height: 10px;
+	border-radius: 50%;
+}
+
+.waymorphic-map__list-name {
+	flex: 1 1 auto;
+	min-width: 0;
+	overflow-wrap: anywhere;
+}
+
+.waymorphic-map__list-detail {
+	flex: 0 0 auto;
+	color: #50575e;
+	font-size: 13px;
+}

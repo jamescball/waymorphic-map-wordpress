@@ -62,8 +62,11 @@ function waymorphic_map_render_block( $attributes ) {
 			$markers[] = array(
 				'lat'   => isset( $marker['lat'] ) ? $marker['lat'] : null,
 				'lng'   => isset( $marker['lng'] ) ? $marker['lng'] : null,
-				'popup' => esc_html( $label ),
-				'open'  => ! empty( $marker['open'] ),
+				'popup'    => esc_html( $label ),
+				'open'     => ! empty( $marker['open'] ),
+				'title'    => $label,
+				'category' => isset( $marker['category'] ) ? $marker['category'] : '',
+				'colour'   => isset( $marker['colour'] ) ? $marker['colour'] : '',
 			);
 		}
 	}
@@ -76,6 +79,13 @@ function waymorphic_map_render_block( $attributes ) {
 			'style'       => isset( $attributes['mapStyle'] ) ? $attributes['mapStyle'] : '',
 			'height'      => isset( $attributes['height'] ) ? $attributes['height'] : '',
 			'markers'     => $markers,
+			'list'        => ! empty( $attributes['list'] ),
+			'locator'     => ! empty( $attributes['locator'] ),
+			'unit'        => isset( $attributes['unit'] ) ? $attributes['unit'] : 'km',
+			'filter'      => ! empty( $attributes['filter'] ),
+			'directions'  => ! empty( $attributes['directions'] ),
+			'locate'      => ! empty( $attributes['locate'] ),
+			'animation'   => isset( $attributes['animation'] ) ? $attributes['animation'] : '',
 			'controls'    => ! isset( $attributes['controls'] ) || $attributes['controls'],
 			'scroll_zoom' => ! empty( $attributes['scrollZoom'] ),
 			'interactive' => ! isset( $attributes['interactive'] ) || $attributes['interactive'],

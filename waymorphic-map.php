@@ -2,8 +2,8 @@
 /**
  * Plugin Name:       Waymorphic Map
  * Plugin URI:        https://github.com/jamescball/waymorphic-map-wordpress
- * Description:       Free OpenStreetMap vector maps for WordPress. A block and a shortcode, five map styles, markers with popups. No API key, no account.
- * Version:           1.0.0
+ * Description:       Free OpenStreetMap vector maps for WordPress. A block and a shortcode, five map styles, markers, shapes, a marker list and a search for the nearest markers. No API key, no account.
+ * Version:           1.1.0
  * Requires at least: 6.3
  * Requires PHP:      7.4
  * Author:            James Ball
@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'WAYMORPHIC_MAP_VERSION', '1.0.0' );
+define( 'WAYMORPHIC_MAP_VERSION', '1.1.0' );
 define( 'WAYMORPHIC_MAP_MAPLIBRE_VERSION', '5.21.0' );
 define( 'WAYMORPHIC_MAP_FILE', __FILE__ );
 define( 'WAYMORPHIC_MAP_DIR', plugin_dir_path( __FILE__ ) );

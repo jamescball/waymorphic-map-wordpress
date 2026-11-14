@@ -153,3 +153,60 @@ function waymorphic_map_sanitize_options( $input ) {
 		'zoom'      => null === $zoom ? $defaults['zoom'] : $zoom,
 	);
 }
+
+/**
+ * A hex colour such as #1f6feb or #fff, or the fallback.
+ *
+ * @param mixed  $value    The input.
+ * @param string $fallback The value when the input is not a hex colour.
+ * @return string
+ */
+function waymorphic_map_clean_colour( $value, $fallback = '' ) {
+	$value = is_string( $value ) ? strtolower( trim( $value ) ) : '';
+	return preg_match( '/^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/', $value ) ? $value : $fallback;
+}
+
+/**
+ * The marker animations.
+ *
+ * @param mixed $value The input.
+ * @return string 'drop', 'bounce' or ''.
+ */
+function waymorphic_map_clean_animation( $value ) {
+	$value = is_string( $value ) ? strtolower( trim( $value ) ) : '';
+	return in_array( $value, array( 'drop', 'bounce' ), true ) ? $value : '';
+}
+
+/**
+ * A list of points from text such as "51.5,-0.12; 51.6,-0.1".
+ *
+ * @param mixed $value Text with "lat,lng" pairs that ; or | divide, or a list of [ lat, lng ] arrays.
+ * @return array<int,array{0:float,1:float}> The points as [ lng, lat ], 500 at most.
+ */
+function waymorphic_map_clean_points( $value ) {
+	$pairs = array();
+	if ( is_string( $value ) ) {
+		foreach ( preg_split( '/[;|]/', $value ) as $pair ) {
+			$pairs[] = array_map( 'trim', explode( ',', $pair ) );
+		}
+	} elseif ( is_array( $value ) ) {
+		$pairs = $value;
+	}
+
+	$points = array();
+	foreach ( $pairs as $pair ) {
+		if ( ! is_array( $pair ) || count( $pair ) < 2 ) {
+			continue;
+		}
+		$pair = array_values( $pair );
+		$lat  = waymorphic_map_clean_number( $pair[0], -85, 85 );
+		$lng  = waymorphic_map_clean_number( $pair[1], -180, 180 );
+		if ( null !== $lat && null !== $lng ) {
+			$points[] = array( $lng, $lat );
+		}
+		if ( count( $points ) >= 500 ) {
+			break;
+		}
+	}
+	return $points;
+}

@@ -19,6 +19,13 @@
 			"default": [],
 			"items": { "type": "object" }
 		},
+		"list": { "type": "boolean", "default": false },
+		"locator": { "type": "boolean", "default": false },
+		"unit": { "type": "string", "default": "km" },
+		"filter": { "type": "boolean", "default": false },
+		"directions": { "type": "boolean", "default": false },
+		"locate": { "type": "boolean", "default": false },
+		"animation": { "type": "string", "default": "" },
 		"controls": { "type": "boolean", "default": true },
 		"scrollZoom": { "type": "boolean", "default": false },
 		"interactive": { "type": "boolean", "default": true },

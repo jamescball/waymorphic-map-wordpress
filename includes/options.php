@@ -180,10 +180,12 @@ function waymorphic_map_clean_animation( $value ) {
 /**
  * A list of points from text such as "51.5,-0.12; 51.6,-0.1".
  *
- * @param mixed $value Text with "lat,lng" pairs that ; or | divide, or a list of [ lat, lng ] arrays.
- * @return array<int,array{0:float,1:float}> The points as [ lng, lat ], 500 at most.
+ * @param mixed $value   Text with "lat,lng" pairs that ; or | divide, or a list of [ lat, lng ] arrays.
+ * @param int   $max     The largest number of points.
+ * @param bool  $weights Keep a third number of a point, 0 to 100: its weight in a heatmap.
+ * @return array<int,array<int,float>> The points as [ lng, lat ] or [ lng, lat, weight ].
  */
-function waymorphic_map_clean_points( $value ) {
+function waymorphic_map_clean_points( $value, $max = 500, $weights = false ) {
 	$pairs = array();
 	if ( is_string( $value ) ) {
 		foreach ( preg_split( '/[;|]/', $value ) as $pair ) {
@@ -202,9 +204,14 @@ function waymorphic_map_clean_points( $value ) {
 		$lat  = waymorphic_map_clean_number( $pair[0], -85, 85 );
 		$lng  = waymorphic_map_clean_number( $pair[1], -180, 180 );
 		if ( null !== $lat && null !== $lng ) {
-			$points[] = array( $lng, $lat );
+			$point  = array( $lng, $lat );
+			$weight = $weights && isset( $pair[2] ) ? waymorphic_map_clean_number( $pair[2], 0, 100 ) : null;
+			if ( null !== $weight ) {
+				$point[] = $weight;
+			}
+			$points[] = $point;
 		}
-		if ( count( $points ) >= 500 ) {
+		if ( count( $points ) >= $max ) {
 			break;
 		}
 	}

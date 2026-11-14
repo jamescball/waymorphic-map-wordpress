@@ -15,14 +15,15 @@ if ( ! defined( 'ABSPATH' ) ) {
 function waymorphic_map_register_shortcodes() {
 	add_shortcode( 'waymorphic_map', 'waymorphic_map_shortcode' );
 	add_shortcode( 'waymorphic_marker', 'waymorphic_map_marker_shortcode' );
-	foreach ( array( 'polygon', 'line', 'circle', 'rectangle' ) as $type ) {
+	foreach ( array( 'polygon', 'line', 'circle', 'rectangle', 'heatmap' ) as $type ) {
 		add_shortcode( 'waymorphic_' . $type, 'waymorphic_map_shape_shortcode' );
 	}
+	add_shortcode( 'waymorphic_file', 'waymorphic_map_file_shortcode' );
 }
 
 /**
- * The markers and shapes of the map shortcodes that are open, innermost last.
- * A shape is an array with a 'type' key.
+ * The markers, shapes and files of the map shortcodes that are open, innermost
+ * last. A shape is an array with a 'type' key, a file an array with a 'url' key.
  *
  * @param string     $action 'open', 'add' or 'close'.
  * @param array|null $marker The marker or the shape to add.
@@ -62,6 +63,7 @@ function waymorphic_map_shortcode( $atts, $content = null ) {
 			'label'       => '',
 			'colour'      => '',
 			'color'       => '',
+			'cluster'     => '',
 			'list'        => '',
 			'locator'     => '',
 			'radius'      => '',
@@ -105,8 +107,11 @@ function waymorphic_map_shortcode( $atts, $content = null ) {
 	}
 	$markers = array();
 	$shapes  = array();
+	$files   = array();
 	foreach ( waymorphic_map_marker_stack( 'close' ) as $item ) {
-		if ( isset( $item['type'] ) ) {
+		if ( isset( $item['url'] ) ) {
+			$files[] = $item;
+		} elseif ( isset( $item['type'] ) ) {
 			$shapes[] = $item;
 		} else {
 			$markers[] = $item;
@@ -139,6 +144,8 @@ function waymorphic_map_shortcode( $atts, $content = null ) {
 			'width'       => $atts['width'],
 			'markers'     => $markers,
 			'shapes'      => $shapes,
+			'files'       => $files,
+			'cluster'     => waymorphic_map_clean_bool( $atts['cluster'], false ),
 			'list'        => waymorphic_map_clean_bool( $atts['list'], false ),
 			'locator'     => waymorphic_map_clean_bool( $atts['locator'], false ),
 			'radius'      => $atts['radius'],
@@ -217,6 +224,7 @@ function waymorphic_map_marker_shortcode( $atts, $content = null ) {
  * [waymorphic_line points="51.5,-0.2; 51.6,-0.1" colour="#d63638" width="4"]
  * [waymorphic_circle lat="51.5" lng="-0.12" radius="500"]
  * [waymorphic_rectangle points="51.5,-0.2; 51.6,-0.1"]
+ * [waymorphic_heatmap points="51.5,-0.2; 51.6,-0.1,3" radius="30"]
  *
  * @param array|string $atts    The attributes.
  * @param string|null  $content The popup text.
@@ -270,6 +278,39 @@ function waymorphic_map_shape_shortcode( $atts, $content = null, $tag = '' ) {
 			'popup'   => null === $content ? '' : do_shortcode( $content ),
 		)
 	);
+
+	return '';
+}
+
+/**
+ * [waymorphic_file url="https://example.com/places.csv"], inside [waymorphic_map]:
+ * the markers and shapes of a CSV, GeoJSON, KML or GPX file.
+ *
+ * @param array|string $atts The attributes.
+ * @return string Always empty: the map shortcode shows the file.
+ */
+function waymorphic_map_file_shortcode( $atts ) {
+	$atts = shortcode_atts(
+		array(
+			'url'      => '',
+			'colour'   => '',
+			'color'    => '',
+			'category' => '',
+		),
+		$atts,
+		'waymorphic_file'
+	);
+
+	if ( '' !== trim( $atts['url'] ) ) {
+		waymorphic_map_marker_stack(
+			'add',
+			array(
+				'url'      => $atts['url'],
+				'colour'   => '' !== $atts['colour'] ? $atts['colour'] : $atts['color'],
+				'category' => $atts['category'],
+			)
+		);
+	}
 
 	return '';
 }

@@ -36,6 +36,7 @@ Copy this folder to `wp-content/plugins/waymorphic-map` and activate **Waymorphi
 | `scroll_zoom` | `true`: plain scroll zooms the map. `false`: ctrl or cmd + scroll | `false` |
 | `interactive` | `false` makes a still map | `true` |
 | `title` | Name of the map for screen readers | `Map` |
+| `cluster` | `true` puts markers that are near to each other in a group | `false` |
 | `list` | `true` shows the list of the markers below the map | `false` |
 | `locator` | `true` shows the search for the nearest markers | `false` |
 | `radius`, `unit` | First distance of the search; `km` or `mi` | `25`, `km` |
@@ -61,7 +62,23 @@ Copy this folder to `wp-content/plugins/waymorphic-map` and activate **Waymorphi
 
 All shapes take `colour` and `width`. Polygons, circles and rectangles take `fill` and `opacity` (0 to 1). The radius of a circle is in metres. A rectangle takes two opposite corners.
 
-In the block, the "Features" panel has the list, the search, the category buttons, the directions link, the location button and the animation. Each marker has a category and a colour. The block does not draw shapes: use the shortcode for them.
+**Heatmap and files**, in `[waymorphic_map]`:
+
+```
+[waymorphic_heatmap points="51.50,-0.12; 51.51,-0.11,3; 51.52,-0.10" radius="30"]
+[waymorphic_file url="https://example.com/wp-content/uploads/shops.csv" category="Shops" colour="#008a20"]
+[waymorphic_file url="https://example.com/wp-content/uploads/walk.gpx"]
+```
+
+A heatmap point can have a weight as a third number. `[waymorphic_file]` shows the markers, lines and areas of a CSV, GeoJSON, KML or GPX file. The browser gets the file on each page view, so the file must be on the site or on a server that permits the site to read it (CORS). A CSV file has a first row with the column names: `lat`, `lng`, and the optional `title`, `description`, `category`, `colour`, `icon`. Text from a file shows as plain text.
+
+**In the block:**
+
+- The "Features" panel has the list, the search, the groups of markers, the category buttons, the directions link, the location button and the animation.
+- Each marker has a category, a colour and an optional picture.
+- The "Shapes" panel draws polygons, lines, circles and rectangles: select a type, then click the map.
+- "Import a file" in the Markers panel adds the markers and shapes of a CSV, GeoJSON, KML or GPX file to the block. The file is not uploaded. A line keeps 500 points at most.
+- The block has no heatmap: use the shortcode.
 
 **Settings.** Settings > Waymorphic Map: default style, height and zoom, and the tile server URL for a self-hosted server.
 
@@ -71,7 +88,7 @@ In the block, the "Features" panel has the list, the search, the category button
 - Filter `waymorphic_map_config`: the configuration of one map before output.
 - Filter `waymorphic_map_tiles_url`: the tile server URL.
 - Filter `waymorphic_map_directions_url`: the address of the directions link. `{lat}` and `{lng}` are the position of the marker.
-- JavaScript: each `.waymorphic-map` element has its MapLibre map in `element.waymorphicMap`. `WaymorphicMap.init( root )` starts maps that you add to the page later. `WaymorphicMap.addShapes( map, WaymorphicMap.shapeFeatures( shapes ) )` adds shapes to a map.
+- JavaScript: each `.waymorphic-map` element has its MapLibre map in `element.waymorphicMap`. `WaymorphicMap.init( root )` starts maps that you add to the page later. `WaymorphicMap.addShapes( map, WaymorphicMap.shapeFeatures( shapes ) )` adds shapes to a map. `WaymorphicMap.parseData( text, name )` reads the markers and shapes of a CSV, GeoJSON, KML or GPX file.
 
 ```
 waymorphic-map.php      plugin header and hooks

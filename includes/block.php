@@ -16,7 +16,7 @@ function waymorphic_map_register_block() {
 	wp_register_script(
 		'waymorphic-map-editor',
 		plugins_url( 'block/editor.js', WAYMORPHIC_MAP_FILE ),
-		array( 'wp-blocks', 'wp-element', 'wp-block-editor', 'wp-components', 'wp-i18n' ),
+		array( 'wp-blocks', 'wp-element', 'wp-block-editor', 'wp-components', 'wp-i18n', 'waymorphic-map' ),
 		WAYMORPHIC_MAP_VERSION,
 		true
 	);
@@ -67,7 +67,19 @@ function waymorphic_map_render_block( $attributes ) {
 				'title'    => $label,
 				'category' => isset( $marker['category'] ) ? $marker['category'] : '',
 				'colour'   => isset( $marker['colour'] ) ? $marker['colour'] : '',
+				'icon'     => isset( $marker['icon'] ) ? $marker['icon'] : '',
 			);
+		}
+	}
+
+	// The shapes of the block have plain text for the popup and [ lat, lng ] points.
+	$shapes = array();
+	if ( ! empty( $attributes['shapes'] ) && is_array( $attributes['shapes'] ) ) {
+		foreach ( $attributes['shapes'] as $shape ) {
+			if ( is_array( $shape ) ) {
+				$shape['popup'] = esc_html( isset( $shape['label'] ) ? (string) $shape['label'] : '' );
+				$shapes[]       = $shape;
+			}
 		}
 	}
 
@@ -79,6 +91,8 @@ function waymorphic_map_render_block( $attributes ) {
 			'style'       => isset( $attributes['mapStyle'] ) ? $attributes['mapStyle'] : '',
 			'height'      => isset( $attributes['height'] ) ? $attributes['height'] : '',
 			'markers'     => $markers,
+			'shapes'      => $shapes,
+			'cluster'     => ! empty( $attributes['cluster'] ),
 			'list'        => ! empty( $attributes['list'] ),
 			'locator'     => ! empty( $attributes['locator'] ),
 			'unit'        => isset( $attributes['unit'] ) ? $attributes['unit'] : 'km',

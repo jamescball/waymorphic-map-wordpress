@@ -25,6 +25,8 @@ function waymorphic_map_register_assets() {
 		'waymorphic-map',
 		'window.waymorphicMapL10n = ' . wp_json_encode(
 			array(
+				/* translators: %d: a number of markers. */
+				'group'         => __( 'Markers here: %d. Zoom in.', 'waymorphic-map' ),
 				'noMap'         => __( 'The map cannot be shown in this browser.', 'waymorphic-map' ),
 				'directions'    => __( 'Directions', 'waymorphic-map' ),
 				/* translators: %d: the number of the marker. */
@@ -112,10 +114,10 @@ function waymorphic_map_clean_markers( $markers ) {
 /**
  * Cleans a list of shapes.
  *
- * @param mixed $shapes A list of arrays with type (polygon, line, circle or rectangle),
- *                      points, radius (metres, for a circle), colour, fill, opacity,
- *                      width and popup (HTML).
- * @return array<int,array<string,mixed>> Shapes of the types polygon, line and circle.
+ * @param mixed $shapes A list of arrays with type (polygon, line, circle, rectangle or
+ *                      heatmap), points, radius (metres for a circle, pixels for a
+ *                      heatmap), colour, fill, opacity, width and popup (HTML).
+ * @return array<int,array<string,mixed>> Shapes of the types polygon, line, circle and heatmap.
  */
 function waymorphic_map_clean_shapes( $shapes ) {
 	$clean = array();
@@ -126,7 +128,21 @@ function waymorphic_map_clean_shapes( $shapes ) {
 		if ( ! is_array( $shape ) || ! isset( $shape['type'] ) ) {
 			continue;
 		}
-		$type   = (string) $shape['type'];
+		$type = (string) $shape['type'];
+		if ( 'heatmap' === $type ) {
+			$points = waymorphic_map_clean_points( isset( $shape['points'] ) ? $shape['points'] : array(), 5000, true );
+			if ( $points ) {
+				$radius  = waymorphic_map_clean_number( isset( $shape['radius'] ) ? $shape['radius'] : null, 1, 200 );
+				$opacity = waymorphic_map_clean_number( isset( $shape['opacity'] ) ? $shape['opacity'] : null, 0, 1 );
+				$clean[] = array(
+					'type'    => 'heatmap',
+					'points'  => $points,
+					'radius'  => null === $radius ? 30 : $radius,
+					'opacity' => null === $opacity ? 0.8 : $opacity,
+				);
+			}
+			continue;
+		}
 		$points = waymorphic_map_clean_points( isset( $shape['points'] ) ? $shape['points'] : array() );
 		$item   = array();
 
@@ -181,6 +197,39 @@ function waymorphic_map_clean_shapes( $shapes ) {
 }
 
 /**
+ * Cleans a list of files that the map reads in the browser.
+ *
+ * @param mixed $files A list of arrays with url, and the optional colour and category.
+ * @return array<int,array<string,string>>
+ */
+function waymorphic_map_clean_files( $files ) {
+	$clean = array();
+	if ( ! is_array( $files ) ) {
+		return $clean;
+	}
+	foreach ( $files as $file ) {
+		$url = is_array( $file ) && isset( $file['url'] ) && is_string( $file['url'] ) ? esc_url_raw( trim( $file['url'] ), array( 'http', 'https' ) ) : '';
+		if ( '' === $url ) {
+			continue;
+		}
+		$item   = array( 'url' => $url );
+		$colour = waymorphic_map_clean_colour( isset( $file['colour'] ) ? $file['colour'] : '' );
+		if ( '' !== $colour ) {
+			$item['colour'] = $colour;
+		}
+		$category = isset( $file['category'] ) && is_scalar( $file['category'] ) ? sanitize_text_field( (string) $file['category'] ) : '';
+		if ( '' !== $category ) {
+			$item['category'] = $category;
+		}
+		$clean[] = $item;
+		if ( count( $clean ) >= 10 ) {
+			break;
+		}
+	}
+	return $clean;
+}
+
+/**
  * The HTML of one map.
  *
  * @param array<string,mixed> $args {
@@ -194,8 +243,11 @@ function waymorphic_map_clean_shapes( $shapes ) {
  *     @type string       $width       CSS length; a number means pixels.
  *     @type array        $markers     Arrays with lat, lng, popup (HTML), open, title, category,
  *                                     colour, icon (URL) and animation (drop or bounce).
- *     @type array        $shapes      Arrays with type (polygon, line, circle, rectangle), points,
- *                                     radius, colour, fill, opacity, width and popup (HTML).
+ *     @type array        $shapes      Arrays with type (polygon, line, circle, rectangle, heatmap),
+ *                                     points, radius, colour, fill, opacity, width and popup (HTML).
+ *     @type array        $files       Arrays with url (a CSV, GeoJSON, KML or GPX file), and the
+ *                                     optional colour and category. The browser reads the files.
+ *     @type bool         $cluster     Put markers that are near to each other in a group.
  *     @type bool         $list        Show the list of the markers below the map.
  *     @type bool         $locator     Show the search for the nearest markers above the map.
  *     @type float|string $radius      The first distance of the search. The default is 25.
@@ -225,6 +277,8 @@ function waymorphic_map_render( $args ) {
 			'width'       => '',
 			'markers'     => array(),
 			'shapes'      => array(),
+			'files'       => array(),
+			'cluster'     => false,
 			'list'        => false,
 			'locator'     => false,
 			'radius'      => null,
@@ -246,6 +300,7 @@ function waymorphic_map_render( $args ) {
 	$zoom    = waymorphic_map_clean_number( $args['zoom'], 0, 22 );
 	$markers = waymorphic_map_clean_markers( $args['markers'] );
 	$shapes  = waymorphic_map_clean_shapes( $args['shapes'] );
+	$files   = waymorphic_map_clean_files( $args['files'] );
 	$style   = waymorphic_map_clean_style( $args['style'], $options['style'] );
 
 	$animation = waymorphic_map_clean_animation( $args['animation'] );
@@ -267,6 +322,12 @@ function waymorphic_map_render( $args ) {
 
 	if ( $shapes ) {
 		$config['shapes'] = $shapes;
+	}
+	if ( $files ) {
+		$config['files'] = $files;
+	}
+	if ( $args['cluster'] ) {
+		$config['cluster'] = true;
 	}
 	if ( $args['list'] ) {
 		$config['list'] = true;
@@ -304,14 +365,18 @@ function waymorphic_map_render( $args ) {
 		// An explicit centre.
 		$config['center'] = array( $lng, $lat );
 		$config['zoom']   = null === $zoom ? (float) $options['zoom'] : $zoom;
-	} elseif ( 1 === count( $markers ) && ! $shapes ) {
+	} elseif ( 1 === count( $markers ) && ! $shapes && ! $files ) {
 		$config['center'] = array( $markers[0]['lng'], $markers[0]['lat'] );
 		$config['zoom']   = null === $zoom ? (float) $options['zoom'] : $zoom;
-	} elseif ( $markers || $shapes ) {
+	} elseif ( $markers || $shapes || $files ) {
 		// The script fits the view to the markers and the shapes; an explicit zoom is the upper limit.
 		$config['fit'] = true;
 		if ( null !== $zoom ) {
 			$config['zoom'] = $zoom;
+		}
+		if ( ! $markers && ! $shapes ) {
+			// The world, until the files are there.
+			$config['center'] = array( 0, 20 );
 		}
 	} else {
 		// Nothing to show: the whole world.

@@ -316,3 +316,44 @@
 .waymorphic-styles__item[aria-checked="true"] .waymorphic-styles__swatch {
 	box-shadow: 0 0 0 2px #fff, 0 0 0 4px #3858e9;
 }
+
+/* The bar on the map while the user draws a shape. */
+.waymorphic-map-editor__draw {
+	position: absolute;
+	left: 10px;
+	bottom: 34px;
+	z-index: 4;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+	max-width: calc(100% - 20px);
+	box-sizing: border-box;
+	padding: 8px 12px;
+	border-radius: 4px;
+	background: #fff;
+	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+	font: 13px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+	color: #1e1e1e;
+}
+
+.waymorphic-map-editor__draw .waymorphic-map-editor__add {
+	margin: 0;
+	box-shadow: none;
+}
+
+.waymorphic-map-editor__draw .waymorphic-map-editor__add:disabled {
+	background: #a7aaad;
+	cursor: default;
+}
+
+.waymorphic-map-editor__cancel {
+	margin: 0;
+	padding: 8px 12px;
+	border: 1px solid #949494;
+	border-radius: 4px;
+	background: #fff;
+	font: inherit;
+	color: inherit;
+	cursor: pointer;
+}

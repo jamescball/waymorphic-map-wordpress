@@ -19,6 +19,12 @@
 			"default": [],
 			"items": { "type": "object" }
 		},
+		"shapes": {
+			"type": "array",
+			"default": [],
+			"items": { "type": "object" }
+		},
+		"cluster": { "type": "boolean", "default": false },
 		"list": { "type": "boolean", "default": false },
 		"locator": { "type": "boolean", "default": false },
 		"unit": { "type": "string", "default": "km" },

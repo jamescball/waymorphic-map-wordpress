@@ -25,6 +25,44 @@
 		{ name: __( 'Black', 'waymorphic-map' ), color: '#1d2327' },
 	];
 
+	var SHAPE_NAMES = {
+		polygon: __( 'Polygon', 'waymorphic-map' ),
+		line: __( 'Line', 'waymorphic-map' ),
+		circle: __( 'Circle', 'waymorphic-map' ),
+		rectangle: __( 'Rectangle', 'waymorphic-map' ),
+	};
+	// The sidebar shows the fields of this number of markers and shapes.
+	var SIDEBAR_LIMIT = 30;
+
+	// A shape of the block ([lat, lng] points) as the page script wants it ([lng, lat]).
+	function frontShape( shape ) {
+		var points = ( shape.points || [] ).map( function ( point ) {
+			return [ point[ 1 ], point[ 0 ] ];
+		} );
+		var item = { type: shape.type, points: points, colour: shape.colour, fill: shape.fill, radius: shape.radius };
+		if ( shape.type === 'rectangle' ) {
+			if ( points.length < 2 ) {
+				return null;
+			}
+			item.type = 'polygon';
+			item.points = [ points[ 0 ], [ points[ 1 ][ 0 ], points[ 0 ][ 1 ] ], points[ 1 ], [ points[ 0 ][ 0 ], points[ 1 ][ 1 ] ] ];
+		}
+		return item;
+	}
+
+	// 500 points of a long line at most: the page shows no more.
+	function thin( points ) {
+		if ( points.length <= 500 ) {
+			return points;
+		}
+		var step = ( points.length - 1 ) / 499;
+		var result = [];
+		for ( var i = 0; i < 500; i++ ) {
+			result.push( points[ Math.round( i * step ) ] );
+		}
+		return result;
+	}
+
 	function round( value, places ) {
 		var factor = Math.pow( 10, places );
 		return Math.round( value * factor ) / factor;
@@ -328,6 +366,19 @@
 		// The popup that offers a marker at the point of a click.
 		var offerRef = useRef( null );
 		var addRef = useRef( null );
+		// The shape that the user draws: its type and its points, or null.
+		var drawState = useState( null );
+		var drawing = drawState[ 0 ];
+		var setDrawing = drawState[ 1 ];
+		var drawRef = useRef( null );
+		drawRef.current = drawing;
+		var drawPointRef = useRef( null );
+		var drawMarkersRef = useRef( [] );
+		var shapesDrawRef = useRef( null );
+		var shapesDirtyRef = useRef( false );
+		var noteState = useState( '' );
+		var note = noteState[ 0 ];
+		var setNote = noteState[ 1 ];
 		var locateState = useState( 'idle' );
 		var locating = locateState[ 0 ];
 		var setLocating = locateState[ 1 ];
@@ -348,8 +399,9 @@
 		var hasCentre = isNumber( attributes.lat ) && isNumber( attributes.lng );
 		var zoom = isNumber( attributes.zoom ) ? attributes.zoom : hasCentre ? settings.defaultZoom : WORLD.zoom;
 		var markers = attributes.markers || [];
+		var shapes = attributes.shapes || [];
 		// A new block: ask for the place first.
-		var setup = ! hasCentre && markers.length === 0 && ! skipped;
+		var setup = ! hasCentre && markers.length === 0 && shapes.length === 0 && ! skipped;
 
 		// Make the map. MapLibre comes from the window the block is in: the
 		// editor canvas is an iframe, and the map must use that window.
@@ -399,6 +451,11 @@
 					if ( target && target.closest && target.closest( '.maplibregl-marker, .maplibregl-popup' ) ) {
 						return;
 					}
+					if ( drawRef.current ) {
+						// The click is a point of the shape.
+						drawPointRef.current( event.lngLat.wrap() );
+						return;
+					}
 					if ( offerRef.current ) {
 						offerRef.current.remove();
 						offerRef.current = null;
@@ -425,6 +482,12 @@
 						popup.remove();
 						addRef.current( { lat: point.lat, lng: point.lng, name: '' } );
 					} );
+				} );
+				// A new style removes the shapes: draw them again.
+				map.on( 'idle', function () {
+					if ( shapesDrawRef.current && ( shapesDirtyRef.current || ! map.getSource( 'waymorphic-shapes' ) ) ) {
+						shapesDrawRef.current();
+					}
 				} );
 				mapRef.current = map;
 				setReady( true );
@@ -542,7 +605,16 @@
 				} );
 				markersRef.current = markers.map( function ( item, index ) {
 					var parts = markerForm( node.ownerDocument, item, index );
-					var marker = new view.maplibregl.Marker( { color: item.colour || MARKER_COLOUR, draggable: true } )
+					var markerOptions = { color: item.colour || MARKER_COLOUR, draggable: true };
+					if ( item.icon ) {
+						var image = node.ownerDocument.createElement( 'img' );
+						image.src = item.icon;
+						image.alt = '';
+						markerOptions = { element: node.ownerDocument.createElement( 'div' ), anchor: 'bottom', draggable: true };
+						markerOptions.element.className = 'waymorphic-map__icon';
+						markerOptions.element.appendChild( image );
+					}
+					var marker = new view.maplibregl.Marker( markerOptions )
 						.setLngLat( [ item.lng, item.lat ] )
 						.setPopup( new view.maplibregl.Popup( { maxWidth: '280px', focusAfterOpen: false } ).setDOMContent( parts.form ) )
 						.addTo( map );
@@ -562,6 +634,191 @@
 			},
 			[ ready, markersKey ]
 		);
+
+		// The shapes, and the points of the shape that the user draws.
+		var shapesKey = JSON.stringify( [ shapes, drawing ] );
+		useEffect(
+			function () {
+				var map = mapRef.current;
+				if ( ! map ) {
+					return;
+				}
+				var view = containerRef.current.ownerDocument.defaultView;
+				var script = view.WaymorphicMap;
+				if ( ! script || ! script.shapeFeatures ) {
+					return;
+				}
+				shapesDrawRef.current = function () {
+					var list = shapes.map( frontShape ).filter( Boolean );
+					if ( drawing && drawing.points.length > 1 ) {
+						list.push( { type: 'line', points: frontShape( drawing ).points, colour: '#d63638', width: 2 } );
+					}
+					var data = { type: 'FeatureCollection', features: script.shapeFeatures( list ) };
+					try {
+						var source = map.getSource( 'waymorphic-shapes' );
+						if ( source ) {
+							source.setData( data );
+						} else if ( data.features.length ) {
+							script.addShapes( map, data.features );
+						}
+						shapesDirtyRef.current = false;
+					} catch ( error ) {
+						// The style is not ready: the map draws the shapes when it is.
+						shapesDirtyRef.current = true;
+					}
+				};
+				shapesDrawRef.current();
+
+				drawMarkersRef.current.forEach( function ( marker ) {
+					marker.remove();
+				} );
+				drawMarkersRef.current = ( drawing ? drawing.points : [] ).map( function ( point ) {
+					return new view.maplibregl.Marker( { color: '#d63638', scale: 0.5 } ).setLngLat( [ point[ 1 ], point[ 0 ] ] ).addTo( map );
+				} );
+			},
+			[ ready, shapesKey ]
+		);
+
+		// Keep the view that the editor shows, when the block has no view.
+		function withView( change ) {
+			var map = mapRef.current;
+			if ( map && ( ! isNumber( attributesRef.current.lat ) || ! isNumber( attributesRef.current.lng ) ) ) {
+				var centre = map.getCenter().wrap();
+				change.lat = round( centre.lat, 5 );
+				change.lng = round( centre.lng, 5 );
+				change.zoom = round( map.getZoom(), 2 );
+			}
+			return change;
+		}
+
+		function addShape( shape ) {
+			setDrawing( null );
+			setAttributes(
+				withView( {
+					shapes: ( attributesRef.current.shapes || [] ).concat( [ Object.assign( { colour: MARKER_COLOUR, label: '' }, shape ) ] ),
+				} )
+			);
+		}
+
+		function updateShape( index, change ) {
+			setAttributes( {
+				shapes: ( attributesRef.current.shapes || [] ).map( function ( item, i ) {
+					return i === index ? Object.assign( {}, item, change ) : item;
+				} ),
+			} );
+		}
+
+		function removeShape( index ) {
+			setAttributes( {
+				shapes: ( attributesRef.current.shapes || [] ).filter( function ( item, i ) {
+					return i !== index;
+				} ),
+			} );
+		}
+
+		// A click on the map while the user draws a shape.
+		drawPointRef.current = function ( point ) {
+			var now = drawRef.current;
+			var points = now.points.concat( [ [ round( point.lat, 5 ), round( point.lng, 5 ) ] ] );
+			var map = mapRef.current;
+			if ( now.type === 'circle' ) {
+				// The first radius: an eighth of the width of the view, in metres.
+				var bounds = map.getBounds();
+				var width = ( bounds.getEast() - bounds.getWest() ) * 111320 * Math.cos( ( point.lat * Math.PI ) / 180 );
+				var radius = Math.max( 10, width / 8 );
+				var unit = Math.pow( 10, Math.floor( Math.log( radius ) / Math.LN10 ) );
+				addShape( { type: 'circle', points: points, radius: Math.round( radius / unit ) * unit } );
+			} else if ( now.type === 'rectangle' && points.length === 2 ) {
+				addShape( { type: 'rectangle', points: points } );
+			} else {
+				setDrawing( { type: now.type, points: points } );
+			}
+		};
+
+		function startDrawing( type ) {
+			if ( offerRef.current ) {
+				offerRef.current.remove();
+				offerRef.current = null;
+			}
+			setSkipped( true );
+			setDrawing( { type: type, points: [] } );
+		}
+
+		// Add the markers and the shapes of a CSV, GeoJSON, KML or GPX file.
+		function importFile( file ) {
+			var view = containerRef.current.ownerDocument.defaultView;
+			var script = ( view.WaymorphicMap && view.WaymorphicMap.parseData ? view.WaymorphicMap : window.WaymorphicMap ) || {};
+			if ( ! file || ! script.parseData || ! window.FileReader ) {
+				return;
+			}
+			var reader = new window.FileReader();
+			reader.onload = function () {
+				var data = script.parseData( String( reader.result || '' ), file.name );
+				var before = attributesRef.current.markers || [];
+				var newMarkers = data.markers.slice( 0, Math.max( 0, 1000 - before.length ) ).map( function ( item ) {
+					return {
+						lat: round( item.lat, 5 ),
+						lng: round( item.lng, 5 ),
+						label: item.title && item.text ? item.title + ': ' + item.text : item.title || item.text || '',
+						open: false,
+						category: item.category,
+						colour: item.colour,
+						icon: item.icon,
+					};
+				} );
+				var newShapes = data.shapes.slice( 0, 100 ).map( function ( item ) {
+					return {
+						type: item.type,
+						points: thin( item.points ).map( function ( point ) {
+							return [ round( point[ 1 ], 5 ), round( point[ 0 ], 5 ) ];
+						} ),
+						colour: item.colour || MARKER_COLOUR,
+						fill: item.fill,
+						label: item.text || '',
+					};
+				} );
+				if ( ! newMarkers.length && ! newShapes.length ) {
+					setNote( __( 'The file has no markers or shapes that the plugin can read.', 'waymorphic-map' ) );
+					return;
+				}
+				var change = {
+					markers: before.concat( newMarkers ),
+					shapes: ( attributesRef.current.shapes || [] ).concat( newShapes ),
+				};
+				// Show all that came from the file.
+				var map = mapRef.current;
+				if ( map ) {
+					var bounds = new view.maplibregl.LngLatBounds();
+					newMarkers.forEach( function ( item ) {
+						bounds.extend( [ item.lng, item.lat ] );
+					} );
+					newShapes.forEach( function ( item ) {
+						item.points.forEach( function ( point ) {
+							bounds.extend( [ point[ 1 ], point[ 0 ] ] );
+						} );
+					} );
+					var camera = map.cameraForBounds( bounds, { padding: 60, maxZoom: 15 } );
+					if ( camera && isNumber( camera.zoom ) ) {
+						var centre = view.maplibregl.LngLat.convert( camera.center ).wrap();
+						change.lat = round( centre.lat, 5 );
+						change.lng = round( centre.lng, 5 );
+						change.zoom = round( camera.zoom, 2 );
+					}
+				}
+				setSkipped( true );
+				setPlace( null );
+				setAttributes( change );
+				setNote(
+					sprintf(
+						/* translators: 1: a number of markers, 2: a number of shapes. */
+						__( 'Markers added: %1$d. Shapes added: %2$d.', 'waymorphic-map' ),
+						newMarkers.length,
+						newShapes.length
+					)
+				);
+			};
+			reader.readAsText( file );
+		}
 
 		function updateMarker( index, change ) {
 			var list = ( attributesRef.current.markers || [] ).map( function ( item, i ) {
@@ -710,7 +967,7 @@
 			el(
 				components.PanelBody,
 				{ title: __( 'Markers', 'waymorphic-map' ), initialOpen: true },
-				markers.map( function ( item, index ) {
+				markers.slice( 0, SIDEBAR_LIMIT ).map( function ( item, index ) {
 					return el(
 						'div',
 						{ key: index, style: { marginBottom: '16px', paddingBottom: '16px', borderBottom: '1px solid #ddd' } },
@@ -763,6 +1020,40 @@
 							},
 						} ),
 						el(
+							wp.blockEditor.MediaUploadCheck,
+							null,
+							el( wp.blockEditor.MediaUpload, {
+								allowedTypes: [ 'image' ],
+								onSelect: function ( media ) {
+									if ( media && media.url ) {
+										updateMarker( index, { icon: media.url } );
+									}
+								},
+								render: function ( media ) {
+									return el(
+										components.Button,
+										{ variant: 'link', onClick: media.open, style: { display: 'block', marginBottom: '8px' } },
+										item.icon
+											? __( 'Change the picture of the marker', 'waymorphic-map' )
+											: __( 'Use a picture as the marker', 'waymorphic-map' )
+									);
+								},
+							} )
+						),
+						item.icon
+							? el(
+									components.Button,
+									{
+										variant: 'link',
+										style: { display: 'block', marginBottom: '8px' },
+										onClick: function () {
+											updateMarker( index, { icon: undefined } );
+										},
+									},
+									__( 'Use the usual marker', 'waymorphic-map' )
+							  )
+							: null,
+						el(
 							components.Button,
 							{
 								variant: 'link',
@@ -775,6 +1066,18 @@
 						)
 					);
 				} ),
+				markers.length > SIDEBAR_LIMIT
+					? el(
+							'p',
+							{ style: { color: '#757575' } },
+							sprintf(
+								/* translators: 1: a number of markers, 2: the number of all the markers. */
+								__( 'The sidebar shows %1$d of the %2$d markers. To change one of the others, click it on the map.', 'waymorphic-map' ),
+								SIDEBAR_LIMIT,
+								markers.length
+							)
+					  )
+					: null,
 				el(
 					components.Button,
 					{
@@ -785,11 +1088,162 @@
 					},
 					__( 'Add a marker', 'waymorphic-map' )
 				),
+				el( 'div', { style: { height: '8px' } } ),
+				el(
+					components.FormFileUpload,
+					{
+						accept: '.csv,.geojson,.json,.kml,.gpx',
+						variant: 'secondary',
+						onChange: function ( event ) {
+							var input = event.currentTarget;
+							importFile( input.files && input.files[ 0 ] );
+							// The same file can be selected again.
+							input.value = '';
+						},
+					},
+					__( 'Import a file', 'waymorphic-map' )
+				),
+				el(
+					'p',
+					{ style: { margin: '8px 0 0', color: '#757575' } },
+					__( 'CSV, GeoJSON, KML or GPX. A CSV file has a first row with the column names: lat, lng, title, description, category, colour.', 'waymorphic-map' )
+				),
+				note ? el( 'p', { role: 'status', style: { margin: '8px 0 0' } }, note ) : null,
+				markers.length > 1
+					? el(
+							components.Button,
+							{
+								variant: 'link',
+								isDestructive: true,
+								style: { marginTop: '8px' },
+								onClick: function () {
+									setNote( '' );
+									setAttributes( { markers: [] } );
+								},
+							},
+							__( 'Remove all the markers', 'waymorphic-map' )
+					  )
+					: null,
 				el(
 					'p',
 					{ style: { margin: '12px 0 0', color: '#757575' } },
 					__( 'To find a place, use the search field on the map. To add a marker, click the map at the point. To move a marker, drag it. To change its text, click it.', 'waymorphic-map' )
 				)
+			),
+			el(
+				components.PanelBody,
+				{ title: __( 'Shapes', 'waymorphic-map' ), initialOpen: false },
+				shapes.slice( 0, SIDEBAR_LIMIT ).map( function ( item, index ) {
+					return el(
+						'div',
+						{ key: index, style: { marginBottom: '16px', paddingBottom: '16px', borderBottom: '1px solid #ddd' } },
+						el(
+							components.TextControl,
+							next( {
+								label: sprintf(
+									/* translators: 1: the type of a shape, 2: its number. */
+									__( '%1$s %2$d: popup text', 'waymorphic-map' ),
+									SHAPE_NAMES[ item.type ] || item.type,
+									index + 1
+								),
+								value: item.label || '',
+								onChange: function ( value ) {
+									updateShape( index, { label: value } );
+								},
+							} )
+						),
+						el( 'div', { style: { height: '8px' } } ),
+						item.type === 'circle'
+							? el(
+									components.TextControl,
+									next( {
+										label: __( 'Radius in metres', 'waymorphic-map' ),
+										type: 'number',
+										min: 1,
+										value: String( item.radius || 1000 ),
+										onChange: function ( value ) {
+											var number = parseFloat( value );
+											if ( isFinite( number ) && number > 0 ) {
+												updateShape( index, { radius: number } );
+											}
+										},
+									} )
+							  )
+							: null,
+						item.type === 'circle' ? el( 'div', { style: { height: '8px' } } ) : null,
+						el( components.ColorPalette, {
+							'aria-label': __( 'Colour of the shape', 'waymorphic-map' ),
+							colors: MARKER_COLOURS,
+							value: item.colour || MARKER_COLOUR,
+							clearable: false,
+							onChange: function ( value ) {
+								if ( /^#[0-9a-f]{6}$/i.test( value || '' ) ) {
+									updateShape( index, { colour: value, fill: undefined } );
+								}
+							},
+						} ),
+						el(
+							components.Button,
+							{
+								variant: 'link',
+								isDestructive: true,
+								onClick: function () {
+									removeShape( index );
+								},
+							},
+							__( 'Remove the shape', 'waymorphic-map' )
+						)
+					);
+				} ),
+				shapes.length > SIDEBAR_LIMIT
+					? el(
+							'p',
+							{ style: { color: '#757575' } },
+							sprintf(
+								/* translators: 1: a number of shapes, 2: the number of all the shapes. */
+								__( 'The sidebar shows %1$d of the %2$d shapes.', 'waymorphic-map' ),
+								SIDEBAR_LIMIT,
+								shapes.length
+							)
+					  )
+					: null,
+				el(
+					'div',
+					{ style: { display: 'flex', flexWrap: 'wrap', gap: '8px' } },
+					[ 'polygon', 'line', 'circle', 'rectangle' ].map( function ( type ) {
+						return el(
+							components.Button,
+							{
+								key: type,
+								variant: 'secondary',
+								isPressed: !! drawing && drawing.type === type,
+								onClick: function () {
+									startDrawing( type );
+								},
+							},
+							SHAPE_NAMES[ type ]
+						);
+					} )
+				),
+				el(
+					'p',
+					{ style: { margin: '12px 0 0', color: '#757575' } },
+					__( 'Select a type, then click the map. A polygon and a line: click each point, then select "Finish". A circle: click the centre. A rectangle: click two opposite corners.', 'waymorphic-map' )
+				),
+				shapes.length > 1
+					? el(
+							components.Button,
+							{
+								variant: 'link',
+								isDestructive: true,
+								style: { marginTop: '8px' },
+								onClick: function () {
+									setAttributes( { shapes: [] } );
+								},
+							},
+							__( 'Remove all the shapes', 'waymorphic-map' )
+					  )
+					: null
 			),
 			el(
 				components.PanelBody,
@@ -859,6 +1313,17 @@
 				el(
 					components.ToggleControl,
 					next( {
+						label: __( 'Groups of markers', 'waymorphic-map' ),
+						help: __( 'Markers that are near to each other show as one circle with their number.', 'waymorphic-map' ),
+						checked: !! attributes.cluster,
+						onChange: function ( value ) {
+							setAttributes( { cluster: value } );
+						},
+					} )
+				),
+				el(
+					components.ToggleControl,
+					next( {
 						label: __( 'Category buttons', 'waymorphic-map' ),
 						help: __( 'Visitors select a category and see only its markers.', 'waymorphic-map' ),
 						checked: !! attributes.filter,
@@ -907,7 +1372,7 @@
 				el(
 					'p',
 					{ style: { margin: '12px 0 0', color: '#757575' } },
-					__( 'These features show on the page, not in the editor. For polygons, lines, circles and rectangles, use the shortcode.', 'waymorphic-map' )
+					__( 'These features show on the page, not in the editor.', 'waymorphic-map' )
 				)
 			),
 			el(
@@ -1021,6 +1486,47 @@
 					)
 				)
 			);
+		} else if ( drawing ) {
+			var enough = drawing.points.length >= ( drawing.type === 'polygon' ? 3 : 2 );
+			overlay = el(
+				'div',
+				{ className: 'waymorphic-map-editor__draw', role: 'status' },
+				el(
+					'span',
+					null,
+					{
+						polygon: __( 'Click each corner of the polygon.', 'waymorphic-map' ),
+						line: __( 'Click each point of the line.', 'waymorphic-map' ),
+						circle: __( 'Click the centre of the circle.', 'waymorphic-map' ),
+						rectangle: __( 'Click two opposite corners of the rectangle.', 'waymorphic-map' ),
+					}[ drawing.type ]
+				),
+				drawing.type === 'polygon' || drawing.type === 'line'
+					? el(
+							'button',
+							{
+								type: 'button',
+								className: 'waymorphic-map-editor__add',
+								disabled: ! enough,
+								onClick: function () {
+									addShape( { type: drawing.type, points: drawing.points } );
+								},
+							},
+							__( 'Finish', 'waymorphic-map' )
+					  )
+					: null,
+				el(
+					'button',
+					{
+						type: 'button',
+						className: 'waymorphic-map-editor__cancel',
+						onClick: function () {
+							setDrawing( null );
+						},
+					},
+					__( 'Cancel', 'waymorphic-map' )
+				)
+			);
 		} else if ( isSelected ) {
 			overlay = el(
 				'div',
@@ -1058,7 +1564,7 @@
 				wp.blockEditor.useBlockProps( { className: 'waymorphic-map-editor' } ),
 				el( 'div', { ref: containerRef, className: 'waymorphic-map', style: { height: height } } ),
 				// The first click selects the block; after that the map moves.
-				isSelected || setup ? null : el( 'div', { className: 'waymorphic-map-editor__shield' } ),
+				isSelected || setup || drawing ? null : el( 'div', { className: 'waymorphic-map-editor__shield' } ),
 				overlay
 			)
 		);

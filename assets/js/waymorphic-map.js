@@ -168,6 +168,24 @@
 	 * @return {Object[]} The features.
 	 */
 	function shapeFeatures( shapes ) {
+		var features = [];
+		( shapes || [] ).forEach( function ( shape, number ) {
+			if ( shape.type !== 'heatmap' ) {
+				return;
+			}
+			( shape.points || [] ).forEach( function ( point ) {
+				features.push( {
+					type: 'Feature',
+					geometry: { type: 'Point', coordinates: [ point[ 0 ], point[ 1 ] ] },
+					properties: {
+						heat: number,
+						weight: typeof point[ 2 ] === 'number' ? point[ 2 ] : 1,
+						radius: typeof shape.radius === 'number' ? shape.radius : 30,
+						opacity: typeof shape.opacity === 'number' ? shape.opacity : 0.8,
+					},
+				} );
+			} );
+		} );
 		return ( shapes || [] )
 			.map( function ( shape ) {
 				var points = shape.points || [];
@@ -193,7 +211,8 @@
 					  }
 					: null;
 			} )
-			.filter( Boolean );
+			.filter( Boolean )
+			.concat( features );
 	}
 
 	/**
@@ -208,6 +227,26 @@
 			return;
 		}
 		map.addSource( 'waymorphic-shapes', { type: 'geojson', data: { type: 'FeatureCollection', features: features } } );
+		// One layer for each heatmap, below the shapes.
+		var heats = {};
+		features.forEach( function ( feature ) {
+			var number = feature.properties.heat;
+			if ( typeof number !== 'number' || heats[ number ] ) {
+				return;
+			}
+			heats[ number ] = true;
+			map.addLayer( {
+				id: 'waymorphic-shapes-heat-' + number,
+				type: 'heatmap',
+				source: 'waymorphic-shapes',
+				filter: [ '==', [ 'get', 'heat' ], number ],
+				paint: {
+					'heatmap-weight': [ 'get', 'weight' ],
+					'heatmap-radius': feature.properties.radius,
+					'heatmap-opacity': feature.properties.opacity,
+				},
+			} );
+		} );
 		map.addLayer( {
 			id: 'waymorphic-shapes-fill',
 			type: 'fill',
@@ -219,6 +258,7 @@
 			id: 'waymorphic-shapes-line',
 			type: 'line',
 			source: 'waymorphic-shapes',
+			filter: [ '!=', [ 'geometry-type' ], 'Point' ],
 			layout: { 'line-join': 'round', 'line-cap': 'round' },
 			paint: { 'line-color': [ 'get', 'colour' ], 'line-width': [ 'get', 'width' ] },
 		} );
@@ -245,6 +285,435 @@
 	}
 
 	/**
+	 * Shows or hides a marker: a filter or the search hides it
+	 * (waymorphicHidden), and a group hides it (waymorphicGrouped).
+	 */
+	function showOrHide( marker ) {
+		var visible = ! marker.waymorphicHidden && ! marker.waymorphicGrouped;
+		marker.getElement().style.display = visible ? '' : 'none';
+		if ( ! visible && marker.getPopup() && marker.getPopup().isOpen() ) {
+			marker.togglePopup();
+		}
+	}
+
+	/**
+	 * Puts markers that are near to each other on the screen in a group: one
+	 * circle with their number. A click on the circle zooms to its markers.
+	 *
+	 * @param {Object}   map       The MapLibre map.
+	 * @param {Object[]} glMarkers The MapLibre markers.
+	 * @return {Function} Call it when the markers that a filter hides change.
+	 */
+	function addGroups( map, glMarkers ) {
+		var gl = window.maplibregl;
+		var circles = [];
+
+		function update() {
+			circles.forEach( function ( circle ) {
+				circle.remove();
+			} );
+			circles = [];
+			var groups = [];
+			// From zoom 17, each marker shows: markers at one point stay apart from the others.
+			var apart = map.getZoom() >= 17;
+			glMarkers.forEach( function ( marker ) {
+				marker.waymorphicGrouped = false;
+				if ( marker.waymorphicHidden || apart ) {
+					return;
+				}
+				var point = map.project( marker.getLngLat() );
+				for ( var i = 0; i < groups.length; i++ ) {
+					var dx = groups[ i ].point.x - point.x;
+					var dy = groups[ i ].point.y - point.y;
+					if ( dx * dx + dy * dy < 60 * 60 ) {
+						groups[ i ].markers.push( marker );
+						return;
+					}
+				}
+				groups.push( { point: point, markers: [ marker ] } );
+			} );
+			groups.forEach( function ( group ) {
+				if ( group.markers.length < 2 ) {
+					return;
+				}
+				var bounds = new gl.LngLatBounds();
+				var lng = 0;
+				var lat = 0;
+				group.markers.forEach( function ( marker ) {
+					var position = marker.getLngLat();
+					marker.waymorphicGrouped = true;
+					bounds.extend( position );
+					lng += position.lng;
+					lat += position.lat;
+				} );
+				var button = document.createElement( 'button' );
+				button.type = 'button';
+				button.className = 'waymorphic-map__group';
+				button.textContent = group.markers.length;
+				button.setAttribute( 'aria-label', fill( text.group || 'Markers here: %d. Zoom in.', [ group.markers.length ] ) );
+				button.addEventListener( 'click', function ( event ) {
+					event.stopPropagation();
+					map.fitBounds( bounds, { padding: 80, maxZoom: 17 } );
+				} );
+				circles.push(
+					new gl.Marker( { element: button } )
+						.setLngLat( [ lng / group.markers.length, lat / group.markers.length ] )
+						.addTo( map )
+				);
+			} );
+			glMarkers.forEach( showOrHide );
+		}
+
+		map.on( 'zoomend', update );
+		map.on( 'resize', update );
+		update();
+		return update;
+	}
+
+	var HEX = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
+
+	function firstOf( object, names ) {
+		for ( var i = 0; i < names.length; i++ ) {
+			var value = object[ names[ i ] ];
+			if ( value !== undefined && value !== null && String( value ).trim() !== '' ) {
+				return String( value ).trim();
+			}
+		}
+		return '';
+	}
+
+	// The text of HTML, as KML and GPX descriptions can have HTML.
+	function plain( value ) {
+		var words = String( value || '' );
+		if ( words.indexOf( '<' ) !== -1 ) {
+			words = ( new window.DOMParser().parseFromString( words, 'text/html' ).body.textContent || '' );
+		}
+		words = words.replace( /\s+/g, ' ' ).trim();
+		return words.length > 1000 ? words.slice( 0, 999 ) + '…' : words;
+	}
+
+	function validPoint( lng, lat ) {
+		return isFinite( lng ) && isFinite( lat ) && Math.abs( lat ) <= 90 && Math.abs( lng ) <= 180;
+	}
+
+	// The rows of CSV text. Fields can have quotes.
+	function csvRows( content ) {
+		var first = content.split( /\r?\n/ )[ 0 ] || '';
+		var divider = first.split( ';' ).length > first.split( ',' ).length ? ';' : first.split( '\t' ).length > first.split( ',' ).length ? '\t' : ',';
+		var rows = [];
+		var row = [];
+		var field = '';
+		var quoted = false;
+		for ( var i = 0; i < content.length; i++ ) {
+			var c = content[ i ];
+			if ( quoted ) {
+				if ( c === '"' && content[ i + 1 ] === '"' ) {
+					field += '"';
+					i++;
+				} else if ( c === '"' ) {
+					quoted = false;
+				} else {
+					field += c;
+				}
+			} else if ( c === '"' ) {
+				quoted = true;
+			} else if ( c === divider ) {
+				row.push( field );
+				field = '';
+			} else if ( c === '\n' || c === '\r' ) {
+				if ( c === '\r' && content[ i + 1 ] === '\n' ) {
+					i++;
+				}
+				row.push( field );
+				rows.push( row );
+				row = [];
+				field = '';
+			} else {
+				field += c;
+			}
+		}
+		if ( field !== '' || row.length ) {
+			row.push( field );
+			rows.push( row );
+		}
+		return rows;
+	}
+
+	/**
+	 * Reads the markers and the shapes of a file: CSV, GeoJSON, KML or GPX.
+	 *
+	 * @param {string} content The text of the file.
+	 * @param {string} [name]  The name or the address of the file.
+	 * @return {{markers: Object[], shapes: Object[]}} Markers with lat, lng, title,
+	 *         text (no HTML), category, colour and icon. Shapes with type (line or
+	 *         polygon), points ([lng, lat]), colour, fill and text.
+	 */
+	function parseData( content, name ) {
+		var result = { markers: [], shapes: [] };
+		content = String( content || '' ).replace( /^\uFEFF/, '' ).trim();
+		var kind = ( /\.(csv|gpx|kml|geojson|json)(?:$|[?#])/i.exec( name || '' ) || [] )[ 1 ];
+		kind = kind ? kind.toLowerCase() : '';
+		if ( content[ 0 ] === '{' || content[ 0 ] === '[' ) {
+			kind = 'json';
+		} else if ( content[ 0 ] === '<' ) {
+			kind = 'xml';
+		} else if ( ! kind || kind === 'json' || kind === 'geojson' ) {
+			kind = 'csv';
+		}
+
+		function marker( lng, lat, values ) {
+			lng = parseFloat( lng );
+			lat = parseFloat( lat );
+			if ( ! validPoint( lng, lat ) ) {
+				return;
+			}
+			var item = { lat: lat, lng: lng };
+			var title = plain( values.title ).slice( 0, 200 );
+			var words = plain( values.text );
+			if ( title ) {
+				item.title = title;
+			}
+			if ( words && words !== title ) {
+				item.text = words;
+			}
+			if ( values.category ) {
+				item.category = plain( values.category ).slice( 0, 100 );
+			}
+			if ( HEX.test( values.colour || '' ) ) {
+				item.colour = values.colour.toLowerCase();
+			}
+			if ( /^https?:\/\//i.test( values.icon || '' ) ) {
+				item.icon = values.icon;
+			}
+			result.markers.push( item );
+		}
+
+		function shape( type, points, values ) {
+			points = ( points || [] )
+				.map( function ( point ) {
+					return [ parseFloat( point[ 0 ] ), parseFloat( point[ 1 ] ) ];
+				} )
+				.filter( function ( point ) {
+					return validPoint( point[ 0 ], point[ 1 ] );
+				} );
+			if ( type === 'polygon' && points.length > 3 ) {
+				var last = points[ points.length - 1 ];
+				if ( last[ 0 ] === points[ 0 ][ 0 ] && last[ 1 ] === points[ 0 ][ 1 ] ) {
+					points.pop();
+				}
+			}
+			if ( points.length < ( type === 'polygon' ? 3 : 2 ) ) {
+				return;
+			}
+			var item = { type: type, points: points };
+			var words = [ plain( values.title ), plain( values.text ) ].filter( Boolean ).join( ': ' );
+			if ( words ) {
+				item.text = words;
+			}
+			if ( HEX.test( values.colour || '' ) ) {
+				item.colour = values.colour.toLowerCase();
+			}
+			if ( HEX.test( values.fill || '' ) ) {
+				item.fill = values.fill.toLowerCase();
+			}
+			result.shapes.push( item );
+		}
+
+		function geometry( part, values ) {
+			if ( ! part || typeof part !== 'object' ) {
+				return;
+			}
+			var c = part.coordinates;
+			if ( part.type === 'GeometryCollection' ) {
+				( part.geometries || [] ).forEach( function ( inner ) {
+					geometry( inner, values );
+				} );
+			} else if ( ! Array.isArray( c ) ) {
+				return;
+			} else if ( part.type === 'Point' ) {
+				marker( c[ 0 ], c[ 1 ], values );
+			} else if ( part.type === 'MultiPoint' ) {
+				c.forEach( function ( point ) {
+					marker( point[ 0 ], point[ 1 ], values );
+				} );
+			} else if ( part.type === 'LineString' ) {
+				shape( 'line', c, values );
+			} else if ( part.type === 'MultiLineString' ) {
+				c.forEach( function ( line ) {
+					shape( 'line', line, values );
+				} );
+			} else if ( part.type === 'Polygon' ) {
+				shape( 'polygon', c[ 0 ], values );
+			} else if ( part.type === 'MultiPolygon' ) {
+				c.forEach( function ( polygon ) {
+					shape( 'polygon', polygon[ 0 ], values );
+				} );
+			}
+		}
+
+		function feature( item ) {
+			if ( ! item || typeof item !== 'object' ) {
+				return;
+			}
+			if ( item.type === 'FeatureCollection' ) {
+				( item.features || [] ).forEach( feature );
+			} else if ( item.type === 'Feature' ) {
+				var p = item.properties || {};
+				geometry( item.geometry, {
+					title: firstOf( p, [ 'title', 'name', 'Name' ] ),
+					text: firstOf( p, [ 'description', 'popup', 'text', 'desc' ] ),
+					category: firstOf( p, [ 'category' ] ),
+					colour: firstOf( p, [ 'colour', 'color', 'marker-color', 'stroke' ] ),
+					fill: firstOf( p, [ 'fill' ] ),
+					icon: firstOf( p, [ 'icon' ] ),
+				} );
+			} else {
+				geometry( item, {} );
+			}
+		}
+
+		if ( kind === 'json' ) {
+			try {
+				var data = JSON.parse( content );
+				( Array.isArray( data ) ? data : [ data ] ).forEach( feature );
+			} catch ( error ) {
+				// Not JSON: no markers.
+			}
+			return result;
+		}
+
+		if ( kind === 'xml' ) {
+			var doc = new window.DOMParser().parseFromString( content, 'application/xml' );
+			var all = function ( node, tag ) {
+				return Array.prototype.slice.call( node.getElementsByTagNameNS( '*', tag ) );
+			};
+			var child = function ( node, tag ) {
+				for ( var i = 0; i < node.children.length; i++ ) {
+					if ( node.children[ i ].localName === tag ) {
+						return node.children[ i ].textContent || '';
+					}
+				}
+				return '';
+			};
+			var kml = function ( node ) {
+				return ( node.textContent || '' )
+					.trim()
+					.split( /\s+/ )
+					.map( function ( pair ) {
+						return pair.split( ',' );
+					} );
+			};
+			// KML.
+			all( doc, 'Placemark' ).forEach( function ( place ) {
+				var values = { title: child( place, 'name' ), text: child( place, 'description' ) };
+				all( place, 'Point' ).forEach( function ( node ) {
+					var point = kml( all( node, 'coordinates' )[ 0 ] || node )[ 0 ] || [];
+					marker( point[ 0 ], point[ 1 ], values );
+				} );
+				all( place, 'LineString' ).forEach( function ( node ) {
+					shape( 'line', kml( all( node, 'coordinates' )[ 0 ] || node ), values );
+				} );
+				all( place, 'Polygon' ).forEach( function ( node ) {
+					var ring = all( node, 'outerBoundaryIs' )[ 0 ] || node;
+					shape( 'polygon', kml( all( ring, 'coordinates' )[ 0 ] || ring ), values );
+				} );
+			} );
+			// GPX.
+			var gpx = function ( nodes ) {
+				return nodes.map( function ( node ) {
+					return [ node.getAttribute( 'lon' ), node.getAttribute( 'lat' ) ];
+				} );
+			};
+			all( doc, 'wpt' ).forEach( function ( node ) {
+				marker( node.getAttribute( 'lon' ), node.getAttribute( 'lat' ), {
+					title: child( node, 'name' ),
+					text: child( node, 'desc' ) || child( node, 'cmt' ),
+				} );
+			} );
+			all( doc, 'trk' ).forEach( function ( track ) {
+				var values = { title: child( track, 'name' ), text: child( track, 'desc' ) };
+				all( track, 'trkseg' ).forEach( function ( part ) {
+					shape( 'line', gpx( all( part, 'trkpt' ) ), values );
+				} );
+			} );
+			all( doc, 'rte' ).forEach( function ( route ) {
+				shape( 'line', gpx( all( route, 'rtept' ) ), { title: child( route, 'name' ), text: child( route, 'desc' ) } );
+			} );
+			return result;
+		}
+
+		// CSV: the first row has the names of the columns.
+		var rows = csvRows( content );
+		var head = ( rows.shift() || [] ).map( function ( cell ) {
+			return cell.trim().toLowerCase();
+		} );
+		rows.forEach( function ( row ) {
+			var record = {};
+			head.forEach( function ( column, index ) {
+				record[ column ] = row[ index ];
+			} );
+			marker( firstOf( record, [ 'lng', 'lon', 'long', 'longitude', 'x' ] ), firstOf( record, [ 'lat', 'latitude', 'y' ] ), {
+				title: firstOf( record, [ 'title', 'name', 'label' ] ),
+				text: firstOf( record, [ 'description', 'popup', 'text', 'address' ] ),
+				category: firstOf( record, [ 'category' ] ),
+				colour: firstOf( record, [ 'colour', 'color' ] ),
+				icon: firstOf( record, [ 'icon' ] ),
+			} );
+		} );
+		return result;
+	}
+
+	/**
+	 * Gets the files of a map and reads them.
+	 *
+	 * @param {Object[]} files Objects with url, and the optional colour and category
+	 *                         for the markers and shapes that have none.
+	 * @return {Promise<{markers: Object[], shapes: Object[]}>} With the popup HTML made.
+	 */
+	function loadFiles( files ) {
+		return Promise.all(
+			files.map( function ( file ) {
+				return window
+					.fetch( file.url )
+					.then( function ( response ) {
+						if ( ! response.ok ) {
+							throw new Error( 'HTTP ' + response.status );
+						}
+						return response.text();
+					} )
+					.then( function ( content ) {
+						var data = parseData( content, file.url );
+						data.markers.forEach( function ( item ) {
+							var html = item.title ? '<strong>' + escapeHtml( item.title ) + '</strong>' : '';
+							if ( item.text ) {
+								html += ( html ? '<br>' : '' ) + escapeHtml( item.text );
+							}
+							item.popup = html;
+							item.colour = item.colour || file.colour;
+							item.category = item.category || file.category;
+						} );
+						data.shapes.forEach( function ( item ) {
+							item.popup = item.text ? escapeHtml( item.text ) : '';
+							item.colour = item.colour || file.colour;
+						} );
+						return data;
+					} )
+					.catch( function () {
+						// A file that does not come does not stop the map.
+						return { markers: [], shapes: [] };
+					} );
+			} )
+		).then( function ( all ) {
+			return all.reduce(
+				function ( sum, data ) {
+					return { markers: sum.markers.concat( data.markers ), shapes: sum.shapes.concat( data.shapes ) };
+				},
+				{ markers: [], shapes: [] }
+			);
+		} );
+	}
+
+	/**
 	 * A distance in the unit of the map, as text.
 	 */
 	function distanceText( metres, unit ) {
@@ -261,8 +730,9 @@
 	 * @param {Object}      map       The MapLibre map.
 	 * @param {Object}      config    The configuration.
 	 * @param {Object[]}    glMarkers The MapLibre markers, in the sequence of config.markers.
+	 * @param {Function}    [regroup] The result of addGroups(), when the map has groups.
 	 */
-	function addPanels( element, map, config, glMarkers ) {
+	function addPanels( element, map, config, glMarkers, regroup ) {
 		var gl = window.maplibregl;
 		var items = config.markers || [];
 		var unit = config.unit === 'mi' ? 'mi' : 'km';
@@ -287,7 +757,8 @@
 					other.togglePopup();
 				}
 			} );
-			map.easeTo( { center: [ item.lng, item.lat ], zoom: Math.max( map.getZoom(), 14 ) } );
+			// On a map with groups, zoom 17 shows each marker.
+			map.easeTo( { center: [ item.lng, item.lat ], zoom: Math.max( map.getZoom(), regroup ? 17 : 14 ) } );
 			if ( marker.getPopup() && ! marker.getPopup().isOpen() ) {
 				marker.getPopup().options.focusAfterOpen = false;
 				marker.togglePopup();
@@ -301,14 +772,16 @@
 			var shown = [];
 			glMarkers.forEach( function ( marker, index ) {
 				var visible = isVisible( index );
-				marker.getElement().style.display = visible ? '' : 'none';
-				if ( ! visible && marker.getPopup() && marker.getPopup().isOpen() ) {
-					marker.togglePopup();
-				}
+				marker.waymorphicHidden = ! visible;
 				if ( visible ) {
 					shown.push( index );
 				}
 			} );
+			if ( regroup ) {
+				regroup();
+			} else {
+				glMarkers.forEach( showOrHide );
+			}
 			if ( state.origin ) {
 				shown.sort( function ( a, b ) {
 					return state.distances[ a ] - state.distances[ b ];
@@ -591,7 +1064,7 @@
 	 * @param {Object}      config  style (URL), center ([lng, lat]), zoom, fit,
 	 *                              markers, shapes, controls, scrollZoom, interactive,
 	 *                              locate, list, filter, locator, unit, searchUrl,
-	 *                              directionsUrl.
+	 *                              directionsUrl, cluster, files.
 	 * @return {Object|null} The MapLibre map, or null when the browser cannot show one.
 	 */
 	function create( element, config ) {
@@ -612,25 +1085,31 @@
 
 		var shapes = shapeFeatures( config.shapes );
 		var bounds = new gl.LngLatBounds();
-		markers.forEach( function ( item ) {
-			bounds.extend( [ item.lng, item.lat ] );
-		} );
-		shapes.forEach( function ( feature ) {
-			var points = feature.geometry.type === 'Polygon' ? feature.geometry.coordinates[ 0 ] : feature.geometry.coordinates;
-			points.forEach( function ( point ) {
-				bounds.extend( point );
+		function extend( someMarkers, someShapes ) {
+			someMarkers.forEach( function ( item ) {
+				bounds.extend( [ item.lng, item.lat ] );
 			} );
-		} );
+			someShapes.forEach( function ( feature ) {
+				var type = feature.geometry.type;
+				var points = feature.geometry.coordinates;
+				( type === 'Polygon' ? points[ 0 ] : type === 'Point' ? [ points ] : points ).forEach( function ( point ) {
+					bounds.extend( point );
+				} );
+			} );
+		}
+		extend( markers, shapes );
+		var fitOptions = {
+			padding: 60,
+			maxZoom: typeof config.zoom === 'number' ? config.zoom : 15,
+		};
 
 		if ( config.fit && ! bounds.isEmpty() ) {
 			options.bounds = bounds;
-			options.fitBoundsOptions = {
-				padding: 60,
-				maxZoom: typeof config.zoom === 'number' ? config.zoom : 15,
-			};
+			options.fitBoundsOptions = fitOptions;
 		} else {
 			options.center = config.center || [ 0, 20 ];
-			options.zoom = typeof config.zoom === 'number' ? config.zoom : 1;
+			// With fit, the zoom is the upper limit of the view of the files, not the zoom of the world.
+			options.zoom = typeof config.zoom === 'number' && ! config.fit ? config.zoom : 1;
 		}
 
 		var map;
@@ -652,16 +1131,45 @@
 		if ( interactive && config.locate ) {
 			map.addControl( new gl.GeolocateControl( { positionOptions: { enableHighAccuracy: true } } ), 'top-right' );
 		}
-		if ( shapes.length ) {
-			map.on( 'load', function () {
+		var styleReady = false;
+		var shapesWait = false;
+		map.on( 'load', function () {
+			styleReady = true;
+			if ( shapesWait ) {
 				addShapes( map, shapes );
-			} );
+			}
+		} );
+
+		// The markers, the shapes and the parts around the map, when the files are there.
+		function finish( extra ) {
+			if ( extra ) {
+				var more = shapeFeatures( extra.shapes );
+				extend( extra.markers, more );
+				markers = markers.concat( extra.markers );
+				shapes = shapes.concat( more );
+				if ( config.fit && ! bounds.isEmpty() && ( extra.markers.length || more.length ) ) {
+					map.fitBounds( bounds, Object.assign( { animate: false }, fitOptions ) );
+				}
+			}
+			if ( styleReady ) {
+				addShapes( map, shapes );
+			} else {
+				shapesWait = true;
+			}
+			var all = Object.assign( {}, config, { markers: markers } );
+			var glMarkers = addMarkers( map, markers, all );
+			var regroup = config.cluster ? addGroups( map, glMarkers ) : null;
+			if ( config.list || config.filter || config.locator ) {
+				addPanels( element, map, all, glMarkers, regroup );
+			}
+			element.classList.add( 'is-ready' );
 		}
-		var glMarkers = addMarkers( map, markers, config );
-		if ( config.list || config.filter || config.locator ) {
-			addPanels( element, map, config, glMarkers );
+
+		if ( Array.isArray( config.files ) && config.files.length ) {
+			loadFiles( config.files ).then( finish );
+		} else {
+			finish( null );
 		}
-		element.classList.add( 'is-ready' );
 
 		return map;
 	}
@@ -716,6 +1224,7 @@
 		addMarkers: addMarkers,
 		addShapes: addShapes,
 		shapeFeatures: shapeFeatures,
+		parseData: parseData,
 		init: init,
 		markerColour: MARKER_COLOUR,
 	};

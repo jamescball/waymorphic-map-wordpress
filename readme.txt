@@ -19,7 +19,10 @@ Waymorphic Map adds interactive maps to your posts and pages. The maps are vecto
 * **Five map styles:** Positron, Bright, Liberty, Dark and Fiord.
 * **Markers with popups.** Add as many as you want. The map can fit its view to them.
 * **Marker colours, pictures and animations.** Give each marker a colour or your own picture. Markers can drop or bounce when the map opens.
-* **Shapes.** Polygons, lines, circles and rectangles, each with a popup.
+* **Shapes.** Polygons, lines, circles and rectangles, each with a popup. Draw them on the map in the block, or use the shortcodes.
+* **Import.** Add the markers, lines and areas of a CSV, GeoJSON, KML or GPX file. A GPX track shows a route on the map.
+* **Groups of markers** (clusters). Markers that are near to each other show as one circle with their number.
+* **Heatmaps.**
 * **A list of the markers** below the map. A click on a name shows that marker.
 * **A search for the nearest markers** (store locator). The visitor types an address or uses the location of the browser, and sees the markers in a distance, nearest first.
 * **Categories.** Give the markers a category, and visitors can show one category at a time.
@@ -61,6 +64,7 @@ Attributes of `[waymorphic_map]`:
 * `scroll_zoom` - `true` lets plain scroll zoom the map.
 * `interactive` - `false` makes a still map.
 * `title` - the name of the map for screen readers.
+* `cluster` - `true` puts markers that are near to each other in a group.
 * `list` - `true` shows the list of the markers below the map.
 * `locator` - `true` shows the search for the nearest markers above the map.
 * `radius` - the first distance of the search. The default is 25.
@@ -89,6 +93,23 @@ Put the shape shortcodes in `[waymorphic_map]`. The points are `latitude,longitu
 * `[waymorphic_circle]` - `lat` and `lng`, or `address`, and `radius` in metres.
 * `[waymorphic_rectangle]` - two opposite corners.
 * All shapes: `colour` (the outline), `width` (the outline, in pixels). Polygons, circles and rectangles: `fill` (the colour of the inside) and `opacity` (0 to 1).
+* `[waymorphic_heatmap]` - `points`, 5000 at most. A point can have a weight as a third number: `51.5,-0.12,3`. Optional: `radius` in pixels (the default is 30) and `opacity` (0 to 1).
+
+= Files =
+
+`[waymorphic_map cluster="true" list="true"]
+[waymorphic_file url="https://example.com/wp-content/uploads/shops.csv" category="Shops" colour="#008a20"]
+[waymorphic_file url="https://example.com/wp-content/uploads/walk.gpx"]
+[/waymorphic_map]`
+
+`[waymorphic_file]` shows the markers, lines and areas of a CSV, GeoJSON, KML or GPX file. The browser of the visitor gets the file each time the page opens, so a change to the file shows on the map. Ten files for each map at most.
+
+* A CSV file has a first row with the names of the columns: `lat` (or `latitude`), `lng` (or `lon`, `longitude`), and the optional `title` (or `name`), `description`, `category`, `colour` and `icon`.
+* The file must be on your site, or on a server that permits your site to read it (CORS).
+* The text of a file shows as plain text. HTML in a file does not operate.
+* `colour` and `category` on the shortcode are for the markers that have none in the file.
+
+In the block, "Import a file" in the Markers panel reads a file from your computer and adds its markers and shapes to the block. The file is not uploaded.
 
 = A store locator =
 
@@ -143,7 +164,15 @@ Yes. Set `locator="true"` and `list="true"` on the shortcode, or the same option
 
 = Can I draw shapes in the block editor? =
 
-Not at this time. Use the shape shortcodes in `[waymorphic_map]`.
+Yes. Open the "Shapes" panel, select a type and click the map. For a heatmap, use the shortcode.
+
+= Can I show a route? =
+
+Yes, as a line. Import a GPX or KML file of the route, or draw a line. The plugin does not calculate a route between two addresses: the directions link opens openstreetmap.org for that.
+
+= Can I import my markers from a different map plugin? =
+
+Export the markers as a CSV file, make sure that the first row has `lat` and `lng` columns, then use "Import a file" in the block.
 
 = Can developers change the map? =
 
@@ -163,12 +192,15 @@ Send an email to contact@waymorphic.com.
 == Changelog ==
 
 = 1.1.0 =
-* New: polygons, lines, circles and rectangles, with the `[waymorphic_polygon]`, `[waymorphic_line]`, `[waymorphic_circle]` and `[waymorphic_rectangle]` shortcodes.
+* New: polygons, lines, circles and rectangles, with the `[waymorphic_polygon]`, `[waymorphic_line]`, `[waymorphic_circle]` and `[waymorphic_rectangle]` shortcodes. In the block, draw them on the map.
+* New: import of CSV, GeoJSON, KML and GPX files, in the block and with the `[waymorphic_file]` shortcode.
+* New: groups of markers (clusters).
+* New: heatmaps, with the `[waymorphic_heatmap]` shortcode.
 * New: a colour, a picture, a category and an animation for each marker.
 * New: a list of the markers below the map.
 * New: a search for the nearest markers (store locator), with kilometres or miles.
 * New: category buttons, a directions link and a location button.
-* New: a "Features" panel in the block, and a colour and a category for each marker.
+* New: a "Features" panel in the block, and a colour, a category and a picture for each marker.
 
 = 1.0.0 =
 * First release: block, shortcodes, settings page.

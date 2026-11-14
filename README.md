@@ -60,6 +60,14 @@ assets/js, assets/css   front-end script and style
 assets/vendor           MapLibre GL JS 5.21.0 (BSD 3-Clause)
 ```
 
+## Release
+
+1. Set the same version in the plugin header and the `WAYMORPHIC_MAP_VERSION` constant in `waymorphic-map.php`, and in `Stable tag` in `readme.txt`. Add a changelog entry in `readme.txt`.
+2. `bin/build-zip.sh` makes `build/waymorphic-map.zip` from the last commit. The script stops if the three version numbers are different.
+3. Push a tag such as `v1.0.0`. The Release workflow builds the zip and attaches it to a GitHub release.
+
+`.wordpress-org/` holds the icon, banner and screenshots for the WordPress.org plugin directory. These files go in the `assets` folder of the plugin's SVN repository, not in the zip.
+
 ## Service and credit
 
 Maps come from `https://tiles.waymorphic.com`. The service is free and best effort. Keep the credit on the map: map data © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, schema by [OpenMapTiles](https://openmaptiles.org/). See [fair use](https://waymorphic.com/#fair).

@@ -102,6 +102,13 @@ Yes. The `waymorphic_map_config` filter changes the configuration of a map, and 
 
 Send an email to contact@waymorphic.com.
 
+== Screenshots ==
+
+1. A map with a marker and a popup on a page.
+2. A new block asks for the place. The search gives suggestions while you type.
+3. The block in the editor: the search field on the map, the text form of a marker, and the five styles in the sidebar.
+4. The settings page with the defaults for new maps.
+
 == Changelog ==
 
 = 1.0.0 =
@@ -109,4 +116,4 @@ Send an email to contact@waymorphic.com.
 
 == Third-party code ==
 
-The plugin includes [MapLibre GL JS](https://maplibre.org/) 5.21.0 (BSD 3-Clause licence) in `assets/vendor/maplibre-gl`.
+The plugin includes [MapLibre GL JS](https://maplibre.org/) 5.21.0 (BSD 3-Clause licence) in `assets/vendor/maplibre-gl`. The file `maplibre-gl.js` is the minified build from the npm package `maplibre-gl`. The source code is at https://github.com/maplibre/maplibre-gl-js/tree/v5.21.0.

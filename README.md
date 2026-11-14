@@ -8,7 +8,7 @@ Copy this folder to `wp-content/plugins/waymorphic-map` and activate **Waymorphi
 
 ## Use
 
-**Block.** Add the "Waymorphic Map" block. A new block asks "Where is your map?": type an address, a town or a postcode and select it from the list. The map goes there and gets a marker. "Use my location" does the same with the position that the browser gives. After that, the search field is on the map. Drag the map to set the view. Click the map to add a marker at that point. Drag a marker to move it, and click it to change its text or remove it. In the sidebar, select the style from the five pictures and set the height.
+**Block.** Add the "Waymorphic Map" block. A new block asks "Where is your map?": type an address, a town or a postcode and select it from the list. The map goes there and gets a marker. "Use my location" does the same with the position that the browser gives. After that, the search field is on the map. Drag the map to set the view. Click the map to add a marker at that point. Drag a marker to move it, and click it to change its text or remove it. In the sidebar, select the style from the five swatches and set the height.
 
 **Shortcode.**
 
@@ -63,6 +63,10 @@ assets/vendor           MapLibre GL JS 5.21.0 (BSD 3-Clause)
 ## Service and credit
 
 Maps come from `https://tiles.waymorphic.com`. The service is free and best effort. Keep the credit on the map: map data © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, schema by [OpenMapTiles](https://openmaptiles.org/). See [fair use](https://waymorphic.com/#fair).
+
+## Contact
+
+Questions and problem reports: [contact@waymorphic.com](mailto:contact@waymorphic.com).
 
 ## Licence
 

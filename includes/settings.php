@@ -143,6 +143,10 @@ function waymorphic_map_settings_page() {
 			);
 			?>
 		</p>
+		<p class="description">
+			<?php esc_html_e( 'Questions or problems? Contact:', 'waymorphic-map' ); ?>
+			<a href="mailto:contact@waymorphic.com">contact@waymorphic.com</a>
+		</p>
 	</div>
 	<?php
 }

@@ -235,51 +235,71 @@
 		);
 	}
 
-	// The colour of each style, shown when its picture does not load.
+	// The swatch colours of each style, the same as in the Waymorphic map browser.
 	var STYLE_COLOURS = {
-		positron: '#e6e8ea',
-		bright: '#f3ede2',
-		liberty: '#e9e2d3',
-		dark: '#2a2a2a',
-		fiord: '#45516e',
+		positron: { land: '#f2f3f0', water: '#c2c8ca', road: '#ffffff' },
+		bright: { land: '#f8f4f0', water: '#a0c8f0', road: '#ffe89a' },
+		liberty: { land: '#efefef', water: '#9ebdff', road: '#ffd88a' },
+		dark: { land: '#0e0e0e', water: '#1b1b1b', road: '#3a3a3a' },
+		fiord: { land: '#2b3a49', water: '#1a2937', road: '#4e6070' },
 	};
 
 	/**
-	 * The styles as small pictures of the same part of the map.
+	 * The styles as swatches: land, a bay of water and a road, drawn with CSS,
+	 * as in the Waymorphic map browser. A radio group: the arrow keys move
+	 * between the styles.
 	 *
 	 * props: value (the style in use), onChange( name ).
 	 */
 	function StylePicker( props ) {
+		var names = Object.keys( settings.styles );
+
+		function onKeyDown( event ) {
+			var step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[ event.key ];
+			if ( ! step ) {
+				return;
+			}
+			event.preventDefault();
+			var name = names[ ( names.indexOf( props.value ) + step + names.length ) % names.length ];
+			props.onChange( name );
+			var button = event.currentTarget.querySelector( '[data-style="' + name + '"]' );
+			if ( button ) {
+				button.focus();
+			}
+		}
+
 		return el(
 			'div',
-			{ className: 'waymorphic-styles', role: 'group', 'aria-label': __( 'Map style', 'waymorphic-map' ) },
-			Object.keys( settings.styles ).map( function ( name ) {
+			{
+				className: 'waymorphic-styles',
+				role: 'radiogroup',
+				'aria-label': __( 'Map style', 'waymorphic-map' ),
+				onKeyDown: onKeyDown,
+			},
+			names.map( function ( name ) {
 				var selected = name === props.value;
+				var colours = STYLE_COLOURS[ name ] || { land: '#ddd', water: '#bbb', road: '#fff' };
 				return el(
 					'button',
 					{
 						key: name,
 						type: 'button',
-						className: 'waymorphic-styles__item' + ( selected ? ' is-selected' : '' ),
-						'aria-pressed': selected,
+						role: 'radio',
+						className: 'waymorphic-styles__item',
+						'data-style': name,
+						'aria-checked': selected,
+						tabIndex: selected ? 0 : -1,
 						title: settings.styles[ name ],
 						onClick: function () {
 							props.onChange( name );
 						},
 					},
-					el(
-						'span',
-						{ className: 'waymorphic-styles__picture', style: { background: STYLE_COLOURS[ name ] || '#ddd' } },
-						el( 'img', {
-							src: settings.tilesUrl + '/static/' + name + '/-0.1246,51.5007,11/132x80@2x.png',
-							alt: '',
-							loading: 'lazy',
-							onError: function ( event ) {
-								event.target.style.display = 'none';
-							},
-						} )
-					),
-					el( 'span', { className: 'waymorphic-styles__name' }, name.charAt( 0 ).toUpperCase() + name.slice( 1 ) )
+					el( 'span', {
+						className: 'waymorphic-styles__swatch',
+						'aria-hidden': 'true',
+						style: { '--land': colours.land, '--water': colours.water, '--road': colours.road },
+					} ),
+					name.charAt( 0 ).toUpperCase() + name.slice( 1 )
 				);
 			} )
 		);

@@ -240,27 +240,35 @@
 	cursor: pointer;
 }
 
-/* The style pictures in the sidebar. */
+/* The style swatches in the sidebar, as in the Waymorphic map browser. */
 .waymorphic-styles {
-	display: grid;
-	grid-template-columns: 1fr 1fr;
-	gap: 8px;
+	display: flex;
+	gap: 2px;
+	margin: 0 -4px;
 }
 
 .waymorphic-styles__item {
-	display: block;
+	display: flex;
+	flex: 1 1 0;
+	flex-direction: column;
+	align-items: center;
+	gap: 6px;
+	min-width: 0;
 	margin: 0;
-	padding: 3px;
-	border: 1px solid #ddd;
-	border-radius: 4px;
-	background: #fff;
-	color: #1e1e1e;
-	text-align: left;
+	padding: 5px 4px 6px;
+	border: 0;
+	border-radius: 9px;
+	background: transparent;
+	font-size: 11.5px;
+	line-height: 1;
+	color: #757575;
+	white-space: nowrap;
 	cursor: pointer;
 }
 
 .waymorphic-styles__item:hover {
-	border-color: #949494;
+	background: #f0f0f0;
+	color: #1e1e1e;
 }
 
 .waymorphic-styles__item:focus-visible {
@@ -268,31 +276,43 @@
 	outline-offset: 1px;
 }
 
-.waymorphic-styles__item.is-selected {
-	border-color: #3858e9;
-	box-shadow: 0 0 0 1px #3858e9;
-}
-
-.waymorphic-styles__picture {
-	display: block;
-	aspect-ratio: 33 / 20;
-	overflow: hidden;
-	border-radius: 2px;
-}
-
-.waymorphic-styles__picture img {
-	display: block;
-	width: 100%;
-	height: 100%;
-	object-fit: cover;
-}
-
-.waymorphic-styles__name {
-	display: block;
-	padding: 4px 2px 1px;
-	font-size: 12px;
-}
-
-.waymorphic-styles__item.is-selected .waymorphic-styles__name {
+.waymorphic-styles__item[aria-checked="true"] {
+	color: #1e1e1e;
 	font-weight: 600;
+}
+
+.waymorphic-styles__swatch {
+	position: relative;
+	width: 100%;
+	aspect-ratio: 1;
+	overflow: hidden;
+	border-radius: 7px;
+	background: var(--land);
+	box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+}
+
+/* A bay of water. */
+.waymorphic-styles__swatch::before {
+	content: "";
+	position: absolute;
+	inset: 55% -20% -20% 40%;
+	border-radius: 50%;
+	background: var(--water);
+}
+
+/* A road. */
+.waymorphic-styles__swatch::after {
+	content: "";
+	position: absolute;
+	top: 46%;
+	right: -10%;
+	left: -10%;
+	height: 12%;
+	background: var(--road);
+	transform: rotate(-32deg);
+	transform-origin: center;
+}
+
+.waymorphic-styles__item[aria-checked="true"] .waymorphic-styles__swatch {
+	box-shadow: 0 0 0 2px #fff, 0 0 0 4px #3858e9;
 }

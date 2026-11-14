@@ -17,19 +17,19 @@
 	var WORLD = { lat: 20, lng: 0, zoom: 1 };
 	var MARKER_COLOUR = '#1f6feb';
 	var MARKER_COLOURS = [
-		{ name: __( 'Blue', 'waymorphic-map' ), color: '#1f6feb' },
-		{ name: __( 'Red', 'waymorphic-map' ), color: '#d63638' },
-		{ name: __( 'Green', 'waymorphic-map' ), color: '#008a20' },
-		{ name: __( 'Orange', 'waymorphic-map' ), color: '#e26f00' },
-		{ name: __( 'Purple', 'waymorphic-map' ), color: '#7a3ff2' },
-		{ name: __( 'Black', 'waymorphic-map' ), color: '#1d2327' },
+		{ name: __( 'Blue', 'wp-free-maps' ), color: '#1f6feb' },
+		{ name: __( 'Red', 'wp-free-maps' ), color: '#d63638' },
+		{ name: __( 'Green', 'wp-free-maps' ), color: '#008a20' },
+		{ name: __( 'Orange', 'wp-free-maps' ), color: '#e26f00' },
+		{ name: __( 'Purple', 'wp-free-maps' ), color: '#7a3ff2' },
+		{ name: __( 'Black', 'wp-free-maps' ), color: '#1d2327' },
 	];
 
 	var SHAPE_NAMES = {
-		polygon: __( 'Polygon', 'waymorphic-map' ),
-		line: __( 'Line', 'waymorphic-map' ),
-		circle: __( 'Circle', 'waymorphic-map' ),
-		rectangle: __( 'Rectangle', 'waymorphic-map' ),
+		polygon: __( 'Polygon', 'wp-free-maps' ),
+		line: __( 'Line', 'wp-free-maps' ),
+		circle: __( 'Circle', 'wp-free-maps' ),
+		rectangle: __( 'Rectangle', 'wp-free-maps' ),
 	};
 	// The sidebar shows the fields of this number of markers and shapes.
 	var SIDEBAR_LIMIT = 30;
@@ -211,8 +211,8 @@
 		}
 
 		var message = {
-			empty: __( 'Nothing found. Try a town, a street or a postcode.', 'waymorphic-map' ),
-			error: __( 'The search did not answer. Try again.', 'waymorphic-map' ),
+			empty: __( 'Nothing found. Try a town, a street or a postcode.', 'wp-free-maps' ),
+			error: __( 'The search did not answer. Try again.', 'wp-free-maps' ),
 		}[ result.status ];
 		var showList = open && ( result.results.length > 0 || !! message );
 		var listId = idRef.current + '-list';
@@ -224,13 +224,13 @@
 				type: 'search',
 				className: 'waymorphic-search__input',
 				role: 'combobox',
-				'aria-label': __( 'Search for a place or an address', 'waymorphic-map' ),
+				'aria-label': __( 'Search for a place or an address', 'wp-free-maps' ),
 				'aria-expanded': showList,
 				'aria-controls': listId,
 				'aria-autocomplete': 'list',
 				'aria-activedescendant': showList && result.results.length ? idRef.current + '-' + active : undefined,
 				autoComplete: 'off',
-				placeholder: props.placeholder || __( 'Search for a place or an address', 'waymorphic-map' ),
+				placeholder: props.placeholder || __( 'Search for a place or an address', 'wp-free-maps' ),
 				value: text,
 				autoFocus: !! props.autoFocus,
 				onChange: function ( event ) {
@@ -319,7 +319,7 @@
 			{
 				className: 'waymorphic-styles',
 				role: 'radiogroup',
-				'aria-label': __( 'Map style', 'waymorphic-map' ),
+				'aria-label': __( 'Map style', 'wp-free-maps' ),
 				onKeyDown: onKeyDown,
 			},
 			names.map( function ( name ) {
@@ -467,7 +467,7 @@
 					var button = node.ownerDocument.createElement( 'button' );
 					button.type = 'button';
 					button.className = 'waymorphic-map-editor__here';
-					button.textContent = __( 'Add a marker here', 'waymorphic-map' );
+					button.textContent = __( 'Add a marker here', 'wp-free-maps' );
 					var popup = new view.maplibregl.Popup( { closeOnClick: false, focusAfterOpen: false, offset: 4 } )
 						.setLngLat( point )
 						.setDOMContent( button )
@@ -547,18 +547,18 @@
 			form.className = 'waymorphic-marker-form';
 
 			var label = doc.createElement( 'label' );
-			label.textContent = __( 'Popup text', 'waymorphic-map' );
+			label.textContent = __( 'Popup text', 'wp-free-maps' );
 			var input = doc.createElement( 'input' );
 			input.type = 'text';
 			input.value = item.label || '';
-			input.placeholder = __( 'For example: Our office', 'waymorphic-map' );
+			input.placeholder = __( 'For example: Our office', 'wp-free-maps' );
 			label.appendChild( input );
 			form.appendChild( label );
 
 			var remove = doc.createElement( 'button' );
 			remove.type = 'button';
 			remove.className = 'waymorphic-marker-form__remove';
-			remove.textContent = __( 'Remove the marker', 'waymorphic-map' );
+			remove.textContent = __( 'Remove the marker', 'wp-free-maps' );
 			form.appendChild( remove );
 
 			[ 'keydown', 'keyup', 'keypress' ].forEach( function ( type ) {
@@ -618,7 +618,7 @@
 						.setLngLat( [ item.lng, item.lat ] )
 						.setPopup( new view.maplibregl.Popup( { maxWidth: '280px', focusAfterOpen: false } ).setDOMContent( parts.form ) )
 						.addTo( map );
-					marker.getElement().title = __( 'Drag to move. Click to change the text.', 'waymorphic-map' );
+					marker.getElement().title = __( 'Drag to move. Click to change the text.', 'wp-free-maps' );
 					marker.on( 'dragend', function () {
 						var position = marker.getLngLat().wrap();
 						updateMarker( index, { lat: round( position.lat, 5 ), lng: round( position.lng, 5 ) } );
@@ -778,7 +778,7 @@
 					};
 				} );
 				if ( ! newMarkers.length && ! newShapes.length ) {
-					setNote( __( 'The file has no markers or shapes that the plugin can read.', 'waymorphic-map' ) );
+					setNote( __( 'The file has no markers or shapes that the plugin can read.', 'wp-free-maps' ) );
 					return;
 				}
 				var change = {
@@ -811,7 +811,7 @@
 				setNote(
 					sprintf(
 						/* translators: 1: a number of markers, 2: a number of shapes. */
-						__( 'Markers added: %1$d. Shapes added: %2$d.', 'waymorphic-map' ),
+						__( 'Markers added: %1$d. Shapes added: %2$d.', 'wp-free-maps' ),
 						newMarkers.length,
 						newShapes.length
 					)
@@ -956,7 +956,7 @@
 							addMarker( place );
 						},
 					},
-					__( 'Add marker', 'waymorphic-map' )
+					__( 'Add marker', 'wp-free-maps' )
 				)
 			)
 		);
@@ -966,7 +966,7 @@
 			null,
 			el(
 				components.PanelBody,
-				{ title: __( 'Markers', 'waymorphic-map' ), initialOpen: true },
+				{ title: __( 'Markers', 'wp-free-maps' ), initialOpen: true },
 				markers.slice( 0, SIDEBAR_LIMIT ).map( function ( item, index ) {
 					return el(
 						'div',
@@ -976,7 +976,7 @@
 							next( {
 								label: sprintf(
 									/* translators: %d: the number of the marker. */
-									__( 'Marker %d: popup text', 'waymorphic-map' ),
+									__( 'Marker %d: popup text', 'wp-free-maps' ),
 									index + 1
 								),
 								value: item.label || '',
@@ -989,7 +989,7 @@
 						el(
 							components.ToggleControl,
 							next( {
-								label: __( 'Show the popup when the page opens', 'waymorphic-map' ),
+								label: __( 'Show the popup when the page opens', 'wp-free-maps' ),
 								checked: !! item.open,
 								disabled: ! item.label,
 								onChange: function ( value ) {
@@ -1000,8 +1000,8 @@
 						el(
 							components.TextControl,
 							next( {
-								label: __( 'Category', 'waymorphic-map' ),
-								help: index === 0 ? __( 'For the category buttons and the list. For example: Shops.', 'waymorphic-map' ) : undefined,
+								label: __( 'Category', 'wp-free-maps' ),
+								help: index === 0 ? __( 'For the category buttons and the list. For example: Shops.', 'wp-free-maps' ) : undefined,
 								value: item.category || '',
 								onChange: function ( value ) {
 									updateMarker( index, { category: value } );
@@ -1010,7 +1010,7 @@
 						),
 						el( 'div', { style: { height: '8px' } } ),
 						el( components.ColorPalette, {
-							'aria-label': __( 'Colour of the marker', 'waymorphic-map' ),
+							'aria-label': __( 'Colour of the marker', 'wp-free-maps' ),
 							colors: MARKER_COLOURS,
 							value: item.colour || MARKER_COLOUR,
 							clearable: false,
@@ -1034,8 +1034,8 @@
 										components.Button,
 										{ variant: 'link', onClick: media.open, style: { display: 'block', marginBottom: '8px' } },
 										item.icon
-											? __( 'Change the picture of the marker', 'waymorphic-map' )
-											: __( 'Use a picture as the marker', 'waymorphic-map' )
+											? __( 'Change the picture of the marker', 'wp-free-maps' )
+											: __( 'Use a picture as the marker', 'wp-free-maps' )
 									);
 								},
 							} )
@@ -1050,7 +1050,7 @@
 											updateMarker( index, { icon: undefined } );
 										},
 									},
-									__( 'Use the usual marker', 'waymorphic-map' )
+									__( 'Use the usual marker', 'wp-free-maps' )
 							  )
 							: null,
 						el(
@@ -1062,7 +1062,7 @@
 									removeMarker( index );
 								},
 							},
-							__( 'Remove the marker', 'waymorphic-map' )
+							__( 'Remove the marker', 'wp-free-maps' )
 						)
 					);
 				} ),
@@ -1072,7 +1072,7 @@
 							{ style: { color: '#757575' } },
 							sprintf(
 								/* translators: 1: a number of markers, 2: the number of all the markers. */
-								__( 'The sidebar shows %1$d of the %2$d markers. To change one of the others, click it on the map.', 'waymorphic-map' ),
+								__( 'The sidebar shows %1$d of the %2$d markers. To change one of the others, click it on the map.', 'wp-free-maps' ),
 								SIDEBAR_LIMIT,
 								markers.length
 							)
@@ -1086,7 +1086,7 @@
 							addMarker( place );
 						},
 					},
-					__( 'Add a marker', 'waymorphic-map' )
+					__( 'Add a marker', 'wp-free-maps' )
 				),
 				el( 'div', { style: { height: '8px' } } ),
 				el(
@@ -1101,12 +1101,12 @@
 							input.value = '';
 						},
 					},
-					__( 'Import a file', 'waymorphic-map' )
+					__( 'Import a file', 'wp-free-maps' )
 				),
 				el(
 					'p',
 					{ style: { margin: '8px 0 0', color: '#757575' } },
-					__( 'CSV, GeoJSON, KML or GPX. A CSV file has a first row with the column names: lat, lng, title, description, category, colour.', 'waymorphic-map' )
+					__( 'CSV, GeoJSON, KML or GPX. A CSV file has a first row with the column names: lat, lng, title, description, category, colour.', 'wp-free-maps' )
 				),
 				note ? el( 'p', { role: 'status', style: { margin: '8px 0 0' } }, note ) : null,
 				markers.length > 1
@@ -1121,18 +1121,18 @@
 									setAttributes( { markers: [] } );
 								},
 							},
-							__( 'Remove all the markers', 'waymorphic-map' )
+							__( 'Remove all the markers', 'wp-free-maps' )
 					  )
 					: null,
 				el(
 					'p',
 					{ style: { margin: '12px 0 0', color: '#757575' } },
-					__( 'To find a place, use the search field on the map. To add a marker, click the map at the point. To move a marker, drag it. To change its text, click it.', 'waymorphic-map' )
+					__( 'To find a place, use the search field on the map. To add a marker, click the map at the point. To move a marker, drag it. To change its text, click it.', 'wp-free-maps' )
 				)
 			),
 			el(
 				components.PanelBody,
-				{ title: __( 'Shapes', 'waymorphic-map' ), initialOpen: false },
+				{ title: __( 'Shapes', 'wp-free-maps' ), initialOpen: false },
 				shapes.slice( 0, SIDEBAR_LIMIT ).map( function ( item, index ) {
 					return el(
 						'div',
@@ -1142,7 +1142,7 @@
 							next( {
 								label: sprintf(
 									/* translators: 1: the type of a shape, 2: its number. */
-									__( '%1$s %2$d: popup text', 'waymorphic-map' ),
+									__( '%1$s %2$d: popup text', 'wp-free-maps' ),
 									SHAPE_NAMES[ item.type ] || item.type,
 									index + 1
 								),
@@ -1157,7 +1157,7 @@
 							? el(
 									components.TextControl,
 									next( {
-										label: __( 'Radius in metres', 'waymorphic-map' ),
+										label: __( 'Radius in metres', 'wp-free-maps' ),
 										type: 'number',
 										min: 1,
 										value: String( item.radius || 1000 ),
@@ -1172,7 +1172,7 @@
 							: null,
 						item.type === 'circle' ? el( 'div', { style: { height: '8px' } } ) : null,
 						el( components.ColorPalette, {
-							'aria-label': __( 'Colour of the shape', 'waymorphic-map' ),
+							'aria-label': __( 'Colour of the shape', 'wp-free-maps' ),
 							colors: MARKER_COLOURS,
 							value: item.colour || MARKER_COLOUR,
 							clearable: false,
@@ -1191,7 +1191,7 @@
 									removeShape( index );
 								},
 							},
-							__( 'Remove the shape', 'waymorphic-map' )
+							__( 'Remove the shape', 'wp-free-maps' )
 						)
 					);
 				} ),
@@ -1201,7 +1201,7 @@
 							{ style: { color: '#757575' } },
 							sprintf(
 								/* translators: 1: a number of shapes, 2: the number of all the shapes. */
-								__( 'The sidebar shows %1$d of the %2$d shapes.', 'waymorphic-map' ),
+								__( 'The sidebar shows %1$d of the %2$d shapes.', 'wp-free-maps' ),
 								SIDEBAR_LIMIT,
 								shapes.length
 							)
@@ -1228,7 +1228,7 @@
 				el(
 					'p',
 					{ style: { margin: '12px 0 0', color: '#757575' } },
-					__( 'Select a type, then click the map. A polygon and a line: click each point, then select "Finish". A circle: click the centre. A rectangle: click two opposite corners.', 'waymorphic-map' )
+					__( 'Select a type, then click the map. A polygon and a line: click each point, then select "Finish". A circle: click the centre. A rectangle: click two opposite corners.', 'wp-free-maps' )
 				),
 				shapes.length > 1
 					? el(
@@ -1241,13 +1241,13 @@
 									setAttributes( { shapes: [] } );
 								},
 							},
-							__( 'Remove all the shapes', 'waymorphic-map' )
+							__( 'Remove all the shapes', 'wp-free-maps' )
 					  )
 					: null
 			),
 			el(
 				components.PanelBody,
-				{ title: __( 'Map', 'waymorphic-map' ), initialOpen: true },
+				{ title: __( 'Map', 'wp-free-maps' ), initialOpen: true },
 				el( StylePicker, {
 					value: attributes.mapStyle || settings.defaultStyle,
 					onChange: function ( value ) {
@@ -1258,8 +1258,8 @@
 				el(
 					components.TextControl,
 					next( {
-						label: __( 'Height', 'waymorphic-map' ),
-						help: __( 'For example 400px or 60vh.', 'waymorphic-map' ),
+						label: __( 'Height', 'wp-free-maps' ),
+						help: __( 'For example 400px or 60vh.', 'wp-free-maps' ),
 						placeholder: settings.defaultHeight,
 						value: attributes.height || '',
 						onChange: function ( value ) {
@@ -1270,12 +1270,12 @@
 			),
 			el(
 				components.PanelBody,
-				{ title: __( 'Features', 'waymorphic-map' ), initialOpen: false },
+				{ title: __( 'Features', 'wp-free-maps' ), initialOpen: false },
 				el(
 					components.ToggleControl,
 					next( {
-						label: __( 'List of the markers below the map', 'waymorphic-map' ),
-						help: __( 'A click on a name shows that marker.', 'waymorphic-map' ),
+						label: __( 'List of the markers below the map', 'wp-free-maps' ),
+						help: __( 'A click on a name shows that marker.', 'wp-free-maps' ),
 						checked: !! attributes.list,
 						onChange: function ( value ) {
 							setAttributes( { list: value } );
@@ -1285,8 +1285,8 @@
 				el(
 					components.ToggleControl,
 					next( {
-						label: __( 'Search for the nearest markers', 'waymorphic-map' ),
-						help: __( 'Visitors type an address and see the markers in a distance. Their browser sends the address to the map server.', 'waymorphic-map' ),
+						label: __( 'Search for the nearest markers', 'wp-free-maps' ),
+						help: __( 'Visitors type an address and see the markers in a distance. Their browser sends the address to the map server.', 'wp-free-maps' ),
 						checked: !! attributes.locator,
 						onChange: function ( value ) {
 							setAttributes( { locator: value } );
@@ -1297,11 +1297,11 @@
 					? el(
 							components.SelectControl,
 							next( {
-								label: __( 'Unit of distance', 'waymorphic-map' ),
+								label: __( 'Unit of distance', 'wp-free-maps' ),
 								value: attributes.unit === 'mi' ? 'mi' : 'km',
 								options: [
-									{ label: __( 'Kilometres', 'waymorphic-map' ), value: 'km' },
-									{ label: __( 'Miles', 'waymorphic-map' ), value: 'mi' },
+									{ label: __( 'Kilometres', 'wp-free-maps' ), value: 'km' },
+									{ label: __( 'Miles', 'wp-free-maps' ), value: 'mi' },
 								],
 								onChange: function ( value ) {
 									setAttributes( { unit: value } );
@@ -1313,8 +1313,8 @@
 				el(
 					components.ToggleControl,
 					next( {
-						label: __( 'Groups of markers', 'waymorphic-map' ),
-						help: __( 'Markers that are near to each other show as one circle with their number.', 'waymorphic-map' ),
+						label: __( 'Groups of markers', 'wp-free-maps' ),
+						help: __( 'Markers that are near to each other show as one circle with their number.', 'wp-free-maps' ),
 						checked: !! attributes.cluster,
 						onChange: function ( value ) {
 							setAttributes( { cluster: value } );
@@ -1324,8 +1324,8 @@
 				el(
 					components.ToggleControl,
 					next( {
-						label: __( 'Category buttons', 'waymorphic-map' ),
-						help: __( 'Visitors select a category and see only its markers.', 'waymorphic-map' ),
+						label: __( 'Category buttons', 'wp-free-maps' ),
+						help: __( 'Visitors select a category and see only its markers.', 'wp-free-maps' ),
 						checked: !! attributes.filter,
 						onChange: function ( value ) {
 							setAttributes( { filter: value } );
@@ -1335,8 +1335,8 @@
 				el(
 					components.ToggleControl,
 					next( {
-						label: __( 'Directions link', 'waymorphic-map' ),
-						help: __( 'Each popup gets a link to the directions on openstreetmap.org.', 'waymorphic-map' ),
+						label: __( 'Directions link', 'wp-free-maps' ),
+						help: __( 'Each popup gets a link to the directions on openstreetmap.org.', 'wp-free-maps' ),
 						checked: !! attributes.directions,
 						onChange: function ( value ) {
 							setAttributes( { directions: value } );
@@ -1346,7 +1346,7 @@
 				el(
 					components.ToggleControl,
 					next( {
-						label: __( 'Button for the location of the visitor', 'waymorphic-map' ),
+						label: __( 'Button for the location of the visitor', 'wp-free-maps' ),
 						checked: !! attributes.locate,
 						disabled: ! attributes.interactive,
 						onChange: function ( value ) {
@@ -1357,12 +1357,12 @@
 				el(
 					components.SelectControl,
 					next( {
-						label: __( 'Marker animation', 'waymorphic-map' ),
+						label: __( 'Marker animation', 'wp-free-maps' ),
 						value: attributes.animation || '',
 						options: [
-							{ label: __( 'None', 'waymorphic-map' ), value: '' },
-							{ label: __( 'Drop', 'waymorphic-map' ), value: 'drop' },
-							{ label: __( 'Bounce', 'waymorphic-map' ), value: 'bounce' },
+							{ label: __( 'None', 'wp-free-maps' ), value: '' },
+							{ label: __( 'Drop', 'wp-free-maps' ), value: 'drop' },
+							{ label: __( 'Bounce', 'wp-free-maps' ), value: 'bounce' },
 						],
 						onChange: function ( value ) {
 							setAttributes( { animation: value } );
@@ -1372,16 +1372,16 @@
 				el(
 					'p',
 					{ style: { margin: '12px 0 0', color: '#757575' } },
-					__( 'These features show on the page, not in the editor.', 'waymorphic-map' )
+					__( 'These features show on the page, not in the editor.', 'wp-free-maps' )
 				)
 			),
 			el(
 				components.PanelBody,
-				{ title: __( 'Behaviour', 'waymorphic-map' ), initialOpen: false },
+				{ title: __( 'Behaviour', 'wp-free-maps' ), initialOpen: false },
 				el(
 					components.ToggleControl,
 					next( {
-						label: __( 'Visitors can move the map', 'waymorphic-map' ),
+						label: __( 'Visitors can move the map', 'wp-free-maps' ),
 						checked: attributes.interactive,
 						onChange: function ( value ) {
 							setAttributes( { interactive: value } );
@@ -1391,7 +1391,7 @@
 				el(
 					components.ToggleControl,
 					next( {
-						label: __( 'Show the zoom and fullscreen buttons', 'waymorphic-map' ),
+						label: __( 'Show the zoom and fullscreen buttons', 'wp-free-maps' ),
 						checked: attributes.controls,
 						disabled: ! attributes.interactive,
 						onChange: function ( value ) {
@@ -1402,8 +1402,8 @@
 				el(
 					components.ToggleControl,
 					next( {
-						label: __( 'Scroll to zoom', 'waymorphic-map' ),
-						help: __( 'When this is off, the page scrolls, and ctrl or cmd + scroll zooms the map.', 'waymorphic-map' ),
+						label: __( 'Scroll to zoom', 'wp-free-maps' ),
+						help: __( 'When this is off, the page scrolls, and ctrl or cmd + scroll zooms the map.', 'wp-free-maps' ),
 						checked: attributes.scrollZoom,
 						disabled: ! attributes.interactive,
 						onChange: function ( value ) {
@@ -1414,8 +1414,8 @@
 				el(
 					components.TextControl,
 					next( {
-						label: __( 'Name for screen readers', 'waymorphic-map' ),
-						placeholder: __( 'Map', 'waymorphic-map' ),
+						label: __( 'Name for screen readers', 'wp-free-maps' ),
+						placeholder: __( 'Map', 'wp-free-maps' ),
 						value: attributes.title || '',
 						onChange: function ( value ) {
 							setAttributes( { title: value } );
@@ -1425,12 +1425,12 @@
 			),
 			el(
 				components.PanelBody,
-				{ title: __( 'Exact position', 'waymorphic-map' ), initialOpen: false },
-				numberField( __( 'Latitude', 'waymorphic-map' ), 'lat', -85, 85, 'any' ),
+				{ title: __( 'Exact position', 'wp-free-maps' ), initialOpen: false },
+				numberField( __( 'Latitude', 'wp-free-maps' ), 'lat', -85, 85, 'any' ),
 				el( 'div', { style: { height: '16px' } } ),
-				numberField( __( 'Longitude', 'waymorphic-map' ), 'lng', -180, 180, 'any' ),
+				numberField( __( 'Longitude', 'wp-free-maps' ), 'lng', -180, 180, 'any' ),
 				el( 'div', { style: { height: '16px' } } ),
-				numberField( __( 'Zoom', 'waymorphic-map' ), 'zoom', 0, 22, 'any' )
+				numberField( __( 'Zoom', 'wp-free-maps' ), 'zoom', 0, 22, 'any' )
 			)
 		);
 
@@ -1447,11 +1447,11 @@
 				el(
 					'div',
 					{ className: 'waymorphic-setup__card' },
-					el( 'p', { className: 'waymorphic-setup__title' }, __( 'Where is your map?', 'waymorphic-map' ) ),
+					el( 'p', { className: 'waymorphic-setup__title' }, __( 'Where is your map?', 'wp-free-maps' ) ),
 					el(
 						'p',
 						{ className: 'waymorphic-setup__text' },
-						__( 'Type an address, a town or a postcode, then select it from the list. The map goes there and gets a marker.', 'waymorphic-map' )
+						__( 'Type an address, a town or a postcode, then select it from the list. The map goes there and gets a marker.', 'wp-free-maps' )
 					),
 					el( PlaceSearch, { onPick: goTo, getFocus: getFocus } ),
 					el(
@@ -1463,14 +1463,14 @@
 							onClick: locate,
 						},
 						locating === 'busy'
-							? __( 'Finding your location…', 'waymorphic-map' )
-							: __( 'Use my location', 'waymorphic-map' )
+							? __( 'Finding your location…', 'wp-free-maps' )
+							: __( 'Use my location', 'wp-free-maps' )
 					),
 					locating === 'error'
 						? el(
 								'p',
 								{ className: 'waymorphic-setup__error', role: 'alert' },
-								__( 'The browser did not give your location. Use the search field.', 'waymorphic-map' )
+								__( 'The browser did not give your location. Use the search field.', 'wp-free-maps' )
 						  )
 						: null,
 					el(
@@ -1482,7 +1482,7 @@
 								setSkipped( true );
 							},
 						},
-						__( 'Or move the map by hand', 'waymorphic-map' )
+						__( 'Or move the map by hand', 'wp-free-maps' )
 					)
 				)
 			);
@@ -1495,10 +1495,10 @@
 					'span',
 					null,
 					{
-						polygon: __( 'Click each corner of the polygon.', 'waymorphic-map' ),
-						line: __( 'Click each point of the line.', 'waymorphic-map' ),
-						circle: __( 'Click the centre of the circle.', 'waymorphic-map' ),
-						rectangle: __( 'Click two opposite corners of the rectangle.', 'waymorphic-map' ),
+						polygon: __( 'Click each corner of the polygon.', 'wp-free-maps' ),
+						line: __( 'Click each point of the line.', 'wp-free-maps' ),
+						circle: __( 'Click the centre of the circle.', 'wp-free-maps' ),
+						rectangle: __( 'Click two opposite corners of the rectangle.', 'wp-free-maps' ),
 					}[ drawing.type ]
 				),
 				drawing.type === 'polygon' || drawing.type === 'line'
@@ -1512,7 +1512,7 @@
 									addShape( { type: drawing.type, points: drawing.points } );
 								},
 							},
-							__( 'Finish', 'waymorphic-map' )
+							__( 'Finish', 'wp-free-maps' )
 					  )
 					: null,
 				el(
@@ -1524,7 +1524,7 @@
 							setDrawing( null );
 						},
 					},
-					__( 'Cancel', 'waymorphic-map' )
+					__( 'Cancel', 'wp-free-maps' )
 				)
 			);
 		} else if ( isSelected ) {
@@ -1545,10 +1545,10 @@
 							place.name
 								? sprintf(
 										/* translators: %s: the name of a place. */
-										__( 'Add a marker at %s', 'waymorphic-map' ),
+										__( 'Add a marker at %s', 'wp-free-maps' ),
 										place.name
 								  )
-								: __( 'Add a marker here', 'waymorphic-map' )
+								: __( 'Add a marker here', 'wp-free-maps' )
 					  )
 					: null
 			);

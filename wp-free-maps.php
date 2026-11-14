@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name:       Waymorphic Map
+ * Plugin Name:       Free Maps - Waymorphic Map & Custom Maps
  * Plugin URI:        https://github.com/jamescball/waymorphic-map-wordpress
  * Description:       Free OpenStreetMap vector maps for WordPress. A block and a shortcode, five map styles, markers, shapes, a marker list and a search for the nearest markers. No API key, no account.
  * Version:           1.1.0
@@ -10,7 +10,7 @@
  * Author URI:        https://waymorphic.com/
  * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain:       waymorphic-map
+ * Text Domain:       wp-free-maps
  *
  * @package WaymorphicMap
  */

@@ -26,30 +26,30 @@ function waymorphic_map_register_assets() {
 		'window.waymorphicMapL10n = ' . wp_json_encode(
 			array(
 				/* translators: %d: a number of markers. */
-				'group'         => __( 'Markers here: %d. Zoom in.', 'waymorphic-map' ),
-				'noMap'         => __( 'The map cannot be shown in this browser.', 'waymorphic-map' ),
-				'directions'    => __( 'Directions', 'waymorphic-map' ),
+				'group'         => __( 'Markers here: %d. Zoom in.', 'wp-free-maps' ),
+				'noMap'         => __( 'The map cannot be shown in this browser.', 'wp-free-maps' ),
+				'directions'    => __( 'Directions', 'wp-free-maps' ),
 				/* translators: %d: the number of the marker. */
-				'marker'        => __( 'Marker %d', 'waymorphic-map' ),
-				'list'          => __( 'Places on the map', 'waymorphic-map' ),
-				'all'           => __( 'All', 'waymorphic-map' ),
-				'filter'        => __( 'Show a category', 'waymorphic-map' ),
-				'search'        => __( 'Search', 'waymorphic-map' ),
-				'searchLabel'   => __( 'Find the nearest places', 'waymorphic-map' ),
-				'searchHint'    => __( 'Address, town or postcode', 'waymorphic-map' ),
-				'radius'        => __( 'Distance', 'waymorphic-map' ),
-				'useLocation'   => __( 'Use my location', 'waymorphic-map' ),
-				'reset'         => __( 'Show all', 'waymorphic-map' ),
-				'searching'     => __( 'Searching…', 'waymorphic-map' ),
+				'marker'        => __( 'Marker %d', 'wp-free-maps' ),
+				'list'          => __( 'Places on the map', 'wp-free-maps' ),
+				'all'           => __( 'All', 'wp-free-maps' ),
+				'filter'        => __( 'Show a category', 'wp-free-maps' ),
+				'search'        => __( 'Search', 'wp-free-maps' ),
+				'searchLabel'   => __( 'Find the nearest places', 'wp-free-maps' ),
+				'searchHint'    => __( 'Address, town or postcode', 'wp-free-maps' ),
+				'radius'        => __( 'Distance', 'wp-free-maps' ),
+				'useLocation'   => __( 'Use my location', 'wp-free-maps' ),
+				'reset'         => __( 'Show all', 'wp-free-maps' ),
+				'searching'     => __( 'Searching…', 'wp-free-maps' ),
 				/* translators: 1: a number of places, 2: a distance such as 10 km. */
-				'found'         => __( 'Places in %2$s: %1$d', 'waymorphic-map' ),
+				'found'         => __( 'Places in %2$s: %1$d', 'wp-free-maps' ),
 				/* translators: %s: a distance such as 10 km. */
-				'none'          => __( 'No places in %s.', 'waymorphic-map' ),
-				'notFound'      => __( 'The address was not found. Try a town or a postcode.', 'waymorphic-map' ),
-				'searchError'   => __( 'The search did not answer. Try again.', 'waymorphic-map' ),
-				'locationError' => __( 'The browser did not give your location.', 'waymorphic-map' ),
-				'km'            => __( 'km', 'waymorphic-map' ),
-				'mi'            => __( 'mi', 'waymorphic-map' ),
+				'none'          => __( 'No places in %s.', 'wp-free-maps' ),
+				'notFound'      => __( 'The address was not found. Try a town or a postcode.', 'wp-free-maps' ),
+				'searchError'   => __( 'The search did not answer. Try again.', 'wp-free-maps' ),
+				'locationError' => __( 'The browser did not give your location.', 'wp-free-maps' ),
+				'km'            => __( 'km', 'wp-free-maps' ),
+				'mi'            => __( 'mi', 'wp-free-maps' ),
 			)
 		) . ';',
 		'before'
@@ -400,7 +400,7 @@ function waymorphic_map_render( $args ) {
 		$css .= 'width:' . waymorphic_map_clean_length( $args['width'], '100%' ) . ';';
 	}
 
-	$title   = '' !== trim( (string) $args['title'] ) ? trim( (string) $args['title'] ) : __( 'Map', 'waymorphic-map' );
+	$title   = '' !== trim( (string) $args['title'] ) ? trim( (string) $args['title'] ) : __( 'Map', 'wp-free-maps' );
 	$wrapper = '' !== $args['wrapper'] ? $args['wrapper'] : 'class="wp-block-waymorphic-map"';
 
 	return sprintf(
@@ -411,7 +411,7 @@ function waymorphic_map_render( $args ) {
 		// The HEX flags keep &, <, > and quotes out of the JSON, so the attribute
 		// escaping cannot change it and entities in a popup stay entities.
 		esc_attr( wp_json_encode( $config, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT ) ),
-		esc_html__( 'Turn on JavaScript to see the map.', 'waymorphic-map' )
+		esc_html__( 'Turn on JavaScript to see the map.', 'wp-free-maps' )
 	);
 }
 

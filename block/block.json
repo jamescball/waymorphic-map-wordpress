@@ -30,6 +30,7 @@
 		"unit": { "type": "string", "default": "km" },
 		"filter": { "type": "boolean", "default": false },
 		"directions": { "type": "boolean", "default": false },
+		"directionsService": { "type": "string", "default": "" },
 		"locate": { "type": "boolean", "default": false },
 		"animation": { "type": "string", "default": "" },
 		"controls": { "type": "boolean", "default": true },
@@ -43,7 +44,5 @@
 		"spacing": { "margin": true }
 	},
 	"editorScript": "waymorphic-map-editor",
-	"editorStyle": "waymorphic-map-editor",
-	"script": "waymorphic-map",
-	"style": "waymorphic-map"
+	"editorStyle": "waymorphic-map-editor"
 }

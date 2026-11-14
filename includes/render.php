@@ -28,7 +28,20 @@ function waymorphic_map_register_assets() {
 				/* translators: %d: a number of markers. */
 				'group'         => __( 'Markers here: %d. Zoom in.', 'free-maps' ),
 				'noMap'         => __( 'The map cannot be shown in this browser.', 'free-maps' ),
+				'noStyle'       => __( 'The map did not load. Try again later.', 'free-maps' ),
+				'again'         => __( 'Show the map', 'free-maps' ),
 				'directions'    => __( 'Directions', 'free-maps' ),
+				/* translators: %s: the name of a place. Keep the word of "Directions" in it. */
+				'directionsTo'  => __( 'Directions to %s (opens in a new tab)', 'free-maps' ),
+				/* translators: %s: the name of a place. Keep the word of "Directions" in it. */
+				'directionsFor' => __( 'Directions to %s', 'free-maps' ),
+				/* translators: The name of a list of map services, such as Google Maps. */
+				'directionsIn'  => __( 'Open the directions in', 'free-maps' ),
+				/* translators: %s: the name of a map service, such as Google Maps. */
+				'newTab'        => __( '%s (opens in a new tab)', 'free-maps' ),
+				'origin'        => __( 'The place of your search', 'free-maps' ),
+				/* translators: %s: the popup text of a polygon, a line or a circle on the map. */
+				'shape'         => __( 'Shape on the map: %s', 'free-maps' ),
 				/* translators: %d: the number of the marker. */
 				'marker'        => __( 'Marker %d', 'free-maps' ),
 				'list'          => __( 'Places on the map', 'free-maps' ),
@@ -45,11 +58,34 @@ function waymorphic_map_register_assets() {
 				'found'         => __( 'Places in %2$s: %1$d', 'free-maps' ),
 				/* translators: %s: a distance such as 10 km. */
 				'none'          => __( 'No places in %s.', 'free-maps' ),
+				/* translators: 1: a number of places, 2: a distance such as 10 km, 3: the place of the search, such as Leeds, England. */
+				'foundAt'       => __( 'Places in %2$s of %3$s: %1$d', 'free-maps' ),
+				/* translators: 1: a distance such as 10 km, 2: the place of the search, such as Leeds, England. */
+				'noneAt'        => __( 'No places in %1$s of %2$s.', 'free-maps' ),
+				/* translators: The place of a search, in a text such as: Places in 10 km of your location: 2 */
+				'here'          => __( 'your location', 'free-maps' ),
 				'notFound'      => __( 'The address was not found. Try a town or a postcode.', 'free-maps' ),
 				'searchError'   => __( 'The search did not answer. Try again.', 'free-maps' ),
 				'locationError' => __( 'The browser did not give your location.', 'free-maps' ),
 				'km'            => __( 'km', 'free-maps' ),
 				'mi'            => __( 'mi', 'free-maps' ),
+				// The texts of the map itself, for MapLibre.
+				'map'           => array(
+					'AttributionControl.ToggleAttribution'       => __( 'Toggle attribution', 'free-maps' ),
+					'FullscreenControl.Enter'                    => __( 'Enter fullscreen', 'free-maps' ),
+					'FullscreenControl.Exit'                     => __( 'Exit fullscreen', 'free-maps' ),
+					'GeolocateControl.FindMyLocation'            => __( 'Find my location', 'free-maps' ),
+					'GeolocateControl.LocationNotAvailable'      => __( 'Location not available', 'free-maps' ),
+					'Map.Title'                                  => __( 'Map', 'free-maps' ),
+					'Marker.Title'                               => __( 'Map marker', 'free-maps' ),
+					'NavigationControl.ResetBearing'             => __( 'Drag to rotate map, click to reset north', 'free-maps' ),
+					'NavigationControl.ZoomIn'                   => __( 'Zoom in', 'free-maps' ),
+					'NavigationControl.ZoomOut'                  => __( 'Zoom out', 'free-maps' ),
+					'Popup.Close'                                => __( 'Close popup', 'free-maps' ),
+					'CooperativeGesturesHandler.WindowsHelpText' => __( 'Use Ctrl + scroll to zoom the map', 'free-maps' ),
+					'CooperativeGesturesHandler.MacHelpText'     => __( 'Use ⌘ + scroll to zoom the map', 'free-maps' ),
+					'CooperativeGesturesHandler.MobileHelpText'  => __( 'Use two fingers to move the map', 'free-maps' ),
+				),
 			)
 		) . ';',
 		'before'
@@ -72,15 +108,10 @@ function waymorphic_map_clean_markers( $markers ) {
 		if ( ! is_array( $marker ) ) {
 			continue;
 		}
-		$lat = waymorphic_map_clean_number( isset( $marker['lat'] ) ? $marker['lat'] : null, -90, 90 );
-		$lng = waymorphic_map_clean_number( isset( $marker['lng'] ) ? $marker['lng'] : null, -180, 180 );
-		if ( null === $lat || null === $lng ) {
+		$item = waymorphic_map_clean_position( isset( $marker['lat'] ) ? $marker['lat'] : null, isset( $marker['lng'] ) ? $marker['lng'] : null );
+		if ( ! $item ) {
 			continue;
 		}
-		$item  = array(
-			'lat' => $lat,
-			'lng' => $lng,
-		);
 		$popup = isset( $marker['popup'] ) ? trim( wp_kses_post( (string) $marker['popup'] ) ) : '';
 		if ( '' !== $popup ) {
 			$item['popup'] = $popup;
@@ -90,6 +121,12 @@ function waymorphic_map_clean_markers( $markers ) {
 		}
 		foreach ( array( 'title', 'category' ) as $key ) {
 			$text = isset( $marker[ $key ] ) && is_scalar( $marker[ $key ] ) ? sanitize_text_field( (string) $marker[ $key ] ) : '';
+			if ( false !== strpos( $text, '&lt;' ) ) {
+				// sanitize_text_field() writes a "<" that is not a tag, and the text after it, with
+				// character references ("5 &lt; 6 &amp; more"). These values are text, not HTML:
+				// the script and the list show them as text.
+				$text = wp_specialchars_decode( $text, ENT_QUOTES );
+			}
 			if ( '' !== $text ) {
 				$item[ $key ] = $text;
 			}
@@ -151,6 +188,19 @@ function waymorphic_map_clean_shapes( $shapes ) {
 				'type'   => 'polygon',
 				'points' => $points,
 			);
+			// The holes of a polygon that came from a file: the map does not fill them.
+			if ( isset( $shape['holes'] ) && is_array( $shape['holes'] ) ) {
+				$holes = array();
+				foreach ( array_slice( $shape['holes'], 0, 20 ) as $hole ) {
+					$hole = waymorphic_map_clean_points( $hole );
+					if ( count( $hole ) >= 3 ) {
+						$holes[] = $hole;
+					}
+				}
+				if ( $holes ) {
+					$item['holes'] = $holes;
+				}
+			}
 		} elseif ( 'line' === $type && count( $points ) >= 2 ) {
 			$item = array(
 				'type'   => 'line',
@@ -253,7 +303,10 @@ function waymorphic_map_clean_files( $files ) {
  *     @type float|string $radius      The first distance of the search. The default is 25.
  *     @type string       $unit        km or mi, for the search and the list.
  *     @type bool         $filter      Show the category buttons above the map.
- *     @type bool         $directions  Add a directions link to the popups and the list.
+ *     @type bool|string  $directions  Add a directions link to the popups and the list. True: the
+ *                                     link opens the map service of the settings. Or the name of a
+ *                                     service (osm, google, apple, waze), or 'choice': the visitor
+ *                                     selects the service from a list.
  *     @type bool         $locate      Show the button that goes to the position of the visitor.
  *     @type string       $animation   drop or bounce, for the markers that have no animation.
  *     @type bool         $controls    Show the zoom and fullscreen buttons.
@@ -295,8 +348,9 @@ function waymorphic_map_render( $args ) {
 		)
 	);
 
-	$lat     = waymorphic_map_clean_number( $args['lat'], -85, 85 );
-	$lng     = waymorphic_map_clean_number( $args['lng'], -180, 180 );
+	$centre  = waymorphic_map_clean_position( $args['lat'], $args['lng'] );
+	$lat     = $centre ? $centre['lat'] : null;
+	$lng     = $centre ? $centre['lng'] : null;
 	$zoom    = waymorphic_map_clean_number( $args['zoom'], 0, 22 );
 	$markers = waymorphic_map_clean_markers( $args['markers'] );
 	$shapes  = waymorphic_map_clean_shapes( $args['shapes'] );
@@ -346,18 +400,37 @@ function waymorphic_map_render( $args ) {
 		$config['locator']   = array( 'radius' => null === $radius ? 25 : $radius );
 		$config['searchUrl'] = waymorphic_map_tiles_url() . '/search';
 	}
-	if ( $args['directions'] ) {
-		/**
-		 * Filters the address of the directions link. {lat} and {lng} are the
-		 * position of the marker.
-		 *
-		 * @param string $url The address.
-		 */
-		$directions = (string) apply_filters( 'waymorphic_map_directions_url', 'https://www.openstreetmap.org/directions?to={lat}%2C{lng}' );
-		// esc_url_raw() removes braces, so the script gets ~lat~ and ~lng~.
-		$directions = esc_url_raw( str_replace( array( '{lat}', '{lng}' ), array( '~lat~', '~lng~' ), $directions ), array( 'http', 'https' ) );
-		if ( '' !== $directions ) {
-			$config['directionsUrl'] = $directions;
+	$directions = waymorphic_map_clean_directions( $args['directions'], waymorphic_map_default_directions() );
+	if ( '' !== $directions ) {
+		$services = waymorphic_map_directions_services();
+		if ( 'choice' !== $directions ) {
+			$services = array( $directions => $services[ $directions ] );
+		}
+		$links = array();
+		foreach ( $services as $id => $service ) {
+			$url = $service['url'];
+			if ( 'choice' !== $directions ) {
+				/**
+				 * Filters the address of the directions link, when the link opens one map
+				 * service. {lat} and {lng} are the position of the marker.
+				 *
+				 * @param string $url     The address.
+				 * @param string $service The name of the map service, such as osm or google.
+				 */
+				$url = (string) apply_filters( 'waymorphic_map_directions_url', $url, $id );
+			}
+			// esc_url_raw() removes braces, so the script gets ~lat~ and ~lng~.
+			$url = esc_url_raw( str_replace( array( '{lat}', '{lng}' ), array( '~lat~', '~lng~' ), $url ), array( 'http', 'https' ) );
+			if ( '' !== $url ) {
+				$links[] = array(
+					'label' => $service['label'],
+					'url'   => $url,
+				);
+			}
+		}
+		if ( $links ) {
+			// One service: a link. More than one: the visitor selects from a list.
+			$config['directions'] = $links;
 		}
 	}
 
@@ -395,77 +468,262 @@ function waymorphic_map_render( $args ) {
 	wp_enqueue_style( 'waymorphic-map' );
 	wp_enqueue_script( 'waymorphic-map' );
 
-	$css = 'height:' . waymorphic_map_clean_length( $args['height'], $options['height'] ) . ';';
+	$css   = 'height:' . waymorphic_map_clean_length( $args['height'], waymorphic_map_clean_length( $options['height'], '400px', false ), false ) . ';';
+	$width = '';
 	if ( '' !== (string) $args['width'] ) {
-		$css .= 'width:' . waymorphic_map_clean_length( $args['width'], '100%' ) . ';';
+		$width = 'width:' . waymorphic_map_clean_length( $args['width'], '100%' ) . ';';
+		$css  .= $width;
 	}
 
 	$title   = '' !== trim( (string) $args['title'] ) ? trim( (string) $args['title'] ) : __( 'Map', 'free-maps' );
 	$wrapper = '' !== $args['wrapper'] ? $args['wrapper'] : 'class="wp-block-waymorphic-map"';
 
+	// The HEX flags keep &, <, > and quotes out of the JSON, so the attribute
+	// escaping cannot change it and entities in a popup stay entities.
+	$json = (string) wp_json_encode( $config, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT );
+	$data = '';
+	if ( strlen( $json ) > 100000 ) {
+		// A map with very many markers or points. WordPress runs regular expressions on the
+		// content of a page, and they fail on an HTML tag of about one million characters:
+		// the page then showed a critical error. A script element is not a tag of this type.
+		// In its text, "[" before a letter is written as \u005b, so that WordPress does not
+		// read the text of a popup as a shortcode.
+		$data = '<script type="application/json" class="waymorphic-map__config">'
+			. preg_replace( '/\[(?=[a-z_])(?!(?:true|false|null)\b)/i', '\\u005b', $json )
+			. '</script>';
+		$json = '{}';
+	}
+
 	return sprintf(
-		'<div %1$s><div class="waymorphic-map" style="%2$s" role="region" aria-label="%3$s" data-waymorphic-map="%4$s"><noscript>%5$s</noscript></div></div>',
+		'<div %1$s>%6$s<div class="waymorphic-map" style="%2$s" role="region" aria-label="%3$s" data-waymorphic-map="%4$s">%8$s<noscript>%5$s</noscript></div>%7$s</div>',
 		$wrapper,
 		esc_attr( $css ),
 		esc_attr( $title ),
-		// The HEX flags keep &, <, > and quotes out of the JSON, so the attribute
-		// escaping cannot change it and entities in a popup stay entities.
-		esc_attr( wp_json_encode( $config, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT ) ),
-		esc_html__( 'Turn on JavaScript to see the map.', 'free-maps' )
+		esc_attr( $json ),
+		esc_html__( 'Turn on JavaScript to see the map.', 'free-maps' ),
+		waymorphic_map_tools_space( $config, $width ),
+		waymorphic_map_list_html( $config, $width ),
+		$data
 	);
+}
+
+/**
+ * The name of a marker in the list: its title, the text of its popup, or its
+ * number. The script has the same rule (markerName).
+ *
+ * @param array<string,mixed> $marker The marker.
+ * @param int                 $index  The position of the marker, from 0.
+ * @return string Plain text.
+ */
+function waymorphic_map_marker_name( $marker, $index ) {
+	if ( isset( $marker['title'] ) && is_scalar( $marker['title'] ) && '' !== (string) $marker['title'] ) {
+		return (string) $marker['title'];
+	}
+	if ( isset( $marker['popup'] ) && is_scalar( $marker['popup'] ) ) {
+		// The first line of the popup: "Eiffel Tower" for "<strong>Eiffel Tower</strong><br>Champ de Mars".
+		// A line ends at a line break and at the end of a paragraph, a heading or a list item.
+		$words = (string) preg_replace( '/\s+/u', ' ', (string) $marker['popup'] );
+		$words = (string) preg_replace( '#</?(?:br|p|div|li|h[1-6]|tr|td|th)\b#i', "\n$0", $words );
+		$words = html_entity_decode( wp_strip_all_tags( $words ), ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+		$lines = array_values( array_filter( array_map( 'trim', explode( "\n", $words ) ), 'strlen' ) );
+		$words = $lines ? trim( (string) preg_replace( '/\s+/u', ' ', $lines[0] ) ) : '';
+		if ( '' !== $words ) {
+			$length = function_exists( 'mb_strlen' ) ? mb_strlen( $words ) : strlen( $words );
+			if ( $length > 80 ) {
+				$words = ( function_exists( 'mb_substr' ) ? mb_substr( $words, 0, 77 ) : substr( $words, 0, 77 ) ) . '…';
+			}
+			return $words;
+		}
+	}
+	/* translators: %d: the number of the marker. */
+	return sprintf( __( 'Marker %d', 'free-maps' ), $index + 1 );
+}
+
+/**
+ * The list of the markers below the map, as text. The page has the list
+ * before the script starts: the page does not jump when the map starts, and
+ * the list shows when the browser cannot show the map. The script makes the
+ * rows into buttons.
+ *
+ * @param array<string,mixed> $config The configuration of the map.
+ * @param string              $width  The width of the map as a style declaration, or ''.
+ * @return string HTML, or '' when the map has no list.
+ */
+function waymorphic_map_list_html( $config, $width ) {
+	if ( empty( $config['list'] ) || empty( $config['markers'] ) || ! is_array( $config['markers'] ) ) {
+		return '';
+	}
+	$services = isset( $config['directions'] ) && is_array( $config['directions'] ) ? array_values( $config['directions'] ) : array();
+	$rows     = '';
+	foreach ( array_values( $config['markers'] ) as $index => $marker ) {
+		if ( ! is_array( $marker ) || ! isset( $marker['lat'], $marker['lng'] ) ) {
+			continue;
+		}
+		$name   = waymorphic_map_marker_name( $marker, $index );
+		$colour = waymorphic_map_clean_colour( isset( $marker['colour'] ) ? $marker['colour'] : '', '#1f6feb' );
+		$detail = isset( $marker['category'] ) && is_scalar( $marker['category'] ) && '' !== (string) $marker['category']
+			? ' <span class="waymorphic-map__list-detail">' . esc_html( (string) $marker['category'] ) . '</span>'
+			: '';
+		$link   = '';
+		if ( $services && isset( $services[0]['url'] ) && is_string( $services[0]['url'] ) ) {
+			// A link to the first map service. With more than one service, the script makes it a button with the list of the services.
+			$url  = esc_url( str_replace( array( '~lat~', '~lng~' ), array( (string) (float) $marker['lat'], (string) (float) $marker['lng'] ), $services[0]['url'] ), array( 'http', 'https' ) );
+			$link = '' === $url ? '' : sprintf(
+				'<a class="waymorphic-map__directions%1$s" href="%2$s" target="_blank" rel="noopener" aria-label="%3$s">%4$s</a>',
+				count( $services ) > 1 ? ' waymorphic-map__directions--menu' : '',
+				$url,
+				/* translators: %s: the name of a place. Keep the word of "Directions" in it. */
+				esc_attr( sprintf( __( 'Directions to %s (opens in a new tab)', 'free-maps' ), $name ) ),
+				esc_html__( 'Directions', 'free-maps' )
+			);
+		}
+		$rows .= sprintf(
+			'<li class="waymorphic-map__list-item"><span class="waymorphic-map__list-button waymorphic-map__list-button--text"><span class="waymorphic-map__list-dot" aria-hidden="true" style="background:%1$s"></span><span class="waymorphic-map__list-text"><span class="waymorphic-map__list-name">%2$s</span>%3$s</span></span>%4$s</li>',
+			esc_attr( $colour ),
+			esc_html( $name ),
+			$detail,
+			$link
+		);
+	}
+	if ( '' === $rows ) {
+		return '';
+	}
+	return sprintf(
+		'<ul class="waymorphic-map__list" role="list" aria-label="%1$s"%2$s>%3$s</ul>',
+		esc_attr__( 'Places on the map', 'free-maps' ),
+		'' !== $width ? ' style="' . esc_attr( $width ) . '"' : '',
+		$rows
+	);
+}
+
+/**
+ * An empty element above the map with the height of the search and the
+ * category buttons, which the script makes. The page does not jump when the
+ * map starts.
+ *
+ * @param array<string,mixed> $config The configuration of the map.
+ * @param string              $width  The width of the map as a style declaration, or ''.
+ * @return string HTML, or '' when the map has no search and no category buttons.
+ */
+function waymorphic_map_tools_space( $config, $width ) {
+	$locator = ! empty( $config['locator'] );
+	$filter  = false;
+	if ( ! empty( $config['filter'] ) && ! empty( $config['markers'] ) && is_array( $config['markers'] ) ) {
+		foreach ( $config['markers'] as $marker ) {
+			if ( is_array( $marker ) && isset( $marker['category'] ) && '' !== (string) $marker['category'] ) {
+				$filter = true;
+				break;
+			}
+		}
+	}
+	if ( ! $locator && ! $filter ) {
+		return '';
+	}
+	return sprintf(
+		'<div class="waymorphic-map__tools waymorphic-map__tools--wait%1$s%2$s"%3$s></div>',
+		$locator ? ' has-locator' : '',
+		$filter ? ' has-filter' : '',
+		'' !== $width ? ' style="' . esc_attr( $width ) . '"' : ''
+	);
+}
+
+/**
+ * Loads the style in the head of a page that shows one post with a map. On
+ * other pages the style comes when a map is made, which can be after the head.
+ */
+function waymorphic_map_enqueue_early() {
+	$post = is_singular() ? get_post() : null;
+	if ( $post && ( has_shortcode( (string) $post->post_content, 'waymorphic_map' ) || has_block( 'waymorphic/map', $post ) ) ) {
+		wp_enqueue_style( 'waymorphic-map' );
+	}
 }
 
 /**
  * Finds the coordinates of an address with the search of the tile server.
  * The answer is kept, so a page view does not make a request.
  *
- * @param string $address The address or place name.
+ * @param string                $address The address or place name.
+ * @param array<int,float>|null $near    A point ([ lat, lng ]): the search prefers places near it.
  * @return array{lat:float,lng:float}|null
  */
-function waymorphic_map_geocode( $address ) {
+function waymorphic_map_geocode( $address, $near = null ) {
+	// True when the search did not answer in this page view.
+	static $down = false;
+
 	$address = trim( wp_strip_all_tags( (string) $address ) );
 	$length  = function_exists( 'mb_strlen' ) ? mb_strlen( $address ) : strlen( $address );
 	if ( $length < 2 || $length > 200 ) {
+		waymorphic_map_geocode_state( 'none' );
 		return null;
 	}
 
-	$key    = 'waymorphic_map_geo_' . md5( waymorphic_map_tiles_url() . '|' . strtolower( $address ) );
+	$query = array(
+		'q'     => rawurlencode( $address ),
+		'limit' => 1,
+	);
+	$place = '';
+	if ( is_array( $near ) && isset( $near[0], $near[1] ) && is_numeric( $near[0] ) && is_numeric( $near[1] ) ) {
+		// To the full degree: the kept answer is the same for all the markers of an area.
+		$query['lat']  = round( (float) $near[0] );
+		$query['lon']  = round( (float) $near[1] );
+		$query['zoom'] = 7;
+		$place         = '|' . $query['lat'] . ',' . $query['lon'];
+	}
+
+	$key    = 'waymorphic_map_geo_' . md5( waymorphic_map_tiles_url() . '|' . strtolower( $address ) . $place );
 	$cached = get_transient( $key );
 	if ( is_array( $cached ) ) {
-		return isset( $cached['lat'], $cached['lng'] ) ? $cached : null;
+		$found = isset( $cached['lat'], $cached['lng'] );
+		waymorphic_map_geocode_state( $found ? 'found' : 'none' );
+		return $found ? $cached : null;
+	}
+
+	// The search did not answer a short time ago. A page with many addresses must
+	// not wait for each of them: one page view waits, at most each five minutes.
+	if ( $down || get_transient( 'waymorphic_map_geo_down' ) ) {
+		waymorphic_map_geocode_state( 'down' );
+		return null;
 	}
 
 	$result   = null;
-	$failed   = true;
-	$response = wp_remote_get(
-		add_query_arg(
-			array(
-				'q'     => rawurlencode( $address ),
-				'limit' => 1,
-			),
-			waymorphic_map_tiles_url() . '/search'
-		),
-		array( 'timeout' => 5 )
-	);
+	$response = wp_remote_get( add_query_arg( $query, waymorphic_map_tiles_url() . '/search' ), array( 'timeout' => 4 ) );
 
-	if ( ! is_wp_error( $response ) && 200 === wp_remote_retrieve_response_code( $response ) ) {
-		$failed = false;
-		$data   = json_decode( wp_remote_retrieve_body( $response ), true );
-		$point  = isset( $data['features'][0]['geometry']['coordinates'] ) ? $data['features'][0]['geometry']['coordinates'] : null;
-		if ( is_array( $point ) && isset( $point[0], $point[1] ) && is_numeric( $point[0] ) && is_numeric( $point[1] ) ) {
-			$result = array(
-				'lat' => (float) $point[1],
-				'lng' => (float) $point[0],
-			);
-		}
+	if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) {
+		$down = true;
+		set_transient( 'waymorphic_map_geo_down', 1, 5 * MINUTE_IN_SECONDS );
+		waymorphic_map_geocode_state( 'down' );
+		return null;
 	}
 
-	if ( $result ) {
-		set_transient( $key, $result, MONTH_IN_SECONDS );
-	} else {
-		// Keep "not found" for a day, and an error for a few minutes, then try again.
-		set_transient( $key, array( 'none' => true ), $failed ? 5 * MINUTE_IN_SECONDS : DAY_IN_SECONDS );
+	$data  = json_decode( wp_remote_retrieve_body( $response ), true );
+	$point = isset( $data['features'][0]['geometry']['coordinates'] ) ? $data['features'][0]['geometry']['coordinates'] : null;
+	if ( is_array( $point ) && isset( $point[0], $point[1] ) && is_numeric( $point[0] ) && is_numeric( $point[1] ) ) {
+		$result = array(
+			'lat' => (float) $point[1],
+			'lng' => (float) $point[0],
+		);
 	}
+
+	// Keep a position for a year: an address does not move, and a marker must not go off the
+	// page because the search does not answer at the time of a new lookup. Keep "not found"
+	// for a day.
+	set_transient( $key, $result ? $result : array( 'none' => true ), $result ? YEAR_IN_SECONDS : DAY_IN_SECONDS );
+	waymorphic_map_geocode_state( $result ? 'found' : 'none' );
 
 	return $result;
+}
+
+/**
+ * The result of the last address lookup, for the message that the editors of a page see.
+ *
+ * @param string|null $state 'found', 'none' (the address was not found) or 'down' (the search
+ *                           did not answer) to set the result. Null to read it.
+ * @return string
+ */
+function waymorphic_map_geocode_state( $state = null ) {
+	static $last = '';
+	if ( null !== $state ) {
+		$last = $state;
+	}
+	return $last;
 }

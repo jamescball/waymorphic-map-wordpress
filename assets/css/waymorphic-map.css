@@ -1,3 +1,29 @@
+/**
+ * Waymorphic Map: the map, and the parts around it (the search, the category
+ * buttons, the list of the markers).
+ *
+ * Themes have rules for all buttons, fields, lists and links of a page. Those
+ * rules must not change the parts of the map. Thus the rules for the parts
+ * start with a reset, and each selector has ":not(#_)": it matches all
+ * elements and makes the rule stronger than the element rules of a theme.
+ *
+ * To change the look, set these variables on a parent of the map, for example
+ * on body or on .wp-block-waymorphic-map:
+ *
+ *   --waymorphic-map-accent       buttons, links, the selected state   #1f6feb
+ *   --waymorphic-map-accent-text  text on the accent colour             #fff
+ *   --waymorphic-map-text         text                                  #1d2327
+ *   --waymorphic-map-muted        secondary text                        #50575e
+ *   --waymorphic-map-surface      background of the fields and the list #fff
+ *   --waymorphic-map-border       border of the fields and the buttons  #8c8f94
+ *   --waymorphic-map-line         lines in the list                     #dcdcde
+ *   --waymorphic-map-radius       corners                               4px
+ *   --waymorphic-map-font-size    text size of the parts                14px
+ *   --waymorphic-map-list-height  largest height of the list            320px
+ *   --waymorphic-map-scheme       light or dark, for the browser parts  light
+ *   --waymorphic-map-scroll-space space above the map after a scroll    4rem
+ */
+
 .waymorphic-map {
 	position: relative;
 	width: 100%;
@@ -5,68 +31,358 @@
 	height: 400px;
 	overflow: hidden;
 	background: #e9ecef;
+	/* The layers of the map stay in the map: its messages do not go above a header that stays at the top of the window. */
+	isolation: isolate;
+	/* A click on a row of the list scrolls to the map. This is the space for a header that stays at the top. */
+	scroll-margin-top: var(--waymorphic-map-scroll-space, 4rem);
 }
 
-/* Themes style links, buttons and images in the content. Keep them off the map. */
-.waymorphic-map .maplibregl-ctrl button {
-	box-shadow: none;
-	min-width: 0;
-	min-height: 0;
+.waymorphic-map,
+.waymorphic-map__tools,
+.waymorphic-map__list {
+	--wm-accent: var(--waymorphic-map-accent, #1f6feb);
+	--wm-accent-text: var(--waymorphic-map-accent-text, #fff);
+	--wm-text: var(--waymorphic-map-text, #1d2327);
+	--wm-muted: var(--waymorphic-map-muted, #50575e);
+	--wm-surface: var(--waymorphic-map-surface, #fff);
+	--wm-border: var(--waymorphic-map-border, #8c8f94);
+	--wm-line: var(--waymorphic-map-line, #dcdcde);
+	--wm-radius: var(--waymorphic-map-radius, 4px);
+	--wm-font-size: var(--waymorphic-map-font-size, 14px);
 }
 
-.waymorphic-map .maplibregl-ctrl-attrib a {
-	text-decoration: none;
-}
-
-.waymorphic-map .maplibregl-popup-content {
-	color: #1d2327;
-	font-size: 14px;
-	line-height: 1.4;
-	padding: 12px 28px 12px 14px;
-}
-
-.waymorphic-map .maplibregl-popup-content p {
-	margin: 0 0 0.5em;
-}
-
-.waymorphic-map .maplibregl-popup-content > :last-child {
-	margin-bottom: 0;
-}
-
-.waymorphic-map .maplibregl-popup-content img {
-	max-width: 100%;
-	height: auto;
-}
-
-.waymorphic-map__error {
+.waymorphic-map__error,
+.waymorphic-map noscript {
+	display: block;
 	margin: 0;
 	padding: 1em;
 	font-size: 14px;
+	line-height: 1.4;
 	color: #50575e;
 }
 
-/* The directions link in a popup and in the list. */
-.waymorphic-map .waymorphic-map__directions-line {
-	margin: 0.5em 0 0;
+/* The map did not load: the message is on the map, above the markers. */
+.waymorphic-map .waymorphic-map__error--over {
+	position: absolute;
+	z-index: 2;
+	top: 0;
+	right: 0;
+	left: 0;
+	padding: 0.6em 1em;
+	background: rgba(255, 255, 255, 0.92);
+	color: #1d2327;
+	pointer-events: none;
 }
 
-.waymorphic-map__directions {
-	font-size: 13px;
-	white-space: nowrap;
+/* The map is not there (the button below starts it again): its search and its list do nothing. */
+.waymorphic-map__tools:not(#_)[inert],
+.waymorphic-map__list:not(#_)[inert] {
+	opacity: 0.55;
+}
+
+/* The browser took the drawing context of the map away: a button starts the map again. */
+.waymorphic-map:not(#_) .waymorphic-map__again {
+	all: unset;
+	box-sizing: border-box;
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	max-width: calc(100% - 20px);
+	padding: 10px 18px;
+	border-radius: 4px;
+	background: var(--waymorphic-map-accent, #1f6feb);
+	color: var(--waymorphic-map-accent-text, #fff);
+	font: 600 14px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+	text-align: center;
+	cursor: pointer;
+}
+
+.waymorphic-map:not(#_) .waymorphic-map__again:focus-visible {
+	outline: 2px solid var(--waymorphic-map-accent, #1f6feb);
+	outline-offset: 2px;
+}
+
+/* The message for the editors of the page: an address that was not found, for example. */
+.waymorphic-map__notice:not(#_) {
+	box-sizing: border-box;
+	margin: 8px 0 0;
+	padding: 10px 14px;
+	border: 1px solid #dba617;
+	border-radius: 4px;
+	background: #fcf9e8;
+	color: #1d2327;
+	font-size: 14px;
+	line-height: 1.5;
+}
+
+.waymorphic-map__notice:not(#_) ul {
+	margin: 4px 0 0;
+	padding: 0 0 0 1.3em;
+	list-style: disc;
+}
+
+[dir="rtl"] .waymorphic-map__notice:not(#_) ul {
+	padding: 0 1.3em 0 0;
+}
+
+.waymorphic-map__notice:not(#_) li {
+	margin: 0;
+	padding: 0;
+	color: inherit;
+}
+
+/* The browser cannot show the map: the box is as high as the message. */
+.waymorphic-map.is-failed {
+	height: auto !important;
+}
+
+/* ---------------------------------------------------------------------------
+ * The parts of MapLibre in the map. A theme must not change its buttons.
+ * ------------------------------------------------------------------------ */
+
+.waymorphic-map:not(#_) .maplibregl-ctrl-group button {
+	box-sizing: border-box;
+	display: block;
+	width: 29px;
+	min-width: 0;
+	height: 29px;
+	min-height: 0;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	border-radius: 0;
+	background: transparent;
+	box-shadow: none;
+	color: #333;
+	font: inherit;
+	letter-spacing: normal;
+	text-transform: none;
+	opacity: 1;
+	outline: none;
+	transition: none;
+	cursor: pointer;
+}
+
+.waymorphic-map:not(#_) .maplibregl-ctrl-group button + button {
+	border-top: 1px solid #ddd;
+}
+
+.waymorphic-map:not(#_) .maplibregl-ctrl-group button:first-child {
+	border-radius: 4px 4px 0 0;
+}
+
+.waymorphic-map:not(#_) .maplibregl-ctrl-group button:last-child {
+	border-radius: 0 0 4px 4px;
+}
+
+.waymorphic-map:not(#_) .maplibregl-ctrl-group button:only-child {
+	border-radius: 4px;
+}
+
+.waymorphic-map:not(#_) .maplibregl-ctrl-group button:not(:disabled):hover,
+.waymorphic-map:not(#_) .maplibregl-ctrl-group button:not(:disabled):active {
+	background: rgba(0, 0, 0, 0.05);
+}
+
+.waymorphic-map:not(#_) .maplibregl-ctrl-group button:disabled {
+	cursor: not-allowed;
+}
+
+.waymorphic-map:not(#_) .maplibregl-ctrl-group button:focus-visible {
+	box-shadow: 0 0 2px 2px #0096ff;
+}
+
+.waymorphic-map:not(#_) .maplibregl-ctrl-attrib a {
+	padding: 0;
+	border: 0;
+	background: none;
+	box-shadow: none;
+	color: rgba(0, 0, 0, 0.75);
+	font: inherit;
+	text-decoration: none;
+}
+
+.waymorphic-map:not(#_) .maplibregl-ctrl-attrib a:hover {
+	color: inherit;
+	text-decoration: underline;
+}
+
+/* The map has the keyboard focus (the arrow keys move it). The usual ring is outside the map, where it does not show. */
+.waymorphic-map:not(#_) .maplibregl-canvas:focus-visible {
+	outline: 3px solid var(--wm-accent);
+	outline-offset: -3px;
+}
+
+/* A popup is above the buttons of the map. */
+.waymorphic-map .maplibregl-popup {
+	z-index: 3;
+}
+
+/* The popup of a marker or a shape. */
+.waymorphic-map:not(#_) .maplibregl-popup-content {
+	padding: 12px 30px 12px 14px;
+	color: #1d2327;
+	font-size: 14px;
+	line-height: 1.4;
+	text-align: start;
+	overflow-wrap: break-word;
+}
+
+.waymorphic-map:not(#_) .maplibregl-popup-close-button {
+	box-sizing: border-box;
+	width: 28px;
+	min-width: 0;
+	height: 28px;
+	min-height: 0;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	border-radius: 0 3px 0 0;
+	background: transparent;
+	box-shadow: none;
+	color: #50575e;
+	font: 400 18px/1 Arial, Helvetica, sans-serif;
+	letter-spacing: normal;
+	text-align: center;
+	text-shadow: none;
+	text-transform: none;
+	opacity: 1;
+	transition: none;
+	cursor: pointer;
+}
+
+.waymorphic-map:not(#_) .maplibregl-popup-close-button:hover {
+	background: rgba(0, 0, 0, 0.05);
+	color: #1d2327;
+}
+
+.waymorphic-map:not(#_) .maplibregl-popup-close-button:focus-visible {
+	outline: 2px solid var(--wm-accent);
+	outline-offset: -2px;
+}
+
+.waymorphic-map__popup {
+	overflow-y: auto;
+}
+
+/* The popup is white on each site: its text does not take the colours of a dark theme. */
+.waymorphic-map:not(#_) .waymorphic-map__popup h1,
+.waymorphic-map:not(#_) .waymorphic-map__popup h2,
+.waymorphic-map:not(#_) .waymorphic-map__popup h3,
+.waymorphic-map:not(#_) .waymorphic-map__popup h4,
+.waymorphic-map:not(#_) .waymorphic-map__popup h5,
+.waymorphic-map:not(#_) .waymorphic-map__popup h6,
+.waymorphic-map:not(#_) .waymorphic-map__popup p,
+.waymorphic-map:not(#_) .waymorphic-map__popup li,
+.waymorphic-map:not(#_) .waymorphic-map__popup strong,
+.waymorphic-map:not(#_) .waymorphic-map__popup em,
+.waymorphic-map:not(#_) .waymorphic-map__popup span {
+	color: inherit;
+}
+
+.waymorphic-map:not(#_) .waymorphic-map__popup a:not(.waymorphic-map__menu-item) {
+	padding: 0;
+	border: 0;
+	background: none;
+	box-shadow: none;
+	color: var(--wm-accent);
+	font-weight: inherit;
+}
+
+/* A popup is small: the sizes that a theme has for the headings and the lists of a page are too large. */
+.waymorphic-map:not(#_) .waymorphic-map__popup p {
+	margin: 0 0 0.5em;
+	padding: 0;
+}
+
+.waymorphic-map:not(#_) .waymorphic-map__popup h1,
+.waymorphic-map:not(#_) .waymorphic-map__popup h2,
+.waymorphic-map:not(#_) .waymorphic-map__popup h3,
+.waymorphic-map:not(#_) .waymorphic-map__popup h4,
+.waymorphic-map:not(#_) .waymorphic-map__popup h5,
+.waymorphic-map:not(#_) .waymorphic-map__popup h6 {
+	margin: 0 0 0.4em;
+	padding: 0;
+	font-family: inherit;
+	font-size: 1.15em;
+	font-weight: 600;
+	line-height: 1.3;
+	letter-spacing: normal;
+	text-transform: none;
+}
+
+.waymorphic-map:not(#_) .waymorphic-map__popup ul,
+.waymorphic-map:not(#_) .waymorphic-map__popup ol {
+	margin: 0 0 0.5em;
+	padding: 0 0 0 1.4em;
+	font: inherit;
+}
+
+[dir="rtl"] .waymorphic-map:not(#_) .waymorphic-map__popup ul,
+[dir="rtl"] .waymorphic-map:not(#_) .waymorphic-map__popup ol {
+	padding: 0 1.4em 0 0;
+}
+
+.waymorphic-map:not(#_) .waymorphic-map__popup li {
+	margin: 0;
+	padding: 0;
+	line-height: inherit;
+}
+
+.waymorphic-map:not(#_) .waymorphic-map__popup > :last-child {
+	margin-bottom: 0;
+}
+
+.waymorphic-map:not(#_) .waymorphic-map__popup img {
+	max-width: 100%;
+	height: auto;
+	border-radius: 0;
+	box-shadow: none;
+}
+
+.waymorphic-map:not(#_) .waymorphic-map__directions-line {
+	margin: 0.5em 0 0;
 }
 
 /* A marker with a picture. */
 .waymorphic-map__icon {
-	cursor: pointer;
 	line-height: 0;
 }
 
-.waymorphic-map__icon img {
+/* A marker that shows a popup. */
+.waymorphic-map .waymorphic-map__marker--popup {
+	cursor: pointer;
+}
+
+.waymorphic-map:not(#_) .waymorphic-map__icon img {
 	display: block;
 	width: auto;
 	max-width: 64px;
 	height: auto;
 	max-height: 48px;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	border-radius: 0;
+	background: none;
+	box-shadow: none;
+}
+
+/* The place of a search for the nearest markers. */
+.waymorphic-map .waymorphic-map__origin {
+	box-sizing: border-box;
+	width: 18px;
+	height: 18px;
+	border: 3px solid #fff;
+	border-radius: 50%;
+	background: #1d2327;
+	box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25), 0 1px 5px rgba(0, 0, 0, 0.45);
+}
+
+/* The marker that the list or a click selected: above the others. */
+.waymorphic-map .waymorphic-map__marker--active {
+	z-index: 1;
 }
 
 /* The animations move the picture of the marker, not the marker: MapLibre sets the position on the marker. */
@@ -120,180 +436,581 @@
 	}
 }
 
+/* The buttons that open the popups of the shapes, for the keyboard. A button shows when it has the focus. */
+.waymorphic-map .waymorphic-map__shape-keys {
+	position: absolute;
+	top: 10px;
+	left: 10px;
+	z-index: 3;
+	max-width: calc(100% - 60px);
+}
+
+.waymorphic-map:not(#_) .waymorphic-map__shape-key {
+	position: absolute;
+	width: 1px;
+	min-width: 0;
+	height: 1px;
+	min-height: 0;
+	margin: -1px;
+	padding: 0;
+	overflow: hidden;
+	clip-path: inset(50%);
+	border: 0;
+	white-space: nowrap;
+}
+
+.waymorphic-map:not(#_) .waymorphic-map__shape-key:focus {
+	position: static;
+	display: block;
+	width: auto;
+	max-width: 100%;
+	height: auto;
+	margin: 0;
+	padding: 6px 10px;
+	overflow: hidden;
+	clip-path: none;
+	border: 1px solid var(--wm-border);
+	border-radius: var(--wm-radius);
+	background: var(--wm-surface);
+	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+	color: var(--wm-text);
+	font: 400 14px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+	letter-spacing: normal;
+	text-align: start;
+	text-overflow: ellipsis;
+	text-transform: none;
+	outline: 2px solid var(--wm-accent);
+	outline-offset: 1px;
+	cursor: pointer;
+}
+
+/* A group of markers that are near to each other. It is a marker of MapLibre: no reset of its position. */
+.waymorphic-map:not(#_) .waymorphic-map__group {
+	box-sizing: border-box;
+	display: block;
+	width: auto;
+	min-width: 38px;
+	max-width: none;
+	height: 38px;
+	min-height: 0;
+	margin: 0;
+	padding: 0 8px;
+	border: 3px solid rgba(255, 255, 255, 0.85);
+	border-radius: 19px;
+	background: var(--wm-accent);
+	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+	color: var(--wm-accent-text);
+	font: 600 14px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+	letter-spacing: normal;
+	text-align: center;
+	text-decoration: none;
+	text-shadow: none;
+	text-transform: none;
+	white-space: nowrap;
+	transition: opacity 0.2s;
+	cursor: pointer;
+}
+
+.waymorphic-map:not(#_) .waymorphic-map__group:hover {
+	background: var(--wm-accent);
+	color: var(--wm-accent-text);
+	filter: brightness(0.92);
+}
+
+.waymorphic-map:not(#_) .waymorphic-map__group:focus-visible {
+	outline: 2px solid var(--wm-accent);
+	outline-offset: 2px;
+}
+
+/* ---------------------------------------------------------------------------
+ * The parts around the map. First the reset.
+ * ------------------------------------------------------------------------ */
+
+.waymorphic-map__tools:not(#_),
+.waymorphic-map__tools:not(#_) :not(option),
+.waymorphic-map__list:not(#_),
+.waymorphic-map__list:not(#_) * {
+	all: unset;
+	box-sizing: border-box;
+}
+
+.waymorphic-map__tools:not(#_),
+.waymorphic-map__list:not(#_) {
+	/* The parts are light on each site: the browser draws its own pieces (the arrows of a scroll bar) to match. */
+	color-scheme: var(--waymorphic-map-scheme, light);
+	font-size: var(--wm-font-size);
+	font-style: normal;
+	font-weight: 400;
+	line-height: 1.4;
+	letter-spacing: normal;
+	text-align: start;
+	text-indent: 0;
+	text-shadow: none;
+	text-transform: none;
+	white-space: normal;
+	word-spacing: normal;
+}
+
+/* The reset removes the rule of the browser for the hidden attribute. */
+.waymorphic-map__tools:not(#_) [hidden],
+.waymorphic-map__list:not(#_)[hidden],
+.waymorphic-map__list:not(#_) [hidden] {
+	display: none !important;
+}
+
 /* The search and the category buttons above the map. */
-.waymorphic-map__tools {
+.waymorphic-map__tools:not(#_) {
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
+	max-width: 100%;
 	margin: 0 0 10px;
-	font-size: 14px;
-	line-height: 1.4;
 }
 
-.waymorphic-map__locator {
+/* The space for the search and the category buttons before the script makes them: the page does not jump. */
+.waymorphic-map__tools--wait:not(#_).has-locator,
+.waymorphic-map__tools--wait:not(#_).has-filter {
+	min-height: 40px;
+}
+
+.waymorphic-map__tools--wait:not(#_).has-locator.has-filter {
+	min-height: 80px;
+}
+
+@media (max-width: 600px) {
+	.waymorphic-map__tools--wait:not(#_).has-locator {
+		min-height: 88px;
+	}
+
+	.waymorphic-map__tools--wait:not(#_).has-locator.has-filter {
+		min-height: 128px;
+	}
+}
+
+.waymorphic-map__tools:not(#_) .waymorphic-map__locator {
 	display: flex;
 	flex-wrap: wrap;
 	align-items: center;
 	gap: 8px;
-	margin: 0;
 }
 
-.waymorphic-map__locator-input,
-.waymorphic-map__locator-radius {
-	box-sizing: border-box;
+.waymorphic-map__tools:not(#_) .waymorphic-map__locator-input,
+.waymorphic-map__tools:not(#_) .waymorphic-map__locator-radius {
+	display: block;
 	height: 40px;
-	margin: 0;
-	padding: 0 10px;
-	border: 1px solid #8c8f94;
-	border-radius: 4px;
-	background: #fff;
-	color: #1d2327;
-	font: inherit;
+	border: 1px solid var(--wm-border);
+	border-radius: var(--wm-radius);
+	background-color: var(--wm-surface);
+	color: var(--wm-text);
 }
 
-.waymorphic-map__locator-input {
+.waymorphic-map__tools:not(#_) .waymorphic-map__locator-input {
 	flex: 1 1 200px;
+	width: 100%;
 	min-width: 0;
+	padding: 0 10px;
+	cursor: text;
 }
 
-.waymorphic-map__button {
-	box-sizing: border-box;
-	height: 40px;
-	margin: 0;
-	padding: 0 14px;
-	border: 1px solid #1f6feb;
-	border-radius: 4px;
-	background: #1f6feb;
-	color: #fff;
-	font: inherit;
+.waymorphic-map__tools:not(#_) .waymorphic-map__locator-input::placeholder {
+	color: var(--wm-muted);
+	opacity: 1;
+}
+
+.waymorphic-map__tools:not(#_) .waymorphic-map__locator-radius {
+	flex: 0 0 auto;
+	align-items: center;
+	max-width: 100%;
+	padding: 0 30px 0 10px;
+	/* The text is in the middle of the field: the height less the two borders. */
+	line-height: 38px;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%2350575e' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+	background-repeat: no-repeat;
+	background-position: right 10px center;
 	cursor: pointer;
 }
 
-.waymorphic-map__button--plain {
-	background: #fff;
-	color: #1f6feb;
+[dir="rtl"] .waymorphic-map__tools:not(#_) .waymorphic-map__locator-radius {
+	padding: 0 10px 0 30px;
+	background-position: left 10px center;
 }
 
-.waymorphic-map__button[hidden] {
-	display: none;
+/* A telephone makes the page larger when a field with small text gets the focus. */
+@media (hover: none) and (pointer: coarse) {
+	.waymorphic-map__tools:not(#_) .waymorphic-map__locator-input,
+	.waymorphic-map__tools:not(#_) .waymorphic-map__locator-radius {
+		font-size: 16px;
+	}
 }
 
-.waymorphic-map__status {
+.waymorphic-map__tools:not(#_) .waymorphic-map__locator-input:focus,
+.waymorphic-map__tools:not(#_) .waymorphic-map__locator-radius:focus {
+	border-color: var(--wm-accent);
+	outline: 2px solid var(--wm-accent);
+	outline-offset: -1px;
+}
+
+.waymorphic-map__tools:not(#_) .waymorphic-map__button {
+	display: inline-flex;
+	flex: 0 1 auto;
+	align-items: center;
+	justify-content: center;
+	max-width: 100%;
+	min-height: 40px;
+	padding: 4px 14px;
+	border: 1px solid var(--wm-accent);
+	border-radius: var(--wm-radius);
+	background: var(--wm-accent);
+	color: var(--wm-accent-text);
+	text-align: center;
+	cursor: pointer;
+}
+
+.waymorphic-map__tools:not(#_) .waymorphic-map__button--plain {
+	background: var(--wm-surface);
+	color: var(--wm-accent);
+}
+
+.waymorphic-map__tools:not(#_) .waymorphic-map__button:hover {
+	filter: brightness(0.92);
+}
+
+.waymorphic-map__tools:not(#_) .waymorphic-map__button:active {
+	filter: brightness(0.84);
+}
+
+.waymorphic-map__tools:not(#_) .waymorphic-map__button:focus-visible,
+.waymorphic-map__tools:not(#_) .waymorphic-map__chip:focus-visible {
+	outline: 2px solid var(--wm-accent);
+	outline-offset: 2px;
+}
+
+/* The result of a search. It is on the background of the page: it has the text colour of the page. */
+.waymorphic-map__tools:not(#_) .waymorphic-map__status {
+	display: block;
 	flex: 1 1 100%;
-	margin: 0;
-	color: #50575e;
 }
 
-.waymorphic-map__status:empty {
+.waymorphic-map__tools:not(#_) .waymorphic-map__status:empty {
 	display: none;
 }
 
-.waymorphic-map__filter {
+.waymorphic-map__tools:not(#_) .waymorphic-map__filter {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 6px;
 }
 
-.waymorphic-map__chip {
-	margin: 0;
-	padding: 5px 12px;
-	border: 1px solid #8c8f94;
-	border-radius: 999px;
-	background: #fff;
-	color: #1d2327;
-	font: inherit;
+.waymorphic-map__tools:not(#_) .waymorphic-map__chip {
+	display: inline-flex;
+	align-items: center;
+	max-width: 100%;
+	min-height: 32px;
+	padding: 4px 12px;
+	border: 1px solid var(--wm-border);
+	border-radius: 16px;
+	background: var(--wm-surface);
+	color: var(--wm-text);
+	overflow-wrap: anywhere;
 	cursor: pointer;
 }
 
-.waymorphic-map__chip[aria-pressed="true"] {
-	border-color: #1f6feb;
-	background: #1f6feb;
-	color: #fff;
+.waymorphic-map__tools:not(#_) .waymorphic-map__chip:hover {
+	border-color: var(--wm-accent);
+}
+
+.waymorphic-map__tools:not(#_) .waymorphic-map__chip[aria-pressed="true"] {
+	border-color: var(--wm-accent);
+	background: var(--wm-accent);
+	color: var(--wm-accent-text);
 }
 
 /* The list of the markers below the map. */
-.waymorphic-map__list {
-	max-height: 320px;
+.waymorphic-map__list:not(#_) {
+	display: block;
+	color: var(--wm-text);
+	/* The script reads the position of each row in the list. */
+	position: relative;
+	/* The rows change with the width of the list, not of the window. */
+	container: waymorphic-map-list / inline-size;
+	max-width: 100%;
+	max-height: var(--waymorphic-map-list-height, 320px);
 	margin: 10px 0 0;
-	padding: 0;
+	overflow-x: hidden;
 	overflow-y: auto;
-	list-style: none;
-	border: 1px solid #dcdcde;
-	border-radius: 4px;
-	background: #fff;
-	font-size: 14px;
-	line-height: 1.4;
+	border: 1px solid var(--wm-line);
+	border-radius: var(--wm-radius);
+	/* The shadows at the top and the bottom show that the list has more rows. */
+	background:
+		linear-gradient(var(--wm-surface) 40%, rgba(255, 255, 255, 0)) top / 100% 30px no-repeat local,
+		linear-gradient(rgba(255, 255, 255, 0), var(--wm-surface) 60%) bottom / 100% 30px no-repeat local,
+		radial-gradient(farthest-side at 50% 0, rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0)) top / 100% 9px no-repeat scroll,
+		radial-gradient(farthest-side at 50% 100%, rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0)) bottom / 100% 9px no-repeat scroll,
+		var(--wm-surface);
 }
 
-.waymorphic-map__list[hidden] {
-	display: none;
-}
-
-.waymorphic-map__list-item {
+.waymorphic-map__list:not(#_) .waymorphic-map__list-item {
 	display: flex;
-	align-items: center;
-	gap: 12px;
-	margin: 0;
-	padding: 0 12px 0 0;
-	border-top: 1px solid #f0f0f1;
+	flex-wrap: wrap;
+	align-items: stretch;
+	border-top: 1px solid var(--wm-line);
 }
 
-.waymorphic-map__list-item:first-child {
+.waymorphic-map__list:not(#_) .waymorphic-map__list-item:first-child {
 	border-top: 0;
 }
 
-.waymorphic-map__list-button {
+/* The row is a button: the name with the category and the distance. */
+.waymorphic-map__list:not(#_) .waymorphic-map__list-button {
 	display: flex;
-	flex: 1 1 auto;
-	align-items: center;
+	flex: 1 1 11em;
+	align-items: flex-start;
 	gap: 10px;
 	min-width: 0;
-	margin: 0;
+	min-height: 40px;
 	padding: 10px 12px;
-	border: 0;
-	background: none;
-	color: #1d2327;
-	font: inherit;
-	text-align: left;
 	cursor: pointer;
 }
 
-.waymorphic-map__list-button:hover,
-.waymorphic-map__list-button:focus-visible {
-	background: #f6f7f7;
+.waymorphic-map__list:not(#_) .waymorphic-map__list-button:hover {
+	background: rgba(0, 0, 0, 0.04);
 }
 
-.waymorphic-map__list-dot {
-	flex: 0 0 auto;
+/* A row that is text only: the list below a map that the browser cannot show. */
+.waymorphic-map__list:not(#_) .waymorphic-map__list-button--text,
+.waymorphic-map__list:not(#_) .waymorphic-map__list-button--text:hover {
+	background: none;
+	cursor: auto;
+}
+
+.waymorphic-map__list:not(#_) .waymorphic-map__list-button:focus-visible {
+	outline: 2px solid var(--wm-accent);
+	outline-offset: -2px;
+}
+
+/* The row of the marker that shows its popup on the map. */
+.waymorphic-map__list:not(#_) .waymorphic-map__list-item.is-selected {
+	background: rgba(31, 111, 235, 0.1);
+	box-shadow: inset 3px 0 0 var(--wm-accent);
+}
+
+[dir="rtl"] .waymorphic-map__list:not(#_) .waymorphic-map__list-item.is-selected {
+	box-shadow: inset -3px 0 0 var(--wm-accent);
+}
+
+.waymorphic-map__list:not(#_) .waymorphic-map__list-dot {
+	display: block;
+	flex: 0 0 10px;
 	width: 10px;
 	height: 10px;
+	/* In the middle of the first line of the name. */
+	margin-top: calc(0.7em - 5px);
 	border-radius: 50%;
 }
 
-.waymorphic-map__list-name {
+/* The name, and the category and the distance: on one line if there is space, else on two. */
+.waymorphic-map__list:not(#_) .waymorphic-map__list-text {
+	display: flex;
+	flex: 1 1 auto;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: 2px 12px;
+	min-width: 0;
+}
+
+.waymorphic-map__list:not(#_) .waymorphic-map__list-name {
+	display: block;
 	flex: 1 1 auto;
 	min-width: 0;
-	overflow-wrap: anywhere;
+	overflow-wrap: break-word;
 }
 
-.waymorphic-map__list-detail {
-	flex: 0 0 auto;
-	color: #50575e;
-	font-size: 13px;
+.waymorphic-map__list:not(#_) .waymorphic-map__list-detail {
+	display: block;
+	flex: 0 1 auto;
+	min-width: 0;
+	max-width: 100%;
+	color: var(--wm-muted);
+	font-size: 0.93em;
+	overflow-wrap: break-word;
 }
 
-/* A group of markers that are near to each other. */
-.waymorphic-map .waymorphic-map__group {
-	box-sizing: border-box;
-	min-width: 38px;
-	height: 38px;
+/* ---------------------------------------------------------------------------
+ * The directions link, in a popup and in the list. With more than one map
+ * service, the link is a button that shows the list of the services.
+ * ------------------------------------------------------------------------ */
+
+.waymorphic-map:not(#_) .waymorphic-map__directions,
+.waymorphic-map__list:not(#_) .waymorphic-map__directions {
+	display: inline-block;
 	margin: 0;
-	padding: 0 8px;
-	border: 3px solid rgba(255, 255, 255, 0.85);
-	border-radius: 19px;
-	background: #1f6feb;
-	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
-	color: #fff;
-	font: 600 14px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+	padding: 0;
+	border: 0;
+	border-radius: 2px;
+	background: none;
+	box-shadow: none;
+	color: var(--wm-accent);
+	font: inherit;
+	font-size: 0.93em;
+	letter-spacing: normal;
+	text-decoration: underline;
+	text-transform: none;
+	white-space: nowrap;
 	cursor: pointer;
+}
+
+.waymorphic-map:not(#_) .waymorphic-map__directions:hover,
+.waymorphic-map__list:not(#_) .waymorphic-map__directions:hover {
+	background: none;
+	color: var(--wm-accent);
+	text-decoration: none;
+}
+
+.waymorphic-map:not(#_) .waymorphic-map__directions:focus-visible,
+.waymorphic-map__list:not(#_) .waymorphic-map__directions:focus-visible {
+	outline: 2px solid var(--wm-accent);
+	outline-offset: 2px;
+}
+
+/* A small arrow on the button that opens the list of the services. */
+.waymorphic-map:not(#_) .waymorphic-map__directions--menu::after,
+.waymorphic-map__list:not(#_) .waymorphic-map__directions--menu::after {
+	content: "";
+	display: inline-block;
+	width: 0;
+	height: 0;
+	margin: 0 0 0.1em 0.4em;
+	border: 0.3em solid transparent;
+	border-top-color: currentColor;
+	border-bottom: 0;
+	vertical-align: middle;
+}
+
+[dir="rtl"] .waymorphic-map:not(#_) .waymorphic-map__directions--menu::after,
+[dir="rtl"] .waymorphic-map__list:not(#_) .waymorphic-map__directions--menu::after {
+	margin: 0 0.4em 0.1em 0;
+}
+
+/* In the list, the link is at the end of the row. */
+.waymorphic-map__list:not(#_) .waymorphic-map__list-item > .waymorphic-map__directions,
+.waymorphic-map__list:not(#_) .waymorphic-map__list-item > .waymorphic-map__choice {
+	flex: 0 0 auto;
+	align-self: center;
+	margin: 0 0 0 auto;
+	padding: 8px 12px;
+}
+
+[dir="rtl"] .waymorphic-map__list:not(#_) .waymorphic-map__list-item > .waymorphic-map__directions,
+[dir="rtl"] .waymorphic-map__list:not(#_) .waymorphic-map__list-item > .waymorphic-map__choice {
+	margin: 0 auto 0 0;
+}
+
+.waymorphic-map:not(#_) .waymorphic-map__choice,
+.waymorphic-map__list:not(#_) .waymorphic-map__choice {
+	display: inline-block;
+}
+
+/* In a narrow list (a phone in a column, a sidebar), the link goes below the name, in line with it. */
+@container waymorphic-map-list (max-width: 300px) {
+	.waymorphic-map__list:not(#_) .waymorphic-map__list-button {
+		flex-basis: 100%;
+		padding-bottom: 4px;
+	}
+
+	.waymorphic-map__list:not(#_) .waymorphic-map__list-item > .waymorphic-map__directions,
+	.waymorphic-map__list:not(#_) .waymorphic-map__list-item > .waymorphic-map__choice {
+		margin: 0;
+		padding: 0 12px 10px 32px;
+	}
+
+	[dir="rtl"] .waymorphic-map__list:not(#_) .waymorphic-map__list-item > .waymorphic-map__directions,
+	[dir="rtl"] .waymorphic-map__list:not(#_) .waymorphic-map__list-item > .waymorphic-map__choice {
+		margin: 0;
+		padding: 0 32px 10px 12px;
+	}
+}
+
+/* The list of the map services. Where the browser can, it shows above the page (a popover). */
+.waymorphic-map:not(#_) .waymorphic-map__menu,
+.waymorphic-map__list:not(#_) .waymorphic-map__menu {
+	display: none;
+	box-sizing: border-box;
+	width: max-content;
+	min-width: 150px;
+	max-width: calc(100vw - 16px);
+	margin: 4px 0 0;
+	padding: 4px;
+	border: 1px solid var(--wm-line);
+	border-radius: 6px;
+	background: var(--wm-surface);
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+	color: var(--wm-text);
+	font-size: var(--wm-font-size);
+	line-height: 1.4;
+	text-align: start;
+	white-space: normal;
+}
+
+.waymorphic-map:not(#_) .waymorphic-map__menu.is-open,
+.waymorphic-map__list:not(#_) .waymorphic-map__menu.is-open {
+	display: block;
+}
+
+.waymorphic-map:not(#_) .waymorphic-map__menu[popover],
+.waymorphic-map__list:not(#_) .waymorphic-map__menu[popover] {
+	position: fixed;
+	inset: auto;
+	margin: 0;
+	overflow: visible;
+}
+
+.waymorphic-map:not(#_) .waymorphic-map__menu-item,
+.waymorphic-map__list:not(#_) .waymorphic-map__menu-item {
+	display: block;
+	margin: 0;
+	padding: 8px 12px;
+	border: 0;
+	border-radius: 4px;
+	background: none;
+	box-shadow: none;
+	color: var(--wm-text);
+	font: inherit;
+	letter-spacing: normal;
+	text-decoration: none;
+	text-transform: none;
+	white-space: nowrap;
+	cursor: pointer;
+}
+
+.waymorphic-map:not(#_) .waymorphic-map__menu-item:hover,
+.waymorphic-map__list:not(#_) .waymorphic-map__menu-item:hover {
+	background: rgba(0, 0, 0, 0.06);
+	color: var(--wm-text);
+	text-decoration: none;
+}
+
+.waymorphic-map:not(#_) .waymorphic-map__menu-item:focus-visible,
+.waymorphic-map__list:not(#_) .waymorphic-map__menu-item:focus-visible {
+	outline: 2px solid var(--wm-accent);
+	outline-offset: -2px;
+}
+
+/* Windows contrast themes: the selected states stay visible. */
+@media (forced-colors: active) {
+	.waymorphic-map__tools:not(#_) .waymorphic-map__chip[aria-pressed="true"],
+	.waymorphic-map__list:not(#_) .waymorphic-map__list-item.is-selected {
+		background: Highlight;
+		color: HighlightText;
+		forced-color-adjust: none;
+	}
+
+	.waymorphic-map__list:not(#_) .waymorphic-map__list-item.is-selected .waymorphic-map__list-detail,
+	.waymorphic-map__list:not(#_) .waymorphic-map__list-item.is-selected .waymorphic-map__directions {
+		color: inherit;
+	}
+
+	/* The dot has the colour of its marker. */
+	.waymorphic-map__list:not(#_) .waymorphic-map__list-dot {
+		forced-color-adjust: none;
+	}
 }

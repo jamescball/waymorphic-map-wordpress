@@ -3,7 +3,7 @@
  * Plugin Name:       Free Maps - Waymorphic Map & Custom Maps
  * Plugin URI:        https://github.com/jamescball/waymorphic-map-wordpress
  * Description:       Free OpenStreetMap vector maps for WordPress. A block and a shortcode, five map styles, markers, shapes, a marker list and a search for the nearest markers. No API key, no account.
- * Version:           1.1.0
+ * Version:           1.2.0
  * Requires at least: 6.3
  * Requires PHP:      7.4
  * Author:            James Ball
@@ -19,7 +19,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'WAYMORPHIC_MAP_VERSION', '1.1.0' );
+if ( defined( 'WAYMORPHIC_MAP_VERSION' ) ) {
+	// A second copy of the plugin is active (the folder of version 1.1 had a different name). One copy runs.
+	return;
+}
+
+define( 'WAYMORPHIC_MAP_VERSION', '1.2.0' );
 define( 'WAYMORPHIC_MAP_MAPLIBRE_VERSION', '5.21.0' );
 define( 'WAYMORPHIC_MAP_FILE', __FILE__ );
 define( 'WAYMORPHIC_MAP_DIR', plugin_dir_path( __FILE__ ) );
@@ -34,6 +39,8 @@ require_once WAYMORPHIC_MAP_DIR . 'includes/settings.php';
 add_action( 'init', 'waymorphic_map_register_assets', 5 );
 add_action( 'init', 'waymorphic_map_register_shortcodes' );
 add_action( 'init', 'waymorphic_map_register_block' );
+add_action( 'enqueue_block_assets', 'waymorphic_map_editor_assets' );
+add_action( 'wp_enqueue_scripts', 'waymorphic_map_enqueue_early' );
 add_action( 'admin_init', 'waymorphic_map_register_settings' );
 add_action( 'admin_menu', 'waymorphic_map_add_settings_page' );
 add_filter( 'plugin_action_links_' . plugin_basename( __FILE__ ), 'waymorphic_map_action_links' );

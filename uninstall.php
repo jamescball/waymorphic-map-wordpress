@@ -9,8 +9,32 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 	exit;
 }
 
-delete_option( 'waymorphic_map_options' );
+/**
+ * Removes the data of the plugin from the site that is active.
+ */
+function waymorphic_map_uninstall_site() {
+	global $wpdb;
 
-// The kept answers of the address lookup.
-global $wpdb;
-$wpdb->query( "DELETE FROM {$wpdb->options} WHERE option_name LIKE '\_transient\_waymorphic\_map\_geo\_%' OR option_name LIKE '\_transient\_timeout\_waymorphic\_map\_geo\_%'" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+	delete_option( 'waymorphic_map_options' );
+	delete_transient( 'waymorphic_map_geo_down' );
+
+	// The kept answers of the address lookup.
+	$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->prepare(
+			"DELETE FROM {$wpdb->options} WHERE option_name LIKE %s OR option_name LIKE %s",
+			$wpdb->esc_like( '_transient_waymorphic_map_geo_' ) . '%',
+			$wpdb->esc_like( '_transient_timeout_waymorphic_map_geo_' ) . '%'
+		)
+	);
+}
+
+if ( is_multisite() ) {
+	// WordPress runs this file one time for a network: each site has its options.
+	foreach ( get_sites( array( 'fields' => 'ids', 'number' => 0 ) ) as $waymorphic_map_site_id ) {
+		switch_to_blog( $waymorphic_map_site_id );
+		waymorphic_map_uninstall_site();
+		restore_current_blog();
+	}
+} else {
+	waymorphic_map_uninstall_site();
+}

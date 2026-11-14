@@ -26,10 +26,11 @@ function waymorphic_map_register_settings() {
 	add_settings_section( 'waymorphic_map_defaults', __( 'Defaults', 'free-maps' ), 'waymorphic_map_section_text', 'waymorphic_map' );
 
 	$fields = array(
-		'style'     => __( 'Map style', 'free-maps' ),
-		'height'    => __( 'Height', 'free-maps' ),
-		'zoom'      => __( 'Zoom', 'free-maps' ),
-		'tiles_url' => __( 'Tile server URL', 'free-maps' ),
+		'style'      => __( 'Map style', 'free-maps' ),
+		'height'     => __( 'Height', 'free-maps' ),
+		'zoom'       => __( 'Zoom', 'free-maps' ),
+		'directions' => __( 'Directions link', 'free-maps' ),
+		'tiles_url'  => __( 'Tile server URL', 'free-maps' ),
 	);
 	foreach ( $fields as $name => $label ) {
 		add_settings_field(
@@ -81,6 +82,17 @@ function waymorphic_map_field( $args ) {
 		case 'zoom':
 			echo '<input type="number" class="small-text" min="0" max="22" step="0.5" id="' . esc_attr( $id ) . '" name="' . esc_attr( $input ) . '" value="' . esc_attr( $options['zoom'] ) . '">';
 			echo '<p class="description">' . esc_html__( '0 shows the world, 12 a town, 16 a street.', 'free-maps' ) . '</p>';
+			break;
+
+		case 'directions':
+			$current = waymorphic_map_default_directions();
+			echo '<select id="' . esc_attr( $id ) . '" name="' . esc_attr( $input ) . '">';
+			foreach ( waymorphic_map_directions_services() as $value => $service ) {
+				echo '<option value="' . esc_attr( $value ) . '"' . selected( $current, $value, false ) . '>' . esc_html( $service['label'] ) . '</option>';
+			}
+			echo '<option value="choice"' . selected( $current, 'choice', false ) . '>' . esc_html__( 'The visitor selects (a list of these services)', 'free-maps' ) . '</option>';
+			echo '</select>';
+			echo '<p class="description">' . esc_html__( 'The map service that the directions link of a map opens. The link shows on the maps that have the directions link on. A map can have its own service.', 'free-maps' ) . '</p>';
 			break;
 
 		case 'tiles_url':

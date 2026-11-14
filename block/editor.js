@@ -13,6 +13,8 @@
 	var sprintf = wp.i18n.sprintf;
 	var components = wp.components;
 	var settings = window.waymorphicMapEditor || {};
+	// The map services of the directions link: their labels by their names.
+	var directionsServices = settings.directionsServices || {};
 
 	var WORLD = { lat: 20, lng: 0, zoom: 1 };
 	var MARKER_COLOUR = '#1f6feb';
@@ -40,6 +42,14 @@
 			return [ point[ 1 ], point[ 0 ] ];
 		} );
 		var item = { type: shape.type, points: points, colour: shape.colour, fill: shape.fill, radius: shape.radius };
+		if ( shape.type === 'polygon' && Array.isArray( shape.holes ) ) {
+			// The holes of a polygon that came from a file.
+			item.holes = shape.holes.map( function ( hole ) {
+				return ( Array.isArray( hole ) ? hole : [] ).map( function ( point ) {
+					return [ point[ 1 ], point[ 0 ] ];
+				} );
+			} );
+		}
 		if ( shape.type === 'rectangle' ) {
 			if ( points.length < 2 ) {
 				return null;
@@ -83,10 +93,84 @@
 		return settings.tilesUrl + '/styles/' + ( name || settings.defaultStyle );
 	}
 
+	/**
+	 * The height of a map as the page shows it: the same rule as
+	 * waymorphic_map_clean_length() in PHP. A number is in pixels. A value that
+	 * is not a height gives the default height.
+	 *
+	 * @return {string} A CSS length, or '' when the value is not a height.
+	 */
+	function cleanHeight( value ) {
+		var match = /^(\d+(?:\.\d+)?)(px|vh|vw|em|rem)?$/.exec( String( value || '' ).trim().toLowerCase() );
+		return match && parseFloat( match[ 1 ] ) > 0 ? match[ 1 ] + ( match[ 2 ] || 'px' ) : '';
+	}
+
+	/**
+	 * A number field. While the user types, the field shows the text as typed
+	 * (a minus sign, a zero at the end). The value changes when the text is a
+	 * number. An empty field keeps the value.
+	 *
+	 * props: label, help, value (a number or undefined), min, max, step, onChange( number ).
+	 */
+	function NumberField( props ) {
+		// The text while the user types, else null.
+		var draftState = useState( null );
+		var draft = draftState[ 0 ];
+		var setDraft = draftState[ 1 ];
+
+		return el(
+			components.TextControl,
+			next( {
+				label: props.label,
+				help: props.help,
+				type: 'number',
+				min: props.min,
+				max: props.max,
+				step: props.step || 'any',
+				value: draft !== null ? draft : isNumber( props.value ) ? String( props.value ) : '',
+				onChange: function ( value ) {
+					var number = parseFloat( value );
+					setDraft( value );
+					if ( isFinite( number ) ) {
+						props.onChange( Math.max( props.min, Math.min( props.max, number ) ) );
+					}
+				},
+				onBlur: function () {
+					setDraft( null );
+				},
+			} )
+		);
+	}
+
+	// True for Ctrl+S or Cmd+S: the editor saves the page, also when the focus is in a field on the map.
+	function isSave( event ) {
+		return ( event.ctrlKey || event.metaKey ) && String( event.key ).toLowerCase() === 's';
+	}
+
 	// The editor must not use the keys that are typed in a field on the map.
 	function keepKeys( event ) {
-		event.stopPropagation();
+		if ( ! isSave( event ) ) {
+			event.stopPropagation();
+		}
 	}
+
+	// The zoom for a place of the search that has no size, by its type.
+	var PLACE_ZOOM = {
+		country: 5,
+		state: 7,
+		region: 7,
+		county: 9,
+		island: 10,
+		city: 11,
+		town: 13,
+		village: 14,
+		suburb: 14,
+		hamlet: 15,
+		neighbourhood: 15,
+		postcode: 15,
+		street: 16,
+		poi: 17,
+	};
 
 	/**
 	 * A search field with suggestions while the user types.
@@ -110,6 +194,9 @@
 		var idRef = useRef( 'waymorphic-search-' + Math.random().toString( 36 ).slice( 2 ) );
 		// The text of the place that was selected: no new search for it.
 		var pickedRef = useRef( '' );
+		// The text for which the user pressed Enter before its results were there.
+		var wantRef = useRef( '' );
+		var pickRef = useRef( null );
 
 		useEffect(
 			function () {
@@ -141,13 +228,35 @@
 								return feature.geometry && Array.isArray( feature.geometry.coordinates );
 							} );
 							setActive( 0 );
-							setResult( { status: results.length ? 'done' : 'empty', results: results } );
+							if ( wantRef.current === words && results.length ) {
+								// The user pressed Enter for this text: the first result.
+								wantRef.current = '';
+								pickRef.current( results[ 0 ] );
+								return;
+							}
+							wantRef.current = '';
+							setResult( { status: results.length ? 'done' : 'empty', results: results, query: words } );
+							if ( wp.a11y && wp.a11y.speak ) {
+								wp.a11y.speak(
+									results.length
+										? sprintf(
+												/* translators: %d: a number of places. */
+												__( 'Places found: %d. Use the up and down arrow keys.', 'free-maps' ),
+												results.length
+										  )
+										: __( 'Nothing found. Try a town, a street or a postcode.', 'free-maps' )
+								);
+							}
 						} )
 						.catch( function ( error ) {
 							if ( error && error.name === 'AbortError' ) {
 								return;
 							}
+							wantRef.current = '';
 							setResult( { status: 'error', results: [] } );
+							if ( wp.a11y && wp.a11y.speak ) {
+								wp.a11y.speak( __( 'The search did not answer. Try again.', 'free-maps' ) );
+							}
 						} );
 				}, 250 );
 
@@ -169,6 +278,7 @@
 			setResult( { status: 'idle', results: [] } );
 			props.onPick( feature );
 		}
+		pickRef.current = pick;
 
 		// The keys are handled on the field itself, before the editor gets them:
 		// the editor uses the arrow keys to go from block to block.
@@ -191,8 +301,13 @@
 		}, [] );
 
 		function onKeyDown( event ) {
+			if ( isSave( event ) ) {
+				return;
+			}
 			event.stopPropagation();
 			var count = result.results.length;
+			// The list can be for an older text: the search starts a short time after the last key.
+			var current = result.query === text.trim();
 			if ( event.key === 'ArrowDown' && count ) {
 				event.preventDefault();
 				setOpen( true );
@@ -202,13 +317,35 @@
 				setActive( ( active - 1 + count ) % count );
 			} else if ( event.key === 'Enter' ) {
 				event.preventDefault();
-				if ( count ) {
+				if ( count && current ) {
 					pick( result.results[ Math.min( active, count - 1 ) ] );
+				} else if ( text.trim().length >= 2 && result.status !== 'empty' && result.status !== 'error' ) {
+					// The results for this text are not there yet: take the first one when they come.
+					// Without this, "Paris" typed quickly gave a place from the list for "Par".
+					wantRef.current = text.trim();
 				}
 			} else if ( event.key === 'Escape' ) {
 				setOpen( false );
 			}
 		}
+
+		// The arrow keys can go to a suggestion that is below the visible part of the list.
+		var listRef = useRef( null );
+		useEffect(
+			function () {
+				var list = listRef.current;
+				var item = list && list.children[ active ];
+				if ( ! item ) {
+					return;
+				}
+				if ( item.offsetTop < list.scrollTop ) {
+					list.scrollTop = item.offsetTop;
+				} else if ( item.offsetTop + item.offsetHeight > list.scrollTop + list.clientHeight ) {
+					list.scrollTop = item.offsetTop + item.offsetHeight - list.clientHeight;
+				}
+			},
+			[ active, open, result ]
+		);
 
 		var message = {
 			empty: __( 'Nothing found. Try a town, a street or a postcode.', 'free-maps' ),
@@ -226,7 +363,7 @@
 				role: 'combobox',
 				'aria-label': __( 'Search for a place or an address', 'free-maps' ),
 				'aria-expanded': showList,
-				'aria-controls': listId,
+				'aria-controls': showList ? listId : undefined,
 				'aria-autocomplete': 'list',
 				'aria-activedescendant': showList && result.results.length ? idRef.current + '-' + active : undefined,
 				autoComplete: 'off',
@@ -235,6 +372,7 @@
 				autoFocus: !! props.autoFocus,
 				onChange: function ( event ) {
 					pickedRef.current = '';
+					wantRef.current = '';
 					setText( event.target.value );
 					setOpen( true );
 				},
@@ -249,7 +387,7 @@
 			showList
 				? el(
 						'ul',
-						{ className: 'waymorphic-search__list', role: 'listbox', id: listId },
+						{ className: 'waymorphic-search__list', role: 'listbox', id: listId, ref: listRef },
 						result.results.map( function ( feature, index ) {
 							var properties = feature.properties || {};
 							var name = properties.name || properties.label || feature.id;
@@ -275,7 +413,8 @@
 								detail ? el( 'span', null, detail ) : null
 							);
 						} ),
-						message ? el( 'li', { className: 'waymorphic-search__message', role: 'status' }, message ) : null
+						// The text is spoken with wp.a11y.speak(): a status is not a valid part of a listbox.
+						message ? el( 'li', { className: 'waymorphic-search__message', role: 'presentation' }, message ) : null
 				  )
 				: null
 		);
@@ -386,6 +525,15 @@
 		var readyState = useState( false );
 		var ready = readyState[ 0 ];
 		var setReady = readyState[ 1 ];
+		// True when the browser cannot show the map (no WebGL).
+		var failedState = useState( false );
+		var failed = failedState[ 0 ];
+		var setFailed = failedState[ 1 ];
+		// The part of the long list of markers or shapes that the sidebar shows.
+		var markerPageState = useState( 0 );
+		var setMarkerPage = markerPageState[ 1 ];
+		var shapePageState = useState( 0 );
+		var setShapePage = shapePageState[ 1 ];
 		// The place of the last search, while the map is still on it.
 		var placeState = useState( null );
 		var place = placeState[ 0 ];
@@ -411,6 +559,7 @@
 			var timer = null;
 			var map = null;
 			var stopped = false;
+			var watcher = null;
 
 			function make() {
 				if ( stopped ) {
@@ -427,11 +576,35 @@
 						center: [ lng, lat ],
 						zoom: zoom,
 						cooperativeGestures: true,
+						// The block saves the centre and the zoom only: the map of the page points north.
+						dragRotate: false,
+						pitchWithRotate: false,
+						touchPitch: false,
 					} );
 				} catch ( error ) {
+					// No WebGL, for example.
+					setFailed( true );
 					return;
 				}
-				map.addControl( new view.maplibregl.NavigationControl(), 'top-right' );
+				map.touchZoomRotate.disableRotation();
+				map.addControl( new view.maplibregl.NavigationControl( { showCompass: false } ), 'top-right' );
+				// A wide or a full block gets its width a moment after the block is made, and
+				// MapLibre does not see this first change: the map kept its first width.
+				var fit = function () {
+					if ( stopped ) {
+						return;
+					}
+					var canvas = map.getCanvas();
+					if ( Math.abs( canvas.clientWidth - node.clientWidth ) > 1 || Math.abs( canvas.clientHeight - node.clientHeight ) > 1 ) {
+						map.resize();
+					}
+				};
+				view.requestAnimationFrame( fit );
+				map.once( 'load', fit );
+				if ( view.ResizeObserver ) {
+					watcher = new view.ResizeObserver( fit );
+					watcher.observe( node );
+				}
 				// Only a move by the user changes the block. A resize fires moveend too.
 				map.on( 'moveend', function ( event ) {
 					if ( ! event.originalEvent ) {
@@ -498,6 +671,9 @@
 			return function () {
 				stopped = true;
 				view.clearTimeout( timer );
+				if ( watcher ) {
+					watcher.disconnect();
+				}
 				if ( map ) {
 					map.remove();
 				}
@@ -600,28 +776,58 @@
 				}
 				var node = containerRef.current;
 				var view = node.ownerDocument.defaultView;
-				markersRef.current.forEach( function ( marker ) {
-					marker.remove();
-				} );
+				var before = markersRef.current;
+				// A letter in a text field changes one marker: only that marker is made again.
+				// To make all the markers again for each key made the editor slow with many markers.
 				markersRef.current = markers.map( function ( item, index ) {
+					var key = JSON.stringify( item );
+					var old = before[ index ];
+					if ( old && old.key === key && editRef.current !== index ) {
+						return old;
+					}
+					if ( old && old.marker ) {
+						old.marker.remove();
+					}
+					if ( ! isNumber( item.lat ) || ! isNumber( item.lng ) ) {
+						// A marker with no position (changed block markup): the page does not show it.
+						return { key: key, marker: null };
+					}
 					var parts = markerForm( node.ownerDocument, item, index );
 					var markerOptions = { color: item.colour || MARKER_COLOUR, draggable: true };
+					var popup = new view.maplibregl.Popup( { maxWidth: 'min(280px, calc(100% - 20px))', focusAfterOpen: false } ).setDOMContent( parts.form );
 					if ( item.icon ) {
 						var image = node.ownerDocument.createElement( 'img' );
-						image.src = item.icon;
 						image.alt = '';
 						markerOptions = { element: node.ownerDocument.createElement( 'div' ), anchor: 'bottom', draggable: true };
 						markerOptions.element.className = 'waymorphic-map__icon';
 						markerOptions.element.appendChild( image );
+						// The form is above the picture, not on it.
+						popup.setOffset( 44 );
+						image.addEventListener( 'load', function () {
+							var width = markerOptions.element.offsetWidth || image.naturalWidth;
+							var height = markerOptions.element.offsetHeight || image.naturalHeight;
+							popup.setOffset( {
+								top: [ 0, 0 ],
+								'top-left': [ 0, 0 ],
+								'top-right': [ 0, 0 ],
+								bottom: [ 0, -height ],
+								'bottom-left': [ 0, -height ],
+								'bottom-right': [ 0, -height ],
+								left: [ width / 2, -height / 2 ],
+								right: [ -width / 2, -height / 2 ],
+							} );
+						} );
+						image.src = item.icon;
 					}
-					var marker = new view.maplibregl.Marker( markerOptions )
-						.setLngLat( [ item.lng, item.lat ] )
-						.setPopup( new view.maplibregl.Popup( { maxWidth: '280px', focusAfterOpen: false } ).setDOMContent( parts.form ) )
-						.addTo( map );
+					var marker = new view.maplibregl.Marker( markerOptions ).setLngLat( [ item.lng, item.lat ] ).setPopup( popup ).addTo( map );
 					marker.getElement().title = __( 'Drag to move. Click to change the text.', 'free-maps' );
 					marker.on( 'dragend', function () {
 						var position = marker.getLngLat().wrap();
-						updateMarker( index, { lat: round( position.lat, 5 ), lng: round( position.lng, 5 ) } );
+						updateMarker( index, { lat: round( position.lat, 5 ), lng: round( position.lng, 5 ) }, true );
+					} );
+					popup.on( 'open', function () {
+						// The sidebar shows the fields of this marker.
+						setMarkerPage( Math.floor( index / SIDEBAR_LIMIT ) );
 					} );
 					if ( editRef.current === index ) {
 						editRef.current = -1;
@@ -629,7 +835,12 @@
 						parts.input.focus( { preventScroll: true } );
 						parts.input.select();
 					}
-					return marker;
+					return { key: key, marker: marker };
+				} );
+				before.slice( markers.length ).forEach( function ( old ) {
+					if ( old.marker ) {
+						old.marker.remove();
+					}
 				} );
 			},
 			[ ready, markersKey ]
@@ -679,6 +890,16 @@
 			[ ready, shapesKey ]
 		);
 
+		// Makes a change that is one step for "Undo". Without this, the editor puts
+		// changes of the same attribute (three new markers) in one step.
+		function commit( change ) {
+			var editor = wp.data && wp.data.dispatch ? wp.data.dispatch( 'core/block-editor' ) : null;
+			setAttributes( change );
+			if ( editor && editor.__unstableMarkLastChangeAsPersistent ) {
+				editor.__unstableMarkLastChangeAsPersistent();
+			}
+		}
+
 		// Keep the view that the editor shows, when the block has no view.
 		function withView( change ) {
 			var map = mapRef.current;
@@ -693,7 +914,7 @@
 
 		function addShape( shape ) {
 			setDrawing( null );
-			setAttributes(
+			commit(
 				withView( {
 					shapes: ( attributesRef.current.shapes || [] ).concat( [ Object.assign( { colour: MARKER_COLOUR, label: '' }, shape ) ] ),
 				} )
@@ -709,7 +930,7 @@
 		}
 
 		function removeShape( index ) {
-			setAttributes( {
+			commit( {
 				shapes: ( attributesRef.current.shapes || [] ).filter( function ( item, i ) {
 					return i !== index;
 				} ),
@@ -753,7 +974,9 @@
 			}
 			var reader = new window.FileReader();
 			reader.onload = function () {
-				var data = script.parseData( String( reader.result || '' ), file.name );
+				// The file can be UTF-8 or the text of a spreadsheet program.
+				var content = script.decodeText ? script.decodeText( reader.result ) : new window.TextDecoder().decode( reader.result );
+				var data = script.parseData( content, file.name );
 				var before = attributesRef.current.markers || [];
 				var newMarkers = data.markers.slice( 0, Math.max( 0, 1000 - before.length ) ).map( function ( item ) {
 					return {
@@ -767,15 +990,22 @@
 					};
 				} );
 				var newShapes = data.shapes.slice( 0, 100 ).map( function ( item ) {
-					return {
-						type: item.type,
-						points: thin( item.points ).map( function ( point ) {
+					var blockPoints = function ( points ) {
+						return thin( points ).map( function ( point ) {
 							return [ round( point[ 1 ], 5 ), round( point[ 0 ], 5 ) ];
-						} ),
+						} );
+					};
+					var shape = {
+						type: item.type,
+						points: blockPoints( item.points ),
 						colour: item.colour || MARKER_COLOUR,
 						fill: item.fill,
 						label: item.text || '',
 					};
+					if ( item.holes && item.holes.length ) {
+						shape.holes = item.holes.slice( 0, 20 ).map( blockPoints );
+					}
+					return shape;
 				} );
 				if ( ! newMarkers.length && ! newShapes.length ) {
 					setNote( __( 'The file has no markers or shapes that the plugin can read.', 'free-maps' ) );
@@ -797,7 +1027,11 @@
 							bounds.extend( [ point[ 1 ], point[ 0 ] ] );
 						} );
 					} );
-					var camera = map.cameraForBounds( bounds, { padding: 60, maxZoom: 15 } );
+					// More space at the top: the search field is there.
+					var camera = map.cameraForBounds( bounds, { padding: { top: 110, right: 60, bottom: 60, left: 60 }, maxZoom: 15 } );
+					if ( ! camera ) {
+						camera = map.cameraForBounds( bounds, { padding: 20, maxZoom: 15 } );
+					}
 					if ( camera && isNumber( camera.zoom ) ) {
 						var centre = view.maplibregl.LngLat.convert( camera.center ).wrap();
 						change.lat = round( centre.lat, 5 );
@@ -807,28 +1041,38 @@
 				}
 				setSkipped( true );
 				setPlace( null );
-				setAttributes( change );
-				setNote(
-					sprintf(
-						/* translators: 1: a number of markers, 2: a number of shapes. */
-						__( 'Markers added: %1$d. Shapes added: %2$d.', 'free-maps' ),
-						newMarkers.length,
-						newShapes.length
-					)
+				commit( change );
+				var words = sprintf(
+					/* translators: 1: a number of markers, 2: a number of shapes. */
+					__( 'Markers added: %1$d. Shapes added: %2$d.', 'free-maps' ),
+					newMarkers.length,
+					newShapes.length
 				);
+				var left = data.markers.length - newMarkers.length + ( data.shapes.length - newShapes.length );
+				if ( left > 0 ) {
+					words +=
+						' ' +
+						sprintf(
+							/* translators: %d: a number of markers and shapes. */
+							__( 'Not added: %d. A block can have 1000 markers, and 100 shapes for each file.', 'free-maps' ),
+							left
+						);
+				}
+				setNote( words );
 			};
-			reader.readAsText( file );
+			reader.readAsArrayBuffer( file );
 		}
 
-		function updateMarker( index, change ) {
+		// step: the change is one step for "Undo" (a move, a colour). Not for each letter of a text.
+		function updateMarker( index, change, step ) {
 			var list = ( attributesRef.current.markers || [] ).map( function ( item, i ) {
 				return i === index ? Object.assign( {}, item, change ) : item;
 			} );
-			setAttributes( { markers: list } );
+			( step ? commit : setAttributes )( { markers: list } );
 		}
 
 		function removeMarker( index ) {
-			setAttributes( {
+			commit( {
 				markers: ( attributesRef.current.markers || [] ).filter( function ( item, i ) {
 					return i !== index;
 				} ),
@@ -841,6 +1085,22 @@
 			var centre = map ? map.getCenter().wrap() : { lat: lat, lng: lng };
 			var point = at && isNumber( at.lat ) ? at : { lat: centre.lat, lng: centre.lng, name: '' };
 			var list = attributesRef.current.markers || [];
+			if ( map && point !== at ) {
+				// A new marker at the centre does not go on top of a marker that is there.
+				var spot = map.project( [ point.lng, point.lat ] );
+				var taken = function () {
+					return list.some( function ( item ) {
+						var other = map.project( [ item.lng, item.lat ] );
+						return Math.abs( other.x - spot.x ) < 12 && Math.abs( other.y - spot.y ) < 12;
+					} );
+				};
+				for ( var tries = 0; tries < 12 && taken(); tries++ ) {
+					spot.x += 28;
+					spot.y += 14;
+				}
+				var free = map.unproject( spot ).wrap();
+				point = { lat: free.lat, lng: free.lng, name: '' };
+			}
 			var change = {
 				markers: list.concat( [
 					{ lat: round( point.lat, 5 ), lng: round( point.lng, 5 ), label: point.name || '', open: false },
@@ -854,7 +1114,7 @@
 			}
 			editRef.current = list.length;
 			setPlace( null );
-			setAttributes( change );
+			commit( change );
 		}
 
 		addRef.current = addMarker;
@@ -869,14 +1129,15 @@
 			} else {
 				setPlace( found );
 			}
-			setAttributes( change );
+			commit( change );
 		}
 
 		// Go to a search result.
 		function goTo( feature ) {
 			var point = feature.geometry.coordinates;
 			var properties = feature.properties || {};
-			var newZoom = 15;
+			// A country or a town is not shown at the zoom of a street.
+			var newZoom = PLACE_ZOOM[ properties.type ] || 15;
 			var map = mapRef.current;
 			if ( map && Array.isArray( feature.bbox ) && feature.bbox.length === 4 ) {
 				var camera = map.cameraForBounds(
@@ -922,23 +1183,73 @@
 				: null;
 		}
 
-		function numberField( label, key, min, max, step ) {
+		function numberField( label, key, min, max ) {
+			return el( NumberField, {
+				label: label,
+				value: attributes[ key ],
+				min: min,
+				max: max,
+				onChange: function ( number ) {
+					var change = {};
+					change[ key ] = number;
+					setAttributes( change );
+				},
+			} );
+		}
+
+		// The editor shows the height that the page shows.
+		var height = cleanHeight( attributes.height ) || settings.defaultHeight;
+		var badHeight = ( attributes.height || '' ).trim() !== '' && ! cleanHeight( attributes.height );
+
+		// The sidebar shows the fields of 30 markers or shapes at one time. A long list has pages.
+		function pageOf( count, page ) {
+			return Math.max( 0, Math.min( page, Math.ceil( count / SIDEBAR_LIMIT ) - 1 ) );
+		}
+		var markerPage = pageOf( markers.length, markerPageState[ 0 ] );
+		var shapePage = pageOf( shapes.length, shapePageState[ 0 ] );
+		function pager( count, page, setPage, key ) {
+			if ( count <= SIDEBAR_LIMIT ) {
+				return null;
+			}
+			var first = page * SIDEBAR_LIMIT + 1;
 			return el(
-				components.TextControl,
-				next( {
-					label: label,
-					type: 'number',
-					min: min,
-					max: max,
-					step: step,
-					value: isNumber( attributes[ key ] ) ? String( attributes[ key ] ) : '',
-					onChange: function ( value ) {
-						var number = parseFloat( value );
-						var change = {};
-						change[ key ] = isFinite( number ) ? Math.max( min, Math.min( max, number ) ) : undefined;
-						setAttributes( change );
+				'div',
+				{ key: key, style: { display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px', margin: '0 0 12px' } },
+				el(
+					components.Button,
+					{
+						variant: 'secondary',
+						size: 'small',
+						disabled: page === 0,
+						onClick: function () {
+							setPage( page - 1 );
+						},
 					},
-				} )
+					__( 'Previous', 'free-maps' )
+				),
+				el(
+					'span',
+					{ role: 'status' },
+					sprintf(
+						/* translators: 1: the number of the first item that shows, 2: the number of the last one, 3: the number of all the items. */
+						__( '%1$d to %2$d of %3$d', 'free-maps' ),
+						first,
+						Math.min( count, first + SIDEBAR_LIMIT - 1 ),
+						count
+					)
+				),
+				el(
+					components.Button,
+					{
+						variant: 'secondary',
+						size: 'small',
+						disabled: first + SIDEBAR_LIMIT > count,
+						onClick: function () {
+							setPage( page + 1 );
+						},
+					},
+					__( 'Next', 'free-maps' )
+				)
 			);
 		}
 
@@ -967,7 +1278,9 @@
 			el(
 				components.PanelBody,
 				{ title: __( 'Markers', 'free-maps' ), initialOpen: true },
-				markers.slice( 0, SIDEBAR_LIMIT ).map( function ( item, index ) {
+				pager( markers.length, markerPage, setMarkerPage, 'top' ),
+				markers.slice( markerPage * SIDEBAR_LIMIT, ( markerPage + 1 ) * SIDEBAR_LIMIT ).map( function ( item, offset ) {
+					var index = markerPage * SIDEBAR_LIMIT + offset;
 					return el(
 						'div',
 						{ key: index, style: { marginBottom: '16px', paddingBottom: '16px', borderBottom: '1px solid #ddd' } },
@@ -1001,7 +1314,7 @@
 							components.TextControl,
 							next( {
 								label: __( 'Category', 'free-maps' ),
-								help: index === 0 ? __( 'For the category buttons and the list. For example: Shops.', 'free-maps' ) : undefined,
+								help: offset === 0 ? __( 'For the category buttons and the list. For example: Shops.', 'free-maps' ) : undefined,
 								value: item.category || '',
 								onChange: function ( value ) {
 									updateMarker( index, { category: value } );
@@ -1066,16 +1379,12 @@
 						)
 					);
 				} ),
+				pager( markers.length, markerPage, setMarkerPage, 'bottom' ),
 				markers.length > SIDEBAR_LIMIT
 					? el(
 							'p',
 							{ style: { color: '#757575' } },
-							sprintf(
-								/* translators: 1: a number of markers, 2: the number of all the markers. */
-								__( 'The sidebar shows %1$d of the %2$d markers. To change one of the others, click it on the map.', 'free-maps' ),
-								SIDEBAR_LIMIT,
-								markers.length
-							)
+							__( 'To see the fields of a marker here, click the marker on the map.', 'free-maps' )
 					  )
 					: null,
 				el(
@@ -1094,6 +1403,7 @@
 					{
 						accept: '.csv,.geojson,.json,.kml,.gpx',
 						variant: 'secondary',
+						__next40pxDefaultSize: true,
 						onChange: function ( event ) {
 							var input = event.currentTarget;
 							importFile( input.files && input.files[ 0 ] );
@@ -1118,7 +1428,7 @@
 								style: { marginTop: '8px' },
 								onClick: function () {
 									setNote( '' );
-									setAttributes( { markers: [] } );
+									commit( { markers: [] } );
 								},
 							},
 							__( 'Remove all the markers', 'free-maps' )
@@ -1133,7 +1443,9 @@
 			el(
 				components.PanelBody,
 				{ title: __( 'Shapes', 'free-maps' ), initialOpen: false },
-				shapes.slice( 0, SIDEBAR_LIMIT ).map( function ( item, index ) {
+				pager( shapes.length, shapePage, setShapePage, 'top' ),
+				shapes.slice( shapePage * SIDEBAR_LIMIT, ( shapePage + 1 ) * SIDEBAR_LIMIT ).map( function ( item, offset ) {
+					var index = shapePage * SIDEBAR_LIMIT + offset;
 					return el(
 						'div',
 						{ key: index, style: { marginBottom: '16px', paddingBottom: '16px', borderBottom: '1px solid #ddd' } },
@@ -1154,21 +1466,15 @@
 						),
 						el( 'div', { style: { height: '8px' } } ),
 						item.type === 'circle'
-							? el(
-									components.TextControl,
-									next( {
-										label: __( 'Radius in metres', 'free-maps' ),
-										type: 'number',
-										min: 1,
-										value: String( item.radius || 1000 ),
-										onChange: function ( value ) {
-											var number = parseFloat( value );
-											if ( isFinite( number ) && number > 0 ) {
-												updateShape( index, { radius: number } );
-											}
-										},
-									} )
-							  )
+							? el( NumberField, {
+									label: __( 'Radius in metres', 'free-maps' ),
+									value: isNumber( item.radius ) ? item.radius : 1000,
+									min: 1,
+									max: 5000000,
+									onChange: function ( number ) {
+										updateShape( index, { radius: number } );
+									},
+							  } )
 							: null,
 						item.type === 'circle' ? el( 'div', { style: { height: '8px' } } ) : null,
 						el( components.ColorPalette, {
@@ -1195,18 +1501,7 @@
 						)
 					);
 				} ),
-				shapes.length > SIDEBAR_LIMIT
-					? el(
-							'p',
-							{ style: { color: '#757575' } },
-							sprintf(
-								/* translators: 1: a number of shapes, 2: the number of all the shapes. */
-								__( 'The sidebar shows %1$d of the %2$d shapes.', 'free-maps' ),
-								SIDEBAR_LIMIT,
-								shapes.length
-							)
-					  )
-					: null,
+				pager( shapes.length, shapePage, setShapePage, 'bottom' ),
 				el(
 					'div',
 					{ style: { display: 'flex', flexWrap: 'wrap', gap: '8px' } },
@@ -1238,7 +1533,7 @@
 								isDestructive: true,
 								style: { marginTop: '8px' },
 								onClick: function () {
-									setAttributes( { shapes: [] } );
+									commit( { shapes: [] } );
 								},
 							},
 							__( 'Remove all the shapes', 'free-maps' )
@@ -1259,7 +1554,9 @@
 					components.TextControl,
 					next( {
 						label: __( 'Height', 'free-maps' ),
-						help: __( 'For example 400px or 60vh.', 'free-maps' ),
+						help: badHeight
+							? __( 'This is not a height that the map can use: the map has the default height. Use a value such as 400px or 60vh.', 'free-maps' )
+							: __( 'For example 400px or 60vh.', 'free-maps' ),
 						placeholder: settings.defaultHeight,
 						value: attributes.height || '',
 						onChange: function ( value ) {
@@ -1336,13 +1633,45 @@
 					components.ToggleControl,
 					next( {
 						label: __( 'Directions link', 'free-maps' ),
-						help: __( 'Each popup gets a link to the directions on openstreetmap.org.', 'free-maps' ),
+						help: __( 'Each popup and each row of the list gets a link to the directions to that marker.', 'free-maps' ),
 						checked: !! attributes.directions,
 						onChange: function ( value ) {
 							setAttributes( { directions: value } );
 						},
 					} )
 				),
+				attributes.directions
+					? el(
+							components.SelectControl,
+							next( {
+								label: __( 'The directions link opens', 'free-maps' ),
+								help: __( 'With the list, the visitor selects the map service.', 'free-maps' ),
+								value: attributes.directionsService || '',
+								options: [
+									{
+										label: sprintf(
+											/* translators: %s: the name of a map service, or "a list of the map services". */
+											__( 'The value of the settings (%s)', 'free-maps' ),
+											settings.defaultDirections === 'choice'
+												? __( 'a list of the map services', 'free-maps' )
+												: directionsServices[ settings.defaultDirections ] || settings.defaultDirections
+										),
+										value: '',
+									},
+								]
+									.concat(
+										Object.keys( directionsServices ).map( function ( name ) {
+											return { label: directionsServices[ name ], value: name };
+										} )
+									)
+									.concat( [ { label: __( 'A list of the map services', 'free-maps' ), value: 'choice' } ] ),
+								onChange: function ( value ) {
+									setAttributes( { directionsService: value } );
+								},
+							} )
+					  )
+					: null,
+				attributes.directions ? el( 'div', { style: { height: '16px' } } ) : null,
 				el(
 					components.ToggleControl,
 					next( {
@@ -1426,17 +1755,13 @@
 			el(
 				components.PanelBody,
 				{ title: __( 'Exact position', 'free-maps' ), initialOpen: false },
-				numberField( __( 'Latitude', 'free-maps' ), 'lat', -85, 85, 'any' ),
+				numberField( __( 'Latitude', 'free-maps' ), 'lat', -85, 85 ),
 				el( 'div', { style: { height: '16px' } } ),
-				numberField( __( 'Longitude', 'free-maps' ), 'lng', -180, 180, 'any' ),
+				numberField( __( 'Longitude', 'free-maps' ), 'lng', -180, 180 ),
 				el( 'div', { style: { height: '16px' } } ),
-				numberField( __( 'Zoom', 'free-maps' ), 'zoom', 0, 22, 'any' )
+				numberField( __( 'Zoom', 'free-maps' ), 'zoom', 0, 22 )
 			)
 		);
-
-		var height = /^\d+(\.\d+)?$/.test( ( attributes.height || '' ).trim() )
-			? attributes.height.trim() + 'px'
-			: attributes.height || settings.defaultHeight;
 
 		var overlay = null;
 		if ( setup ) {
@@ -1562,10 +1887,18 @@
 			el(
 				'div',
 				wp.blockEditor.useBlockProps( { className: 'waymorphic-map-editor' } ),
+				// Before the map: the Tab key goes from the block to the search field first.
+				overlay,
 				el( 'div', { ref: containerRef, className: 'waymorphic-map', style: { height: height } } ),
+				failed
+					? el(
+							'p',
+							{ className: 'waymorphic-map-editor__error', role: 'alert' },
+							__( 'This browser cannot show the map here (it needs WebGL). The page can show the map in a different browser. You can change the block in the sidebar.', 'free-maps' )
+					  )
+					: null,
 				// The first click selects the block; after that the map moves.
-				isSelected || setup || drawing ? null : el( 'div', { className: 'waymorphic-map-editor__shield' } ),
-				overlay
+				isSelected || setup || drawing ? null : el( 'div', { className: 'waymorphic-map-editor__shield' } )
 			)
 		);
 	}

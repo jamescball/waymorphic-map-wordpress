@@ -120,6 +120,53 @@
 	var POPUP_WIDTH = 'min(260px, calc(100% - 20px))';
 
 	/**
+	 * Adds the credit of the map (the names and links at the bottom right).
+	 * The text of the credit comes from the tile server, and MapLibre writes it
+	 * in the page as HTML. Its cleaning of that HTML has a fault in the version
+	 * that the plugin includes (GHSA-jrc7-96c5-q579): a tile server could run a
+	 * script in the page. Thus the plugin cleans the text before MapLibre reads
+	 * it, with the list of safe elements that it uses for the popups.
+	 *
+	 * The map must be made with attributionControl: false. The functions of this
+	 * control must listen to the map before the credit of MapLibre does.
+	 *
+	 * @param {Object} map The MapLibre map.
+	 * @param {Object} gl  The MapLibre library of the window of the map.
+	 */
+	function addCredit( map, gl ) {
+		function clean( source ) {
+			if ( ! source || typeof source.attribution !== 'string' || source.attribution === source.waymorphicCredit ) {
+				return;
+			}
+			var holder = document.createElement( 'div' );
+			holder.appendChild( cleanHtml( source.attribution ) );
+			source.attribution = holder.innerHTML;
+			source.waymorphicCredit = source.attribution;
+		}
+		function cleanAll() {
+			var sources = {};
+			try {
+				sources = ( map.getStyle() || {} ).sources || {};
+			} catch ( error ) {
+				// The style is not there yet.
+			}
+			Object.keys( sources ).forEach( function ( id ) {
+				clean( map.getSource( id ) );
+			} );
+		}
+		map.on( 'styledata', cleanAll );
+		map.on( 'sourcedata', function ( event ) {
+			// The credit of a source comes with its description.
+			if ( event.sourceDataType === 'metadata' || event.sourceDataType === 'visibility' ) {
+				clean( event.sourceId ? map.getSource( event.sourceId ) : null );
+				cleanAll();
+			}
+		} );
+		cleanAll();
+		map.addControl( new gl.AttributionControl( { compact: true, customAttribution: '<a href="https://maplibre.org/" target="_blank">MapLibre</a>' } ) );
+	}
+
+	/**
 	 * The map services of the directions link: objects with label and url. In
 	 * a url, ~lat~ and ~lng~ are the position of the marker.
 	 */
@@ -782,9 +829,22 @@
 	 */
 	function addShapes( map, features ) {
 		var gl = window.maplibregl;
-		if ( ! features.length || map.getSource( 'waymorphic-shapes' ) ) {
+		if ( ! features.length ) {
 			return;
 		}
+		var before = map.getSource( 'waymorphic-shapes' );
+		if ( before ) {
+			// The map has shapes: these go with them. A new heatmap needs its layer, which is made
+			// with the first shapes only.
+			map.waymorphicShapes = ( map.waymorphicShapes || [] ).concat(
+				features.filter( function ( feature ) {
+					return typeof feature.properties.heat !== 'number';
+				} )
+			);
+			before.setData( { type: 'FeatureCollection', features: map.waymorphicShapes } );
+			return;
+		}
+		map.waymorphicShapes = features.slice();
 		map.addSource( 'waymorphic-shapes', { type: 'geojson', data: { type: 'FeatureCollection', features: features } } );
 		// One layer for each heatmap, below the shapes.
 		var heats = {};
@@ -1485,15 +1545,21 @@
 	 */
 	function distanceText( metres, unit ) {
 		var value = metres / ( unit === 'mi' ? 1609.344 : 1000 );
-		var shown = value < 10 ? Math.round( value * 10 ) / 10 : Math.round( value );
+		return amountText( value < 10 ? Math.round( value * 10 ) / 10 : Math.round( value ), unit );
+	}
+
+	/**
+	 * A number of kilometres or miles with its unit, as text: "12.5 km".
+	 */
+	function amountText( amount, unit ) {
 		var number;
 		try {
 			// The number format of the language of the page, not of the browser.
-			number = shown.toLocaleString( document.documentElement.lang || undefined );
+			number = amount.toLocaleString( document.documentElement.lang || undefined, { maximumFractionDigits: 2 } );
 		} catch ( error ) {
-			number = shown.toLocaleString();
+			number = String( amount );
 		}
-		return number + ' ' + ( unit === 'mi' ? text.mi || 'mi' : text.km || 'km' );
+		return fill( text.amount || '%1$s %2$s', [ number, unit === 'mi' ? text.mi || 'mi' : text.km || 'km' ] );
 	}
 
 	/**
@@ -1798,7 +1864,8 @@
 			if ( ! state.origin ) {
 				return;
 			}
-			var range = distanceText( state.radius, unit );
+			// The distance as the visitor selected it: "12.5 km" is not "13 km".
+			var range = amountText( Math.round( ( state.radius / ( unit === 'mi' ? 1609.344 : 1000 ) ) * 100 ) / 100, unit );
 			if ( state.where ) {
 				// With the name of the place that the search found: the visitor sees a wrong town.
 				say(
@@ -1896,7 +1963,7 @@
 				.forEach( function ( value ) {
 					var option = document.createElement( 'option' );
 					option.value = value;
-					option.textContent = value + ' ' + ( unit === 'mi' ? text.mi || 'mi' : text.km || 'km' );
+					option.textContent = amountText( value, unit );
 					option.selected = value === first;
 					select.appendChild( option );
 				} );
@@ -2210,6 +2277,8 @@
 			interactive: interactive,
 			// Without scroll zoom, the page scrolls and ctrl or cmd + scroll zooms the map.
 			cooperativeGestures: interactive && ! config.scrollZoom,
+			// The plugin adds the credit: see addCredit().
+			attributionControl: false,
 		};
 		if ( text.map && typeof text.map === 'object' ) {
 			// The texts of the buttons of the map, in the language of the site.
@@ -2253,6 +2322,7 @@
 			// No WebGL, for example.
 			return fail();
 		}
+		addCredit( map, gl );
 
 		// The page has the name of the map on the element of the map. MapLibre makes a second region
 		// with the name "Map" for its canvas, which is the part that gets the keyboard focus: a
@@ -2316,6 +2386,12 @@
 				return;
 			}
 			if ( extra ) {
+				if ( config.animation === 'drop' || config.animation === 'bounce' ) {
+					// The animation of the map is for the markers of the files too.
+					extra.markers.forEach( function ( item ) {
+						item.animation = item.animation || config.animation;
+					} );
+				}
 				var more = shapeFeatures( extra.shapes );
 				extend( extra.markers, more );
 				markers = markers.concat( extra.markers );
@@ -2337,6 +2413,14 @@
 				addPanels( element, map, all, glMarkers, regroup );
 			}
 			element.classList.add( 'is-ready' );
+			// For the scripts of a site: the map is in event.detail.map and in element.waymorphicMap.
+			if ( typeof window.CustomEvent === 'function' ) {
+				window.setTimeout( function () {
+					if ( ! gone ) {
+						element.dispatchEvent( new window.CustomEvent( 'waymorphic-map:ready', { bubbles: true, detail: { map: map } } ) );
+					}
+				}, 0 );
+			}
 		}
 
 		if ( Array.isArray( config.files ) && config.files.length ) {
@@ -2485,6 +2569,7 @@
 		shapeFeatures: shapeFeatures,
 		parseData: parseData,
 		decodeText: decodeText,
+		addCredit: addCredit,
 		init: init,
 		markerColour: MARKER_COLOUR,
 	};

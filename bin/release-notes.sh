@@ -4,7 +4,8 @@
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-version="${1#v}"
+version="${1:?Usage: bin/release-notes.sh v1.0.0}"
+version="${version#v}"
 
 notes="$(awk -v version="$version" '
 	/^== Changelog ==/ { changelog = 1; next }

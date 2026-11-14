@@ -101,7 +101,7 @@
 	 * @return {string} A CSS length, or '' when the value is not a height.
 	 */
 	function cleanHeight( value ) {
-		var match = /^(\d+(?:\.\d+)?)(px|vh|vw|em|rem)?$/.exec( String( value || '' ).trim().toLowerCase() );
+		var match = /^(\d+(?:\.\d+)?)(px|[dsl]?v[hw]|vmin|vmax|em|rem|ch)?$/.exec( String( value || '' ).trim().toLowerCase() );
 		return match && parseFloat( match[ 1 ] ) > 0 ? match[ 1 ] + ( match[ 2 ] || 'px' ) : '';
 	}
 
@@ -484,7 +484,8 @@
 						'aria-hidden': 'true',
 						style: { '--land': colours.land, '--water': colours.water, '--road': colours.road },
 					} ),
-					name.charAt( 0 ).toUpperCase() + name.slice( 1 )
+					// The name of the style in the language of the site: the label without its description.
+					String( settings.styles[ name ] || name ).split( ' (' )[ 0 ]
 				);
 			} )
 		);
@@ -569,18 +570,31 @@
 					timer = view.setTimeout( make, 100 );
 					return;
 				}
+				// The page script adds the credit, with its cleaning of the text of the tile server.
+				var credit = view.WaymorphicMap && view.WaymorphicMap.addCredit;
+				var mapOptions = {
+					container: node,
+					style: styleUrl( attributesRef.current.mapStyle ),
+					center: [ lng, lat ],
+					zoom: zoom,
+					cooperativeGestures: true,
+					// The block saves the centre and the zoom only: the map of the page points north.
+					dragRotate: false,
+					pitchWithRotate: false,
+					touchPitch: false,
+				};
+				if ( view.waymorphicMapL10n && view.waymorphicMapL10n.map ) {
+					// The texts of the map in the language of the site, as on the page.
+					mapOptions.locale = view.waymorphicMapL10n.map;
+				}
+				if ( credit ) {
+					mapOptions.attributionControl = false;
+				}
 				try {
-					map = new view.maplibregl.Map( {
-						container: node,
-						style: styleUrl( attributesRef.current.mapStyle ),
-						center: [ lng, lat ],
-						zoom: zoom,
-						cooperativeGestures: true,
-						// The block saves the centre and the zoom only: the map of the page points north.
-						dragRotate: false,
-						pitchWithRotate: false,
-						touchPitch: false,
-					} );
+					map = new view.maplibregl.Map( mapOptions );
+					if ( credit ) {
+						credit( map, view.maplibregl );
+					}
 				} catch ( error ) {
 					// No WebGL, for example.
 					setFailed( true );

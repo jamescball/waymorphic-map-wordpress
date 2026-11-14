@@ -27,14 +27,14 @@ Copy this folder to `wp-content/plugins/free-maps` and activate **Free Maps - Wa
 | --- | --- | --- |
 | `lat`, `lng` | Centre of the map. `lon` and `long` are other names for `lng` | Fits the markers, or shows the world |
 | `address` | Address or place name, used when `lat` and `lng` are not given | |
-| `zoom` | 0 to 22 | Setting (12) |
+| `zoom` | 0 to 22. When the view fits two or more markers: the upper limit of the view | Setting (12); 15 for a view that fits markers |
 | `style` | `positron`, `bright`, `liberty`, `dark`, `fiord` | Setting (`positron`) |
-| `height` | CSS length (`400px`, `60vh`); a number is in pixels; not a percentage | Setting (`400px`) |
+| `height` | CSS length (`400px`, `60vh`); a number is in pixels; not a percentage. Units: `px`, `vh`, `vw`, `dvh`, `svh`, `lvh`, `vmin`, `vmax`, `em`, `rem`, `ch` | Setting (`400px`) |
 | `width` | CSS length (`300px`, `50%`); a number is in pixels | `100%` |
 | `marker` | `true` puts a marker at the centre | On with `label` or `address` |
 | `label` | Popup text of the marker at the centre | |
 | `controls` | `false` hides the zoom and fullscreen buttons | `true` |
-| `scroll_zoom` | `true`: plain scroll zooms the map. `false`: ctrl or cmd + scroll | `false` |
+| `scroll_zoom` | `true`: plain scroll zooms the map. `false`: ctrl or cmd + scroll, and two fingers move the map on a touch screen | `false` |
 | `interactive` | `false` makes a still map | `true` |
 | `title` | Name of the map for screen readers | `Map` |
 | `cluster` | `true` puts markers that are near to each other in a group | `false` |
@@ -63,7 +63,7 @@ Use straight quotes in the shortcodes. When an address is not found or a positio
 [/waymorphic_map]
 ```
 
-All shapes take `colour` and `width`. Polygons, circles and rectangles take `fill` and `opacity` (0 to 1). The radius of a circle is in metres. A rectangle takes two opposite corners.
+All shapes take `colour` and `width`. Polygons, circles and rectangles take `fill` and `opacity` (0 to 1). The radius of a circle is in metres. A rectangle takes two opposite corners. A polygon or a line has 500 points at most.
 
 **Heatmap and files**, in `[waymorphic_map]`:
 
@@ -80,7 +80,7 @@ A heatmap point can have a weight as a third number. `[waymorphic_file]` shows t
 - The "Features" panel has the list, the search, the groups of markers, the category buttons, the directions link with its map service, the location button and the animation.
 - Each marker has a category, a colour and an optional picture.
 - The "Shapes" panel draws polygons, lines, circles and rectangles: select a type, then click the map.
-- "Import a file" in the Markers panel adds the markers and shapes of a CSV, GeoJSON, KML or GPX file to the block. The file is not uploaded. A line keeps 500 points at most.
+- "Import a file" in the Markers panel adds the markers and shapes of a CSV, GeoJSON, KML or GPX file to the block. The file is not uploaded. A block can have 1000 markers; one file gives 100 shapes at most, and a line keeps 500 points.
 - The block has no heatmap: use the shortcode.
 
 **Settings.** Settings > Waymorphic Map: default style, height and zoom, the map service of the directions link, and the tile server URL for a self-hosted server.
@@ -111,9 +111,9 @@ A heatmap point can have a weight as a third number. `[waymorphic_file]` shows t
 - Filter `waymorphic_map_config`: the configuration of one map before output.
 - Filter `waymorphic_map_tiles_url`: the tile server URL.
 - Filter `waymorphic_map_directions_services`: the map services of the directions link. Each service is `'name' => array( 'label' => ..., 'url' => ... )`. In the URL, `{lat}` and `{lng}` are the position of the marker.
-- Filter `waymorphic_map_directions_url`: the address of the directions link when the link opens one service. The second argument is the name of the service.
+- Filter `waymorphic_map_directions_url`: the address of the directions link when the link opens one service. The second argument is the name of the service. The address must start with `http` or `https`.
 - The configuration of a map is in the `data-waymorphic-map` attribute of its element. A configuration of more than 100,000 characters is in a `script.waymorphic-map__config` element in the map element.
-- JavaScript: each `.waymorphic-map` element has its MapLibre map in `element.waymorphicMap`. `WaymorphicMap.init( root )` starts maps that you add to the page later. `WaymorphicMap.addShapes( map, WaymorphicMap.shapeFeatures( shapes ) )` adds shapes to a map. `WaymorphicMap.parseData( text, name )` reads the markers and shapes of a CSV, GeoJSON, KML or GPX file.
+- JavaScript: each `.waymorphic-map` element has its MapLibre map in `element.waymorphicMap`. A map starts when it comes near the viewport: the element sends the `waymorphic-map:ready` event (it bubbles; the map is in `event.detail.map`) when its markers and shapes are there. `WaymorphicMap.init( root )` starts maps that you add to the page later. `WaymorphicMap.addShapes( map, WaymorphicMap.shapeFeatures( shapes ) )` adds shapes to a map whose style is ready (the points of the shapes are `[ lng, lat ]`). `WaymorphicMap.parseData( text, name )` reads the markers and shapes of a CSV, GeoJSON, KML or GPX file.
 
 ```
 free-maps.php           plugin header and hooks

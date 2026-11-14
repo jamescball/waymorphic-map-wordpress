@@ -45,11 +45,14 @@ function waymorphic_map_register_assets() {
 				/* translators: %d: the number of the marker. */
 				'marker'        => __( 'Marker %d', 'free-maps' ),
 				'list'          => __( 'Places on the map', 'free-maps' ),
+				/* translators: The button that shows the markers of all the categories. */
 				'all'           => __( 'All', 'free-maps' ),
 				'filter'        => __( 'Show a category', 'free-maps' ),
+				/* translators: The button that starts the search for the nearest places (a verb). */
 				'search'        => __( 'Search', 'free-maps' ),
 				'searchLabel'   => __( 'Find the nearest places', 'free-maps' ),
 				'searchHint'    => __( 'Address, town or postcode', 'free-maps' ),
+				/* translators: The name of the list of distances (10 km, 25 km) of the search for the nearest places. */
 				'radius'        => __( 'Distance', 'free-maps' ),
 				'useLocation'   => __( 'Use my location', 'free-maps' ),
 				'reset'         => __( 'Show all', 'free-maps' ),
@@ -67,8 +70,12 @@ function waymorphic_map_register_assets() {
 				'notFound'      => __( 'The address was not found. Try a town or a postcode.', 'free-maps' ),
 				'searchError'   => __( 'The search did not answer. Try again.', 'free-maps' ),
 				'locationError' => __( 'The browser did not give your location.', 'free-maps' ),
+				/* translators: The short form of "kilometres", after a number: 10 km. */
 				'km'            => __( 'km', 'free-maps' ),
+				/* translators: The short form of "miles", after a number: 10 mi. */
 				'mi'            => __( 'mi', 'free-maps' ),
+				/* translators: A distance. 1: the number, 2: the unit (km or mi). */
+				'amount'        => __( '%1$s %2$s', 'free-maps' ),
 				// The texts of the map itself, for MapLibre.
 				'map'           => array(
 					'AttributionControl.ToggleAttribution'       => __( 'Toggle attribution', 'free-maps' ),
@@ -379,6 +386,10 @@ function waymorphic_map_render( $args ) {
 	}
 	if ( $files ) {
 		$config['files'] = $files;
+		if ( '' !== $animation ) {
+			// For the markers of the files: the script gives it to them.
+			$config['animation'] = $animation;
+		}
 	}
 	if ( $args['cluster'] ) {
 		$config['cluster'] = true;

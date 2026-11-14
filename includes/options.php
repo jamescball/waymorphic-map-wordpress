@@ -91,7 +91,8 @@ function waymorphic_map_clean_style( $style, $fallback = 'positron' ) {
 /**
  * A CSS length from user input: a number means pixels.
  *
- * @param mixed  $value    The input, e.g. 400, "400px", "60vh", "100%".
+ * @param mixed  $value    The input, e.g. 400, "400px", "60vh", "100%". The units are px, %, vh, vw, em,
+ *                         rem, and dvh, svh, lvh, dvw, svw, lvw, vmin, vmax, ch.
  * @param string $fallback The value when the input is not a length.
  * @param bool   $percent  Permit a percentage. A width can be a percentage. A height cannot:
  *                         the element around the map has no height, thus the map would have none.
@@ -99,7 +100,7 @@ function waymorphic_map_clean_style( $style, $fallback = 'positron' ) {
  */
 function waymorphic_map_clean_length( $value, $fallback, $percent = true ) {
 	$value = is_scalar( $value ) ? strtolower( trim( (string) $value ) ) : '';
-	if ( preg_match( '/^(\d+(?:\.\d+)?)(px|%|vh|vw|em|rem)?$/', $value, $m ) && (float) $m[1] > 0 ) {
+	if ( preg_match( '/^(\d+(?:\.\d+)?)(px|%|[dsl]?v[hw]|vmin|vmax|em|rem|ch)?$/', $value, $m ) && (float) $m[1] > 0 ) {
 		$unit = isset( $m[2] ) ? $m[2] : 'px';
 		if ( '%' !== $unit || $percent ) {
 			return $m[1] . $unit;

@@ -14,7 +14,7 @@ Free OpenStreetMap vector maps for WordPress. A block and a shortcode, five styl
 
 Waymorphic Map adds interactive maps to your posts and pages. The maps are vector maps of the whole planet, made from OpenStreetMap data and served by [Waymorphic Map](https://waymorphic.com/). They are free. You do not need an account, an API key or a payment card.
 
-* **A block for the editor.** Type an address and select it from the suggestions: the map goes there and gets a marker. Click the map to add more markers, drag them into position, and click a marker to change its text. Select the map style from five swatches. The editor shows the map as your visitors will see it.
+* **A block for the editor.** Type an address and select it from the suggestions: the map goes there and gets a marker. Click the map to add more markers, drag them into position, and click a marker to change its text. Select the map style from five swatches. The editor shows the map, its markers and its shapes. The list, the search, the groups and the category buttons show on the page.
 * **A shortcode** for the classic editor, widgets and templates.
 * **Five map styles:** Positron, Bright, Liberty, Dark and Fiord.
 * **Markers with popups.** Add as many as you want. The map can fit its view to them.
@@ -55,14 +55,15 @@ Attributes of `[waymorphic_map]`:
 
 * `lat`, `lng` - the centre of the map. `lon` and `long` are other names for `lng`.
 * `address` - an address or place name, used when `lat` and `lng` are not given. A marker shows the place.
-* `zoom` - 0 (the world) to 22. The default is in the settings.
+* `zoom` - 0 (the world) to 22. The default is in the settings. When the view fits two or more markers, `zoom` is the upper limit of the view (15 when it is not given).
 * `style` - `positron`, `bright`, `liberty`, `dark` or `fiord`.
 * `height` - a CSS length such as `400px` or `60vh`. A number is in pixels. A percentage is not a height.
 * `width` - a CSS length such as `300px` or `50%`. A number is in pixels.
+* The units of `height` and `width` are `px`, `vh`, `vw`, `dvh`, `svh`, `lvh`, `vmin`, `vmax`, `em`, `rem` and `ch` (and `%` for the width). Other values, such as `calc()`, give the default.
 * `marker` - `true` puts a marker at the centre.
 * `label` - popup text for the marker at the centre.
 * `controls` - `false` hides the zoom and fullscreen buttons.
-* `scroll_zoom` - `true` lets plain scroll zoom the map.
+* `scroll_zoom` - `true` lets plain scroll zoom the map. Without it, ctrl or cmd + scroll zooms the map, and on a touch screen two fingers move the map (one finger scrolls the page).
 * `interactive` - `false` makes a still map.
 * `title` - the name of the map for screen readers.
 * `cluster` - `true` puts markers that are near to each other in a group.
@@ -91,8 +92,8 @@ Put the shape shortcodes in `[waymorphic_map]`. The points are `latitude,longitu
 [waymorphic_rectangle points="51.48,-0.20; 51.49,-0.15"]
 [/waymorphic_map]`
 
-* `[waymorphic_polygon]` - three or more points.
-* `[waymorphic_line]` - two or more points.
+* `[waymorphic_polygon]` - three or more points, 500 at most.
+* `[waymorphic_line]` - two or more points, 500 at most.
 * `[waymorphic_circle]` - `lat` and `lng`, or `address`, and `radius` in metres.
 * `[waymorphic_rectangle]` - two opposite corners.
 * All shapes: `colour` (the outline), `width` (the outline, in pixels). Polygons, circles and rectangles: `fill` (the colour of the inside) and `opacity` (0 to 1).
@@ -113,7 +114,7 @@ Put the shape shortcodes in `[waymorphic_map]`. The points are `latitude,longitu
 * `colour` and `category` on the shortcode are for the markers that have none in the file.
 * For a file with some hundreds of markers or more, use `cluster="true"`. The map draws only the markers that are not in a group, and stays quick.
 
-In the block, "Import a file" in the Markers panel reads a file from your computer and adds its markers and shapes to the block. The file is not uploaded.
+In the block, "Import a file" in the Markers panel reads a file from your computer and adds its markers and shapes to the block. The file is not uploaded. A block can have 1000 markers. One file gives 100 shapes at most, and a line keeps 500 points.
 
 = A store locator =
 
@@ -128,7 +129,7 @@ This plugin shows maps from the Waymorphic Map tile server, `https://tiles.waymo
 
 * When a visitor sees a map, the browser of the visitor gets the map style, map tiles, fonts and icons from that server. As with all web requests, the server sees the IP address and the browser of the visitor, and the tiles requested.
 * When you use an `address` in a shortcode, your WordPress site sends that address to the search of the server and keeps the position for one year. If the search does not find the address, the site asks again after one day.
-* When you search for a place in the block editor, your browser sends the search text to the server.
+* When you search for a place in the block editor, your browser sends the search text to the server, with the centre and the zoom of the map of the block.
 * When a map has the search for the nearest markers (`locator`), the browser of the visitor sends the search text to the server, with the centre of the markers of the map: the server prefers places near the markers. With "Use my location", the position stays in the browser.
 
 The directions link (`directions`) is a link to the map service that you select in the settings, on the shortcode or in the block:
@@ -199,7 +200,7 @@ Export the markers as a CSV file, make sure that the first row has `lat` and `ln
 
 = Can developers change the map? =
 
-Yes. The `waymorphic_map_config` filter changes the configuration of a map, `waymorphic_map_tiles_url` changes the tile server, and `waymorphic_map_directions_services` changes the map services of the directions link. In JavaScript, each map element has its MapLibre map in the `waymorphicMap` property.
+Yes. The `waymorphic_map_config` filter changes the configuration of a map, `waymorphic_map_tiles_url` changes the tile server, and `waymorphic_map_directions_services` changes the map services of the directions link. The address that the `waymorphic_map_directions_url` filter gives must start with `http` or `https`. In JavaScript, each map element has its MapLibre map in the `waymorphicMap` property.
 
 = How do I get help or report a problem? =
 
@@ -220,6 +221,7 @@ Send an email to contact@waymorphic.com.
 * New: CSS variables for the colours of the search, the category buttons and the list.
 * New: the page has the list before the map starts, also without JavaScript and in a browser that cannot show the map. The page does not jump when the map starts.
 * Security: the script cleans the HTML of each popup again in the browser. Before, a user with the role of Contributor or Author could put an element in a post that ran a script in the browser of a visitor or an administrator.
+* Security: the plugin cleans the credit text of the tile server before MapLibre writes it in the page. MapLibre GL JS 5.21.0 has a fault in this cleaning (GHSA-jrc7-96c5-q579): a tile server that is not the Waymorphic server could run a script in the page.
 * Fix: in a narrow list (a telephone, a column), a name showed one letter on each line.
 * Fix: the styles of a theme changed the list, the search, the category buttons, the buttons of the map and the close button of the popups. In some themes the popups could not be read. These parts now look the same in each theme.
 * Fix: the list and the search are as wide as a map that has a width.
@@ -256,6 +258,9 @@ Send an email to contact@waymorphic.com.
 * Fix: on a network of sites, the removal of the plugin removes its data from each site.
 * Fix: on the settings page, a value that is not valid keeps the saved value and shows a message. Before, the default value replaced it with no message.
 * Fix: in the block, Enter in the place search took a suggestion for an older text, the map could be turned (the page does not show this), and a map in a wide block kept its first width.
+* Fix: `animation` on the map shortcode is for the markers of files too. The result text of the search shows the distance that the visitor selected ("12.5 km", not "13 km").
+* New: the units `dvh`, `svh`, `lvh`, `vmin`, `vmax` and `ch` for the height and the width.
+* New for developers: the map element sends the `waymorphic-map:ready` event when its map is ready. `WaymorphicMap.addShapes()` adds shapes to a map that has shapes.
 * Change: the plugin folder, the main file and the text domain are now `free-maps`. The plugin directory does not permit the name `wp-free-maps`. If you installed version 1.1.0 from a zip file, deactivate and delete it, then install this version. The settings and the maps stay.
 
 = 1.1.0 =

@@ -76,6 +76,8 @@ function waymorphic_map_register_assets() {
 				'mi'            => __( 'mi', 'free-maps' ),
 				/* translators: A distance. 1: the number, 2: the unit (km or mi). */
 				'amount'        => __( '%1$s %2$s', 'free-maps' ),
+				// The tile server of the site: a map of the page can have a style and a search from it.
+				'tiles'         => waymorphic_map_tiles_url(),
 				// The texts of the map itself, for MapLibre.
 				'map'           => array(
 					'AttributionControl.ToggleAttribution'       => __( 'Toggle attribution', 'free-maps' ),
@@ -489,6 +491,8 @@ function waymorphic_map_render( $args ) {
 
 	wp_enqueue_style( 'waymorphic-map' );
 	wp_enqueue_script( 'waymorphic-map' );
+	waymorphic_map_trust( isset( $config['style'] ) ? $config['style'] : null );
+	waymorphic_map_trust( isset( $config['searchUrl'] ) ? $config['searchUrl'] : null );
 
 	$css   = 'height:' . waymorphic_map_clean_length( $args['height'], waymorphic_map_clean_length( $options['height'], '400px', false ), false ) . ';';
 	$width = '';
@@ -533,6 +537,49 @@ function waymorphic_map_render( $args ) {
 		waymorphic_map_plain_brackets( waymorphic_map_list_html( $config, $width ) ),
 		$data
 	);
+}
+
+/**
+ * Tells the script that a style or a search address is from this site. The
+ * script starts a map of the page only with a style from the tile server of
+ * the site or with a style that this function gave: a writer with no right
+ * to use scripts can put a map element with an attribute of their choice in
+ * a post, and a style has much control of the map. A filter
+ * (waymorphic_map_config) can give a map a different style: this function
+ * makes it known.
+ *
+ * @param mixed $value The style of a map (an address, or a style as an array), or its search address.
+ */
+function waymorphic_map_trust( $value ) {
+	static $told = array();
+
+	if ( ! $told ) {
+		/**
+		 * Filters more addresses that a map element of a page can use as its style or its search:
+		 * full addresses, or the start of addresses with a slash at the end. For map elements
+		 * that this plugin does not make (HTML of a template, for example).
+		 *
+		 * @param array $addresses The addresses. Empty by default.
+		 */
+		$more = apply_filters( 'waymorphic_map_trusted_addresses', array() );
+		$told = array( '' => true );
+		foreach ( is_array( $more ) ? $more : array() as $address ) {
+			if ( is_string( $address ) ) {
+				waymorphic_map_trust( $address );
+			}
+		}
+	}
+	if ( ! is_string( $value ) && ! is_array( $value ) && ! is_object( $value ) ) {
+		return;
+	}
+	$json = (string) wp_json_encode( $value, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT );
+	$tile = waymorphic_map_tiles_url() . '/';
+	if ( '' === $json || isset( $told[ $json ] ) || ( is_string( $value ) && 0 === strpos( $value, $tile ) ) ) {
+		// Told before, or an address on the tile server: the script knows the tile server.
+		return;
+	}
+	$told[ $json ] = true;
+	wp_add_inline_script( 'waymorphic-map', 'window.waymorphicMapTrust = ( window.waymorphicMapTrust || [] ).concat( [ ' . $json . ' ] );', 'before' );
 }
 
 /**
@@ -755,6 +802,8 @@ function waymorphic_map_enqueue_early() {
 function waymorphic_map_geocode( $address, $near = null ) {
 	// True when the search did not answer in this page view.
 	static $down = false;
+	// The number of addresses that the search refused in this page view.
+	static $refused = 0;
 
 	$address = trim( wp_strip_all_tags( (string) $address ) );
 	$length  = function_exists( 'mb_strlen' ) ? mb_strlen( $address ) : strlen( $address );
@@ -786,7 +835,7 @@ function waymorphic_map_geocode( $address, $near = null ) {
 
 	// The search did not answer a short time ago. A page with many addresses must
 	// not wait for each of them: one page view waits, at most each five minutes.
-	if ( $down || get_transient( 'waymorphic_map_geo_down' ) ) {
+	if ( $down || $refused >= 2 || get_transient( 'waymorphic_map_geo_down' ) ) {
 		waymorphic_map_geocode_state( 'down' );
 		return null;
 	}
@@ -795,7 +844,7 @@ function waymorphic_map_geocode( $address, $near = null ) {
 	$response = wp_remote_get( add_query_arg( $query, waymorphic_map_tiles_url() . '/search' ), array( 'timeout' => 5 ) );
 
 	$code = is_wp_error( $response ) ? 0 : (int) wp_remote_retrieve_response_code( $response );
-	if ( 0 === $code || $code >= 500 || 429 === $code ) {
+	if ( 0 === $code || $code >= 500 || 429 === $code || 408 === $code ) {
 		// No answer, a fault of the server, or too many requests: no more lookups for five minutes.
 		$down = true;
 		set_transient( 'waymorphic_map_geo_down', 1, 5 * MINUTE_IN_SECONDS );
@@ -804,8 +853,10 @@ function waymorphic_map_geocode( $address, $near = null ) {
 	}
 	if ( 200 !== $code ) {
 		// The server refused this address (a firewall can refuse a text). This is an answer for
-		// one address: the other addresses of the site continue.
-		set_transient( $key, array( 'none' => true ), DAY_IN_SECONDS );
+		// one address: the other addresses of the site continue. A server that refuses each
+		// address (it has no search, or it blocks the site) gets two requests for each page view.
+		++$refused;
+		set_transient( $key, array( 'none' => true ), HOUR_IN_SECONDS );
 		waymorphic_map_geocode_state( 'none' );
 		return null;
 	}

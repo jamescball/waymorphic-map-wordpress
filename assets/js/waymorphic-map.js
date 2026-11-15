@@ -183,6 +183,14 @@
 			source.waymorphicCredit = source.attribution;
 		}
 		function cleanAll() {
+			// The sources as the credit of MapLibre reads them.
+			var holders = map.style && ( map.style.tileManagers || map.style.sourceCaches );
+			if ( holders && typeof holders === 'object' ) {
+				Object.keys( holders ).forEach( function ( id ) {
+					var holder = holders[ id ];
+					clean( holder && typeof holder.getSource === 'function' ? holder.getSource() : null );
+				} );
+			}
 			var sources = {};
 			try {
 				sources = ( map.getStyle() || {} ).sources || {};
@@ -193,7 +201,10 @@
 				clean( map.getSource( id ) );
 			} );
 		}
+		// MapLibre writes the credit at these events. For a style with a terrain source, 'terrain'
+		// comes before the first 'styledata'.
 		map.on( 'styledata', cleanAll );
+		map.on( 'terrain', cleanAll );
 		map.on( 'sourcedata', function ( event ) {
 			// The credit of a source comes with its description.
 			if ( event.sourceDataType === 'metadata' || event.sourceDataType === 'visibility' ) {
@@ -202,7 +213,18 @@
 			}
 		} );
 		cleanAll();
-		map.addControl( new gl.AttributionControl( { compact: true, customAttribution: '<a href="https://maplibre.org/" target="_blank">MapLibre</a>' } ) );
+		var control = new gl.AttributionControl( { compact: true, customAttribution: '<a href="https://maplibre.org/" target="_blank">MapLibre</a>' } );
+		// The cleaning also runs directly before each time that MapLibre reads the credits: it does
+		// not depend on the list of events above. (_updateAttributions is a function of the MapLibre
+		// version that the plugin includes. If a later version has no such function, the events stay.)
+		var update = control._updateAttributions;
+		if ( typeof update === 'function' ) {
+			control._updateAttributions = function () {
+				cleanAll();
+				return update.apply( control, arguments );
+			};
+		}
+		map.addControl( control );
 	}
 
 	/**
@@ -2590,6 +2612,31 @@
 		}
 	}
 
+	/**
+	 * Tells if a style or a search address is one that the site gave: an address
+	 * on the tile server of the site, or the style or the search of a map that
+	 * PHP made for this page.
+	 *
+	 * @param {*} value A style (an address, or a style object) or a search address.
+	 * @return {boolean}
+	 */
+	function trusted( value ) {
+		var known = [ text.tiles.replace( /\/+$/, '' ) + '/' ].concat( Array.isArray( window.waymorphicMapTrust ) ? window.waymorphicMapTrust : [] );
+		if ( typeof value === 'string' ) {
+			return known.some( function ( good ) {
+				return typeof good === 'string' && good !== '' && ( value === good || ( good.slice( -1 ) === '/' && value.indexOf( good ) === 0 ) );
+			} );
+		}
+		if ( value && typeof value === 'object' ) {
+			// A style that a filter of the site gave as an object.
+			var words = JSON.stringify( value );
+			return known.some( function ( good ) {
+				return good && typeof good === 'object' && JSON.stringify( good ) === words;
+			} );
+		}
+		return false;
+	}
+
 	function start( element ) {
 		if ( element.waymorphicMap !== undefined ) {
 			return;
@@ -2604,6 +2651,24 @@
 		}
 		if ( ! config || typeof config !== 'object' ) {
 			return;
+		}
+		// A writer with no right to use scripts can put a map element with an attribute of their
+		// choice in a post. Such a map must not load a style or use a search that the site did not
+		// give: the style has much control of the map. PHP gives the address of the tile server
+		// (text.tiles) and the styles and searches of the maps that it made (waymorphicMapTrust).
+		// A page that an older version of the plugin made has no such list: no test then.
+		if ( typeof text.tiles === 'string' && text.tiles ) {
+			if ( ! trusted( config.style ) ) {
+				element.waymorphicMap = null;
+				if ( window.console && window.console.error ) {
+					window.console.error( 'Waymorphic Map: the style of this map is not from this site. For a map with a different style, use WaymorphicMap.create() or the waymorphic_map_trusted_addresses filter.' );
+				}
+				return;
+			}
+			if ( config.searchUrl !== undefined && ! trusted( config.searchUrl ) ) {
+				delete config.searchUrl;
+				delete config.locator;
+			}
 		}
 		makeRoom( element );
 		try {

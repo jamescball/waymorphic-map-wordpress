@@ -201,7 +201,7 @@ Export the markers as a CSV file, make sure that the first row has `lat` and `ln
 
 = Can developers change the map? =
 
-Yes. The `waymorphic_map_config` filter changes the configuration of a map, `waymorphic_map_tiles_url` changes the tile server, and `waymorphic_map_directions_services` changes the map services of the directions link. The address that the `waymorphic_map_directions_url` filter gives must start with `http` or `https`. In JavaScript, each map element has its MapLibre map in the `waymorphicMap` property.
+Yes. The `waymorphic_map_config` filter changes the configuration of a map, `waymorphic_map_tiles_url` changes the tile server, and `waymorphic_map_directions_services` changes the map services of the directions link. The address that the `waymorphic_map_directions_url` filter gives must start with `http` or `https`. A map element that you write by hand (not with the block or the shortcode) starts only with a style from the tile server of the site: the `waymorphic_map_trusted_addresses` filter adds other addresses. In JavaScript, each map element has its MapLibre map in the `waymorphicMap` property.
 
 = How do I get help or report a problem? =
 
@@ -222,7 +222,8 @@ Send an email to contact@waymorphic.com.
 * New: CSS variables for the colours of the search, the category buttons and the list.
 * New: the page has the list before the map starts, also without JavaScript and in a browser that cannot show the map. The page does not jump when the map starts.
 * Security: the script cleans the HTML of each popup again in the browser. Before, a user with the role of Contributor or Author could put an element in a post that ran a script in the browser of a visitor or an administrator.
-* Security: the plugin cleans the credit text of the tile server before MapLibre writes it in the page. MapLibre GL JS 5.21.0 has a fault in this cleaning (GHSA-jrc7-96c5-q579): a tile server that is not the Waymorphic server could run a script in the page.
+* Security: the plugin cleans the credit text of the map style before MapLibre writes it in the page. MapLibre GL JS 5.21.0 has a fault in this cleaning (GHSA-jrc7-96c5-q579): a tile server that is not the Waymorphic server, or a user with the role of Contributor or Author, could run a script in the page.
+* Security: a map element in the content of a page starts only with a map style and a search from the tile server of the site (or from a filter of the site). Before, a user with the role of Contributor or Author could put a map element with a style of their choice in a post.
 * Fix: in a narrow list (a telephone, a column), a name showed one letter on each line.
 * Fix: the styles of a theme changed the list, the search, the category buttons, the buttons of the map and the close button of the popups. In some themes the popups could not be read. These parts now look the same in each theme.
 * Fix: the list and the search are as wide as a map that has a width.

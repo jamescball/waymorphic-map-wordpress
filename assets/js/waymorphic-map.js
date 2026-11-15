@@ -474,7 +474,9 @@
 	 */
 	function keepInView( map, popup ) {
 		var element = popup.getElement();
-		if ( ! element ) {
+		// Not the popup that opened again with a map that has the view of the visitor (see start()):
+		// the map stays where the visitor left it.
+		if ( ! element || popup.waymorphicStay ) {
 			return;
 		}
 		// The focus goes into the popup when it opens. For a popup that is not fully in the map, the
@@ -578,16 +580,21 @@
 	 * A text with plain signs, for the comparison of a title with the text of a popup. WordPress
 	 * writes ’ “ ” – — … × ™ for ' " - -- ... x (tm) in the text of a post (wptexturize), and not
 	 * in the attributes of a shortcode: "St Mary's Church" is "St Mary’s Church" in the popup.
+	 * No sign becomes a letter beside a name: "Nike×Adidas" has the full word "Nike".
 	 */
 	function plainSigns( words ) {
-		return words
-			.replace( /[\u2018\u2019\u201A\u201B\u2032]/g, "'" )
-			.replace( /[\u201C\u201D\u201E\u201F\u2033]/g, '"' )
-			.replace( /\u2026/g, '...' )
-			.replace( /[\u2010-\u2015\u2212]/g, '-' )
-			.replace( /-{2,}/g, '-' )
-			.replace( /\u00D7/g, 'x' )
-			.replace( /\u2122/g, '(tm)' );
+		return (
+			words
+				.replace( /[\u2018\u2019\u201A\u201B\u2032]/g, "'" )
+				.replace( /[\u201C\u201D\u201E\u201F\u2033]/g, '"' )
+				.replace( /\u2026/g, '...' )
+				.replace( /[\u2010-\u2015\u2212]/g, '-' )
+				.replace( /-{2,}/g, '-' )
+				// WordPress writes × only for an x between two digits: "10x10" is "10×10".
+				.replace( /(\d)\u00D7(?=\d)/g, '$1x' )
+				// The letters become the sign, not the sign the letters: "Acme™" does not have the word "tm".
+				.replace( /\(tm\)/g, '\u2122' )
+		);
 	}
 
 	/**
@@ -773,6 +780,8 @@
 					);
 				} );
 				popup.on( 'close', function () {
+					// The popup moves the map again when the visitor opens it the next time.
+					popup.waymorphicStay = false;
 					element.classList.remove( 'waymorphic-map__marker--active' );
 					if ( openMenu && content.contains( openMenu.wrap ) ) {
 						closeMenu();
@@ -836,6 +845,8 @@
 			if ( item.popup && item.open ) {
 				// A popup that opens with the page must not take the keyboard focus.
 				marker.getPopup().options.focusAfterOpen = false;
+				// On a map that starts again with the view of the visitor, it does not move the map.
+				marker.getPopup().waymorphicStay = !! ( config && config.keptView );
 				marker.togglePopup();
 				marker.getPopup().options.focusAfterOpen = true;
 				// The marker stays out of the groups, so that its popup stays open.
@@ -1801,6 +1812,23 @@
 		var originMarker = null;
 		// The view of the map before a search.
 		var home = null;
+		// The view that the last search gave to the map: the centre, the zoom, the turn and the tilt.
+		var searchView = null;
+		// True while the map moves to that view.
+		var toSearch = false;
+		// The events of the move of a search have the mark waymorphicFit (see fitShown()).
+		map.on( 'movestart', function ( event ) {
+			if ( event && event.waymorphicFit ) {
+				toSearch = true;
+			}
+		} );
+		map.on( 'moveend', function ( event ) {
+			if ( event && event.waymorphicFit ) {
+				var centre = map.getCenter();
+				searchView = [ centre.lng, centre.lat, map.getZoom(), map.getBearing(), map.getPitch() ];
+				toSearch = false;
+			}
+		} );
 		// The element with the category buttons.
 		var chips = null;
 		var list = null;
@@ -1813,6 +1841,16 @@
 		var gone = false;
 		map.on( 'remove', function () {
 			if ( state.category || state.origin ) {
+				// The view that stop() kept for the new start of the map.
+				var kept = element.waymorphicView;
+				if ( state.origin && home && kept && ( toSearch || ( searchView && searchView.join() === kept.center.concat( kept.zoom, kept.bearing, kept.pitch ).join() ) ) ) {
+					// The search goes away (below), and the map has the view that the search made (the
+					// visitor did not move the map after the search; a new size of the map is not a move):
+					// the map starts again with the view before the search, as after "Show all".
+					kept.center = home.center.toArray();
+					kept.zoom = home.zoom;
+					kept.moving = false;
+				}
 				// The list and the tools are as after a new start of the map: all the places, no search.
 				// A map that cannot start again leaves this list as text, and the buttons that could
 				// change it go away.
@@ -2108,7 +2146,8 @@
 					  } )
 					: circleRing( state.origin, state.radius )
 			);
-			map.fitBounds( boundsOf( view ), { padding: fitPadding( element ), maxZoom: 15 } );
+			// The events of this move have the mark waymorphicFit (see searchView).
+			map.fitBounds( boundsOf( view ), { padding: fitPadding( element ), maxZoom: 15 }, { waymorphicFit: true } );
 		}
 
 		// Show the markers that are near a point. where: the name of the point, when it is a new point.
@@ -2688,7 +2727,14 @@
 		element.waymorphicView = null;
 		if ( element.classList.contains( 'is-ready' ) ) {
 			try {
-				element.waymorphicView = { center: map.getCenter().toArray(), zoom: map.getZoom(), bearing: map.getBearing(), pitch: map.getPitch() };
+				element.waymorphicView = {
+					center: map.getCenter().toArray(),
+					zoom: map.getZoom(),
+					bearing: map.getBearing(),
+					pitch: map.getPitch(),
+					// True when an animation moved the map at this time: the view is between two views.
+					moving: map.isEasing(),
+				};
 			} catch ( error ) {
 				// The map is not usable: it starts again with its first view.
 			}
@@ -2839,6 +2885,10 @@
 		// The map stopped (see stop()): it starts with the view that the visitor left.
 		var view = element.waymorphicView;
 		element.waymorphicView = null;
+		// A popup that opens with the page does not move the map away from this view (see keepInView()).
+		// Not when the map stopped in an animation, for example the one that moved the map to this
+		// popup: the view is not complete, and the popup can be cut.
+		config.keptView = !! view && ! view.moving;
 		if ( view ) {
 			config.center = view.center;
 			config.zoom = view.zoom;

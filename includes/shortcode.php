@@ -305,7 +305,11 @@ function waymorphic_map_far_places( $places ) {
 		if ( $named ) {
 			continue;
 		}
-		$far[] = array( $address, rtrim( (string) $searched['label'], '. ' ) );
+		// One time for each address: two markers can have the same address.
+		$one = array( $address, rtrim( (string) $searched['label'], '. ' ) );
+		if ( ! in_array( $one, $far, true ) ) {
+			$far[] = $one;
+		}
 	}
 	if ( 1 === count( $far ) ) {
 		/* translators: 1: an address, 2: the name of the place that the search found. */

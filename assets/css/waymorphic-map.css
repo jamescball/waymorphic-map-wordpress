@@ -991,7 +991,10 @@
    (\A0), each 120 px wide, and between them a character with no width where the line can break
    (\200B). Thus a map with a list asks for 240 px, and a narrow cell can make it as narrow as
    120 px: almost the widths that the rows gave in version 1.1.0. The line has no height and does
-   not show. A browser that cannot find the map of a list (:has) has the usual rows. */
+   not show. It is not the first line of text of the map for a parent that puts its parts on one
+   baseline (a table cell, a row with align-items: baseline): layout containment takes the
+   baseline of the line away. A browser that cannot find the map of a list (:has) has the usual
+   rows. */
 @supports selector(:has(+ *)) {
 	.waymorphic-map__list:not(#_) {
 		container: waymorphic-map-list / inline-size;
@@ -1000,6 +1003,7 @@
 	.waymorphic-map:not(#_):has(+ .waymorphic-map__list)::before {
 		content: "\A0\200B\A0";
 		display: block;
+		contain: layout;
 		height: 0;
 		margin: 0;
 		padding: 0;

@@ -301,6 +301,8 @@
 	/* The space is for the focus ring of a link at the edge: a box that scrolls cuts what is outside it. */
 	margin: -4px;
 	padding: 4px;
+	/* The browser keeps this space when it scrolls to a link that gets the focus. */
+	scroll-padding: 4px;
 	overflow-y: auto;
 }
 
@@ -382,6 +384,11 @@
 /* The selector is stronger than the rule for the paragraphs of a popup. */
 .waymorphic-map:not(#_) .waymorphic-map__popup .waymorphic-map__directions-line {
 	margin: 0.5em 0 0;
+}
+
+/* A popup that has only the link: the space above and below it is the same. */
+.waymorphic-map:not(#_) .waymorphic-map__popup .waymorphic-map__directions-line--only {
+	margin-top: 0;
 }
 
 /* A marker with a picture. */
@@ -668,9 +675,10 @@
 		font-size: 16px;
 	}
 
-	/* The hint keeps its size (it is not cut): the telephone looks at the size of the text of the field. */
+	/* The hint keeps its size (it is not cut): the telephone looks at the size of the text of the field.
+	   It is not larger than that text. */
 	.waymorphic-map__tools:not(#_) .waymorphic-map__locator-input::placeholder {
-		font-size: var(--wm-font-size);
+		font-size: min(16px, var(--wm-font-size));
 	}
 }
 
@@ -924,6 +932,11 @@
 	outline-offset: 2px;
 }
 
+/* In the list the control is at the edge of the list, which cuts what is outside it: the ring is inside the control. */
+.waymorphic-map__list:not(#_) .waymorphic-map__directions:focus-visible {
+	outline-offset: -2px;
+}
+
 /* A small arrow on the button that opens the list of the services. */
 .waymorphic-map:not(#_) .waymorphic-map__directions--menu::after,
 .waymorphic-map__list:not(#_) .waymorphic-map__directions--menu::after {
@@ -973,12 +986,32 @@
 }
 
 /* The rows change with the width of the list, not of the window. A list that is a container has no
-   width from its rows: it gets a width of its own, for a parent that is as wide as its content (a Row
-   block, a float, a table cell). A browser that cannot give this width has the usual rows. */
-@supports (contain-intrinsic-inline-size: 1px) {
+   width from its rows. In a parent that is as wide as its content (a Row block, a float, a table
+   cell), the width comes from a line of text at the top of the map: two spaces that do not break
+   (\A0), each 120 px wide, and between them a character with no width where the line can break
+   (\200B). Thus a map with a list asks for 240 px, and a narrow cell can make it as narrow as
+   120 px: almost the widths that the rows gave in version 1.1.0. The line has no height and does
+   not show. A browser that cannot find the map of a list (:has) has the usual rows. */
+@supports selector(:has(+ *)) {
 	.waymorphic-map__list:not(#_) {
 		container: waymorphic-map-list / inline-size;
-		contain-intrinsic-inline-size: 240px;
+	}
+
+	.waymorphic-map:not(#_):has(+ .waymorphic-map__list)::before {
+		content: "\A0\200B\A0";
+		display: block;
+		height: 0;
+		margin: 0;
+		padding: 0;
+		border: 0;
+		overflow: hidden;
+		visibility: hidden;
+		font-size: 1px;
+		line-height: 0;
+		letter-spacing: 0;
+		text-indent: 0;
+		white-space: normal;
+		word-spacing: 120px;
 	}
 }
 
@@ -1035,6 +1068,11 @@
 .waymorphic-map:not(#_) .waymorphic-map__menu.is-open,
 .waymorphic-map__list:not(#_) .waymorphic-map__menu.is-open {
 	display: block;
+}
+
+/* The services of a popup are on the surface of the site, not on the white popup: they have the accent colour of the site. */
+.waymorphic-map:not(#_) .waymorphic-map__menu {
+	--wm-accent: var(--waymorphic-map-accent, #1f6feb);
 }
 
 .waymorphic-map:not(#_) .waymorphic-map__menu[popover],

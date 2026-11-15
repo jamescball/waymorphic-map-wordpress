@@ -169,6 +169,13 @@
 		}
 	}
 
+	// A control in the panel of the sidebar that has the link of a click event. A link that goes away
+	// when it is used gives the focus to such a control: the focus does not go to the top of the page.
+	function inPanel( event, selector ) {
+		var panel = event && event.currentTarget && event.currentTarget.closest ? event.currentTarget.closest( '.components-panel__body' ) : null;
+		return panel ? panel.querySelector( selector ) : null;
+	}
+
 	// The zoom for a place of the search that has no size, by its type.
 	var PLACE_ZOOM = {
 		country: 5,
@@ -324,6 +331,10 @@
 				return;
 			}
 			event.stopPropagation();
+			if ( event.isComposing || event.keyCode === 229 ) {
+				// An input method composes the text (Japanese, Chinese, Korean): its keys are not for the list.
+				return;
+			}
 			var count = result.results.length;
 			// The list can be for an older text: the search starts a short time after the last key.
 			var current = result.query === text.trim();
@@ -792,7 +803,8 @@
 				form.addEventListener( type, keepKeys );
 			} );
 			input.addEventListener( 'keydown', function ( event ) {
-				if ( event.key === 'Enter' ) {
+				// Not the Enter that takes the word of an input method (Safari gives it with the key code 229).
+				if ( event.key === 'Enter' && ! event.isComposing && event.keyCode !== 229 ) {
 					input.blur();
 					// When the block has this text (Ctrl+S gave it), the marker is not made again and
 					// its form stays open: Enter closes the form each time.
@@ -1460,8 +1472,13 @@
 									{
 										variant: 'link',
 										style: { display: 'block', marginBottom: '8px' },
-										onClick: function () {
+										onClick: function ( event ) {
+											// This link goes away: the focus goes to the button for the picture, which is before it.
+											var before = event && event.currentTarget ? event.currentTarget.previousElementSibling : null;
 											updateMarker( index, { icon: undefined }, true );
+											if ( before && before.focus ) {
+												before.focus();
+											}
 										},
 									},
 									__( 'Use the usual marker', 'free-maps' )
@@ -1475,8 +1492,7 @@
 								onClick: function ( event ) {
 									// The link of the last marker goes away with its row: the focus goes to the
 									// "Add a marker" button of the panel, not to the top of the page.
-									var panel = index === markers.length - 1 && event && event.currentTarget ? event.currentTarget.closest( '.components-panel__body' ) : null;
-									var next = panel ? panel.querySelector( '.waymorphic-add-marker' ) : null;
+									var next = index === markers.length - 1 ? inPanel( event, '.waymorphic-add-marker' ) : null;
 									removeMarker( index );
 									if ( next ) {
 										next.focus();
@@ -1535,9 +1551,14 @@
 								variant: 'link',
 								isDestructive: true,
 								style: { marginTop: '8px' },
-								onClick: function () {
+								onClick: function ( event ) {
+									// This link goes away: the focus goes to the "Add a marker" button.
+									var next = inPanel( event, '.waymorphic-add-marker' );
 									setNote( '' );
 									commit( { markers: [] } );
+									if ( next ) {
+										next.focus();
+									}
 								},
 							},
 							__( 'Remove all the markers', 'free-maps' )
@@ -1602,8 +1623,14 @@
 							{
 								variant: 'link',
 								isDestructive: true,
-								onClick: function () {
+								onClick: function ( event ) {
+									// The link of the last shape goes away with its row: the focus goes to the first
+									// button of the shape types, not to the top of the page.
+									var first = index === shapes.length - 1 ? inPanel( event, '.waymorphic-add-shape' ) : null;
 									removeShape( index );
+									if ( first ) {
+										first.focus();
+									}
 								},
 							},
 							__( 'Remove the shape', 'free-maps' )
@@ -1620,6 +1647,7 @@
 							{
 								key: type,
 								variant: 'secondary',
+								className: type === 'polygon' ? 'waymorphic-add-shape' : undefined,
 								isPressed: !! drawing && drawing.type === type,
 								onClick: function () {
 									startDrawing( type );
@@ -1641,8 +1669,13 @@
 								variant: 'link',
 								isDestructive: true,
 								style: { marginTop: '8px' },
-								onClick: function () {
+								onClick: function ( event ) {
+									// This link goes away: the focus goes to the first button of the shape types.
+									var first = inPanel( event, '.waymorphic-add-shape' );
 									commit( { shapes: [] } );
+									if ( first ) {
+										first.focus();
+									}
 								},
 							},
 							__( 'Remove all the shapes', 'free-maps' )
@@ -1995,12 +2028,13 @@
 			inspector,
 			el(
 				'div',
-				wp.blockEditor.useBlockProps( { className: 'waymorphic-map-editor' } ),
+				// has-setup: the first-step card shows. has-no-map: the browser cannot show the map. See editor.css.
+				wp.blockEditor.useBlockProps( { className: 'waymorphic-map-editor' + ( setup ? ' has-setup' : '' ) + ( failed ? ' has-no-map' : '' ) } ),
 				// Before the map: the Tab key goes from the block to the search field first.
 				overlay,
 				// With no map, the box is low and the message is below it. While the first-step card shows, the
-				// box is as high as the card (244 px, 24 px below the top): the message is below the card.
-				el( 'div', { ref: containerRef, className: 'waymorphic-map', style: { height: failed && ! setup ? '120px' : height, minHeight: failed && setup ? '300px' : undefined } } ),
+				// box has no height: the card is in the flow of the block, and the message is below the card.
+				el( 'div', { ref: containerRef, className: 'waymorphic-map', style: { height: failed ? ( setup ? '0px' : '120px' ) : height } } ),
 				failed
 					? el(
 							'p',

@@ -80,7 +80,7 @@ Attributes of `[waymorphic_map]`:
 
 Attributes of `[waymorphic_marker]`: `lat` and `lng`, or `address`; `open="true"` shows the popup when the page opens. The text between the tags is the popup. Optional: `title` (the name in the list and the first line of the popup), `category`, `colour` (such as `#d63638`), `icon` (the URL of a picture to use as the marker) and `animation` (`drop` or `bounce`). A marker with no popup text can have a slash at the end and no closing tag: `[waymorphic_marker lat="51.5" lng="-0.12" /]`.
 
-Use straight quotes (`"`) in the shortcodes. A user who can edit the page sees a message below the map when an address was not found, when a position is not valid, or when the search found an address very far from the places of the map that have a `lat` and a `lng`. Visitors do not see this message. The search gives the place that it knows best: write the town in an address, and the area or the full name of the country when other towns have the same name (`address="Buckingham Palace, London"`, `address="Boston, Lincolnshire"`). Write `United Kingdom` and `United States`, not `UK` and `USA`.
+Use straight quotes (`"`) in the shortcodes. A user who can edit the page sees a message below the map when an address was not found, when a position is not valid, or when the search found an address very far from the places of the map that have a `lat` and a `lng` (the map must have two such places, or a centre with a `lat` and a `lng`). Visitors do not see this message. The search gives the place that it knows best: write the town in an address, and the area or the full name of the country when other towns have the same name (`address="Buckingham Palace, London"`, `address="Boston, Lincolnshire"`). Write `United Kingdom` and `United States`, not `UK` and `USA`. In a very large country, a correct town can be that far: with the full name of its area or of its country in the address (`address="Perth, Western Australia"`), it gets no message.
 
 = Shapes =
 
@@ -253,7 +253,7 @@ Send an email to contact@waymorphic.com.
 * Fix: a map with a very large configuration (about one million characters) made the page show a critical error.
 * Fix: a position that is out of range (lat="151.2" lng="-33.8") is refused. Before, the marker went to the edge of the world.
 * Fix: a marker whose picture does not load shows as the usual marker. The popup of a picture marker opens at the edge of the picture.
-* Fix: a page with many maps: the oldest maps became empty when the browser had no more drawing contexts. A map now starts again when the visitor comes back to it.
+* Fix: a page with many maps: the oldest maps became empty when the browser had no more drawing contexts. A map now starts again when the visitor comes back to it, with the view that the visitor left.
 * Fix: a message shows when the style of the map does not load. Before, the map was grey with no message.
 * Fix: a popup on a narrow map, the keyboard focus ring on the map, a header that stays at the top of the window and covered the map after a click in the list, and the zoom of an iPhone on the search field.
 * Fix: the name of a marker with no title joined the lines of its popup ("Eiffel TowerChamp de Mars").

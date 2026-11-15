@@ -5,8 +5,17 @@
 	isolation: isolate;
 }
 
+/* A new block with its first-step card (the card can be higher than the block) is above the blocks
+   around it. The selected block is above that, and above the parts of a next block that have a
+   layer of their own (a spacer, a cover). These are the levels that the card (4) and the
+   suggestions of the search (6) had in the page before each block had its own layers. A block
+   that stays at the top of the window (10) is above them. */
+.waymorphic-map-editor.has-setup {
+	z-index: 4;
+}
+
 .waymorphic-map-editor.is-selected {
-	z-index: 1;
+	z-index: 6;
 }
 
 /* The first click on a block that is not selected selects it: the shield is above all parts of the map, also its popups. */
@@ -390,11 +399,21 @@
 	cursor: pointer;
 }
 
-/* The browser cannot show the map in the editor. The message is below the grey box of the map,
-   above the veil of the first-step card and not below the search field. */
-.waymorphic-map-editor__error {
+/* The browser cannot show the map in the editor. The first-step card is in the flow of the block: the
+   block is as high as the card at each width, and the message is below the card. The message has no
+   layer of its own: the suggestions of a search show above it. The bar of a new shape is at the top
+   of the grey box, not on the message. */
+.waymorphic-map-editor.has-no-map .waymorphic-setup {
 	position: relative;
-	z-index: 5;
+	inset: auto;
+}
+
+.waymorphic-map-editor.has-no-map .waymorphic-map-editor__draw {
+	top: 10px;
+	bottom: auto;
+}
+
+.waymorphic-map-editor__error {
 	margin: 0;
 	padding: 12px 16px;
 	background: #fcf9e8;

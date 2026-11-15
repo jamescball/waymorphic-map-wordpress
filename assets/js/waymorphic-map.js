@@ -382,6 +382,11 @@
 			if ( ! api.above && menu.scrollIntoView ) {
 				// The services are in the page, below the button: in a list that scrolls, they can be out of view.
 				menu.scrollIntoView( { block: 'nearest', inline: 'nearest' } );
+				// A list that is narrower than the services does not go to the side: the visitor cannot move it back.
+				var around = button.closest( '.waymorphic-map__list' );
+				if ( around ) {
+					around.scrollLeft = 0;
+				}
 			}
 			menu.firstChild.focus( { preventScroll: true } );
 		} );
@@ -514,11 +519,23 @@
 	 * "<strong>Eiffel Tower</strong><br>Champ de Mars". '' when the popup has
 	 * no text. A line ends at a line break and at the end of a paragraph, a
 	 * heading or a list item.
+	 *
+	 * @param {string}  popup    The HTML of the popup.
+	 * @param {boolean} [blocks] For the title line of a popup: a line ends at each element that
+	 *                           starts a new line, and a picture or a button is the end of a word.
+	 *                           Not for the names of the list: PHP makes them with the short rule.
 	 */
-	function firstLine( popup ) {
+	function firstLine( popup, blocks ) {
 		var html = String( popup || '' )
 			.replace( /\s+/g, ' ' )
 			.replace( /<\/?(?:br|p|div|li|h[1-6]|tr|td|th)\b/gi, '\n$&' );
+		if ( blocks ) {
+			// "<b>York Office</b><address>1 High Street</address>": the name is "York Office", not "York Office1".
+			html = html
+				.replace( /<\/?(?:address|article|aside|blockquote|caption|dd|details|dl|dt|fieldset|figcaption|figure|footer|header|hgroup|hr|legend|main|menu|nav|ol|pre|section|summary|table|ul)\b/gi, '\n$&' )
+				// A picture, a film, a sound or a button between two texts is the end of a word, not of the line.
+				.replace( /<\/?(?:audio|button|img|picture|video)\b/gi, ' $&' );
+		}
 		return (
 			( cleanHtml( html ).textContent || '' )
 				.split( '\n' )
@@ -534,13 +551,20 @@
 	 * "london shop", "dinner from 6 pm" does not have "inn".
 	 */
 	function hasName( words, name ) {
-		// A digit, or a letter that has a small and a large form. Quotation marks and dashes are
-		// not letters. Chinese and Japanese text has no spaces between its words: no test there.
+		// A digit from 0 to 9, or a letter that has a small and a large form. Quotation marks and
+		// dashes are not letters. A script that has no small and large letters (Arabic, Hebrew, Hindi,
+		// Korean, Chinese, Japanese, Thai) gets no test of the full words: there a name is often one
+		// word with a particle or an article, or the text has no spaces between its words.
 		function letter( character ) {
 			return !! character && ( /\d/.test( character ) || character.toLowerCase() !== character.toUpperCase() );
 		}
 		if ( ! name ) {
 			return true;
+		}
+		if ( name.length > 200 ) {
+			// A long text is not a short name in a longer word. One search: the test of each place of
+			// a long text that repeats ("aaaa…") keeps the browser busy for seconds.
+			return words.indexOf( name ) !== -1;
 		}
 		for ( var at = words.indexOf( name ); at !== -1; at = words.indexOf( name, at + 1 ) ) {
 			if ( ! letter( words.charAt( at - 1 ) ) && ! letter( words.charAt( at + name.length ) ) ) {
@@ -548,6 +572,22 @@
 			}
 		}
 		return false;
+	}
+
+	/**
+	 * A text with plain signs, for the comparison of a title with the text of a popup. WordPress
+	 * writes ’ “ ” – — … × ™ for ' " - -- ... x (tm) in the text of a post (wptexturize), and not
+	 * in the attributes of a shortcode: "St Mary's Church" is "St Mary’s Church" in the popup.
+	 */
+	function plainSigns( words ) {
+		return words
+			.replace( /[\u2018\u2019\u201A\u201B\u2032]/g, "'" )
+			.replace( /[\u201C\u201D\u201E\u201F\u2033]/g, '"' )
+			.replace( /\u2026/g, '...' )
+			.replace( /[\u2010-\u2015\u2212]/g, '-' )
+			.replace( /-{2,}/g, '-' )
+			.replace( /\u00D7/g, 'x' )
+			.replace( /\u2122/g, '(tm)' );
 	}
 
 	/**
@@ -675,8 +715,8 @@
 			if ( item.title && ( ! config || config.popupTitle !== false ) ) {
 				// The popup starts with the name of the place, if the first line of its text does not
 				// have the name as full words ("Our London shop" has "London shop"; "Dinner" does not have "Inn").
-				var start = firstLine( html ).toLowerCase();
-				var title = String( item.title ).replace( /\s+/g, ' ' ).trim().toLowerCase();
+				var start = plainSigns( firstLine( html, true ).toLowerCase() );
+				var title = plainSigns( String( item.title ).replace( /\s+/g, ' ' ).trim().toLowerCase() );
 				if ( ! hasName( start, title ) ) {
 					html = '<strong class="waymorphic-map__popup-title">' + escapeHtml( item.title ) + '</strong>' + ( html ? '<br>' : '' ) + html;
 				}
@@ -685,7 +725,7 @@
 				var content = popupContent( html, roomForPopup );
 				if ( control ) {
 					var line = document.createElement( 'p' );
-					line.className = 'waymorphic-map__directions-line';
+					line.className = 'waymorphic-map__directions-line' + ( content.firstChild ? '' : ' waymorphic-map__directions-line--only' );
 					line.appendChild( control );
 					content.appendChild( line );
 				}
@@ -1767,9 +1807,28 @@
 		var status = null;
 		// The buttons of the rows that show, by the number of their marker.
 		var rows = {};
+		// Takes the text of a search away from the search field (a map with a search sets it).
+		var clearSearch = null;
 		// True when the map is not there now (it starts again after the browser took its drawing context away).
 		var gone = false;
 		map.on( 'remove', function () {
+			if ( state.category || state.origin ) {
+				// The list and the tools are as after a new start of the map: all the places, no search.
+				// A map that cannot start again leaves this list as text, and the buttons that could
+				// change it go away.
+				state.category = '';
+				state.origin = null;
+				state.where = '';
+				if ( chips ) {
+					Array.prototype.forEach.call( chips.children, function ( chip, number ) {
+						chip.setAttribute( 'aria-pressed', number === 0 ? 'true' : 'false' );
+					} );
+				}
+				if ( clearSearch ) {
+					clearSearch();
+				}
+				draw( true );
+			}
 			gone = true;
 			// The search, the category buttons and the list do nothing until the map starts again.
 			[ top, list ].forEach( function ( part ) {
@@ -1918,28 +1977,34 @@
 			}
 		} );
 
-		function draw() {
+		// Shows the markers and the rows of the places that the category and the search permit.
+		// listOnly: only the rows (the map goes away at this moment).
+		function draw( listOnly ) {
 			var shown = [];
 			if ( gone ) {
 				return shown;
 			}
 			glMarkers.forEach( function ( marker, index ) {
 				var visible = isVisible( index );
-				marker.waymorphicHidden = ! visible;
+				if ( ! listOnly ) {
+					marker.waymorphicHidden = ! visible;
+				}
 				if ( visible ) {
 					shown.push( index );
 				}
 			} );
-			if ( regroup ) {
-				regroup();
-			} else {
-				showOrHide( map, glMarkers );
-				if ( map.waymorphicTabStops ) {
-					map.waymorphicTabStops();
+			if ( ! listOnly ) {
+				if ( regroup ) {
+					regroup();
+				} else {
+					showOrHide( map, glMarkers );
+					if ( map.waymorphicTabStops ) {
+						map.waymorphicTabStops();
+					}
 				}
-			}
-			if ( shown.indexOf( state.selected ) === -1 ) {
-				selectMarker( -1 );
+				if ( shown.indexOf( state.selected ) === -1 ) {
+					selectMarker( -1 );
+				}
 			}
 			if ( state.origin ) {
 				shown.sort( function ( a, b ) {
@@ -2250,6 +2315,16 @@
 					);
 				} );
 			}
+
+			clearSearch = function () {
+				run++;
+				if ( request ) {
+					request.abort();
+				}
+				input.value = '';
+				reset.hidden = true;
+				say( '' );
+			};
 
 			reset.addEventListener( 'click', function ( event ) {
 				run++;
@@ -2608,6 +2683,16 @@
 	 * @param {Object}      map     Its MapLibre map.
 	 */
 	function stop( element, map ) {
+		// The view of the visitor: the map starts again with it. Not before the markers are there:
+		// the view of a map with files changes when its files come.
+		element.waymorphicView = null;
+		if ( element.classList.contains( 'is-ready' ) ) {
+			try {
+				element.waymorphicView = { center: map.getCenter().toArray(), zoom: map.getZoom(), bearing: map.getBearing(), pitch: map.getPitch() };
+			} catch ( error ) {
+				// The map is not usable: it starts again with its first view.
+			}
+		}
 		try {
 			map.remove();
 		} catch ( error ) {
@@ -2751,6 +2836,14 @@
 			// The page has its number of maps: this map starts when it is in the window.
 			return;
 		}
+		// The map stopped (see stop()): it starts with the view that the visitor left.
+		var view = element.waymorphicView;
+		element.waymorphicView = null;
+		if ( view ) {
+			config.center = view.center;
+			config.zoom = view.zoom;
+			config.fit = false;
+		}
 		try {
 			element.waymorphicMap = create( element, config );
 		} catch ( error ) {
@@ -2787,6 +2880,9 @@
 				} );
 			}
 			return;
+		}
+		if ( view && ( view.bearing || view.pitch ) ) {
+			map.jumpTo( { bearing: view.bearing, pitch: view.pitch } );
 		}
 		// The browser took the drawing context of this map away (see makeRoom(): this occurs when the
 		// page has more maps in view than the browser permits, or after a fault of the graphics

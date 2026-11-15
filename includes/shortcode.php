@@ -212,15 +212,18 @@ function waymorphic_map_distance( $a, $b ) {
 }
 
 /**
- * Adds a message for each address that the search found far from the places
+ * Adds a message for the addresses that the search found far from the places
  * that the editor gave as numbers: "Brighton Pier, Brighton" in New Zealand
  * on a map of shops in England. The search gives the place that it knows
  * best, and the map shows the full world. The message is for the editors of
- * the page. Far is a different part of the world (more than 2500 km): two
- * towns of one country are not far. There is no message when the address has
- * the name of the country or the area where the place was found: the editor
- * selected that country. Places that came from the search do not tell where
- * the map is: the search can be wrong for them too.
+ * the page. Far is a different part of the world: more than 2500 km, and more
+ * than ten times the usual distance between the places that are numbers. In
+ * a very large country (the United States, Australia) a correct town can be
+ * that far: the message tells how to make it go away. There is no message
+ * when the address has the name of the country or the area where the place
+ * was found: the editor selected that country. Places that came from the
+ * search do not tell where the map is: the search can be wrong for them too.
+ * A map has one message for all its far places.
  *
  * @param array<int,array<string,mixed>> $places The markers and the centre of the map. Each has
  *                                               lat and lng. 'searched' is the address and the
@@ -235,6 +238,8 @@ function waymorphic_map_far_places( $places ) {
 			$points[ $index ] = $position;
 		}
 	}
+	// The far places: the address and the name of the place that the search found.
+	$far = array();
 	// Other names that editors write for two countries.
 	$names = array(
 		'US' => array( 'USA', 'United States', 'U.S.' ),
@@ -272,7 +277,12 @@ function waymorphic_map_far_places( $places ) {
 		}
 		sort( $spread );
 		$usual = $spread[ (int) floor( count( $spread ) / 2 ) ];
-		$away  = waymorphic_map_distance( $points[ $index ], $middle );
+		if ( 2 === count( $spread ) ) {
+			// With two places, the middle is a corner of their area, and this distance is almost the
+			// distance between them. The half of it is what three places on that line give.
+			$usual = $usual / 2;
+		}
+		$away = waymorphic_map_distance( $points[ $index ], $middle );
 		// Far: more than 2500 km, and more than ten times the usual distance of these places.
 		if ( $away <= 2500 || $away <= 10 * max( 20, $usual ) ) {
 			continue;
@@ -295,8 +305,24 @@ function waymorphic_map_far_places( $places ) {
 		if ( $named ) {
 			continue;
 		}
+		$far[] = array( $address, rtrim( (string) $searched['label'], '. ' ) );
+	}
+	if ( 1 === count( $far ) ) {
 		/* translators: 1: an address, 2: the name of the place that the search found. */
-		waymorphic_map_problems( sprintf( __( 'The address "%1$s" was found here: %2$s. This place is far from the other places of the map. If it is not the correct place, write the town and the area, or the full name of the country, in the address ("Edinburgh, Scotland", "Boston, United Kingdom"), or use lat and lng.', 'free-maps' ), $address, rtrim( (string) $searched['label'], '. ' ) ) );
+		waymorphic_map_problems( sprintf( __( 'The address "%1$s" was found here: %2$s. This place is far from the other places of the map. If it is not the correct place, write the town and the area, or the full name of the country, in the address ("Edinburgh, Scotland", "Boston, United Kingdom"), or use lat and lng. If it is the correct place, write the full name of its area or of its country in the address too ("Perth, Western Australia"): then this message goes away.', 'free-maps' ), $far[0][0], $far[0][1] ) );
+	} elseif ( $far ) {
+		// One message for the map: a map of a large country or of the world can have many such places.
+		$list = array();
+		foreach ( array_slice( $far, 0, 10 ) as $one ) {
+			/* translators: 1: an address, 2: the name of the place that the search found. */
+			$list[] = sprintf( __( '"%1$s" (%2$s)', 'free-maps' ), $one[0], $one[1] );
+		}
+		if ( count( $far ) > 10 ) {
+			/* translators: %d: a number of addresses. */
+			$list[] = sprintf( __( 'and %d more', 'free-maps' ), count( $far ) - 10 );
+		}
+		/* translators: %s: a list of addresses, each with the name of the place that the search found: "Perth" (Perth, Scotland, United Kingdom); "Boston" (Boston, Massachusetts, United States). */
+		waymorphic_map_problems( sprintf( __( 'These addresses were found far from the other places of the map: %s. If a place is not correct, write the town and the area, or the full name of the country, in its address ("Edinburgh, Scotland", "Boston, United Kingdom"), or use lat and lng. If a place is correct, write the full name of its area or of its country in its address too ("Perth, Western Australia"): then the address is not in this message.', 'free-maps' ), implode( '; ', $list ) ) );
 	}
 }
 

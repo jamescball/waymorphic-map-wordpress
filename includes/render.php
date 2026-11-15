@@ -809,13 +809,21 @@ function waymorphic_map_content_has_map( $content, $depth = 0 ) {
  * wp_enqueue_style( 'waymorphic-map' ) before wp_head().
  */
 function waymorphic_map_enqueue_early() {
-	global $wp_query;
+	global $wp_query, $template;
 
-	// A block theme makes the page before the head: the styles of a map that it shows are in time.
-	// On a page that lists posts (a blog, a category, a search), a block theme shows mostly excerpts,
-	// with no map: the styles must not load for each such page. For one post or page, the styles
-	// load here: a template of PHP (a page builder) can make the page after the head.
-	if ( ! is_singular() && function_exists( 'wp_is_block_theme' ) && wp_is_block_theme() ) {
+	// A block template makes the page before the head: the styles of a map that it shows are in time.
+	// On a page that lists posts (a blog, a category, a search), a block template shows mostly
+	// excerpts, with no map: the styles must not load for each such page. For one post or page, the
+	// styles load here: a template of PHP (a page builder) can make the page after the head. A
+	// block theme can also use a template of PHP for a list (home.php, a template of a plugin): then
+	// the list is made after the head, as in a classic theme. WordPress has the template of the
+	// request in $template. When it is not known, the type of the theme tells.
+	if ( is_string( $template ) && '' !== $template ) {
+		$blocks = wp_normalize_path( ABSPATH . WPINC . '/template-canvas.php' ) === wp_normalize_path( $template );
+	} else {
+		$blocks = function_exists( 'wp_is_block_theme' ) && wp_is_block_theme();
+	}
+	if ( ! is_singular() && $blocks ) {
 		return;
 	}
 

@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Makes build/free-maps.zip: the plugin as WordPress installs it. Run from anywhere: bin/build-zip.sh
+# Makes build/free-maps-waymorphic-map.zip: the plugin as WordPress installs it. Run from anywhere: bin/build-zip.sh
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-slug="free-maps"
+slug="free-maps-waymorphic-map"
 cd "$root"
 
 # The zip holds the files of the last commit: the version numbers come from that

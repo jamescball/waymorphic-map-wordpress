@@ -2734,6 +2734,10 @@
 					pitch: map.getPitch(),
 					// True when an animation moved the map at this time: the view is between two views.
 					moving: map.isEasing(),
+					// True when a picture of an open popup did not come yet: the popup gets larger when it comes.
+					loading: Array.prototype.some.call( element.querySelectorAll( '.maplibregl-popup img' ), function ( image ) {
+						return ! image.complete;
+					} ),
 				};
 			} catch ( error ) {
 				// The map is not usable: it starts again with its first view.
@@ -2886,9 +2890,10 @@
 		var view = element.waymorphicView;
 		element.waymorphicView = null;
 		// A popup that opens with the page does not move the map away from this view (see keepInView()).
-		// Not when the map stopped in an animation, for example the one that moved the map to this
-		// popup: the view is not complete, and the popup can be cut.
-		config.keptView = !! view && ! view.moving;
+		// Not when the view is not complete (see stop()): the map stopped in an animation, for example
+		// the one that moved the map to this popup, or before a picture of the popup came. Then the
+		// popup can be cut, and it moves the map as at the first start.
+		config.keptView = !! view && ! view.moving && ! view.loading;
 		if ( view ) {
 			config.center = view.center;
 			config.zoom = view.zoom;

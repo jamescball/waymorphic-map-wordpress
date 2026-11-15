@@ -80,7 +80,7 @@ Attributes of `[waymorphic_map]`:
 
 Attributes of `[waymorphic_marker]`: `lat` and `lng`, or `address`; `open="true"` shows the popup when the page opens. The text between the tags is the popup. Optional: `title` (the name in the list and the first line of the popup), `category`, `colour` (such as `#d63638`), `icon` (the URL of a picture to use as the marker) and `animation` (`drop` or `bounce`). A marker with no popup text can have a slash at the end and no closing tag: `[waymorphic_marker lat="51.5" lng="-0.12" /]`.
 
-Use straight quotes (`"`) in the shortcodes. A user who can edit the page sees a message below the map when an address was not found, when a position is not valid, or when the search found an address far from the other places of the map. Visitors do not see this message. The search gives the place that it knows best: write the town and the country in an address (`address="Brighton Pier, Brighton, United Kingdom"`).
+Use straight quotes (`"`) in the shortcodes. A user who can edit the page sees a message below the map when an address was not found, when a position is not valid, or when the search found an address very far from the places of the map that have a `lat` and a `lng`. Visitors do not see this message. The search gives the place that it knows best: write the town in an address, and the area or the full name of the country when other towns have the same name (`address="Buckingham Palace, London"`, `address="Boston, Lincolnshire"`). Write `United Kingdom` and `United States`, not `UK` and `USA`.
 
 = Shapes =
 
@@ -109,7 +109,7 @@ Put the shape shortcodes in `[waymorphic_map]`. The points are `latitude,longitu
 
 `[waymorphic_file]` shows the markers, lines and areas of a CSV, GeoJSON, KML or GPX file. The browser of the visitor gets the file each time the page opens, so a change to the file shows on the map. Ten files for each map at most.
 
-* A CSV file has a first row with the names of the columns: `lat` (or `latitude`), `lng` (or `lon`, `longitude`), and the optional `title` (or `name`), `description`, `category`, `colour` and `icon`.
+* A CSV file has a first row with the names of the columns: `lat` (or `latitude`), `lng` (or `lon`, `longitude`), and the optional `title` (or `name`), `description`, `category`, `colour` and `icon`. A position is a number: `51.5074`, `51,5074`, or `0.1276 W`. A row whose position has other text does not show.
 * The file must be on your site, or on a server that permits your site to read it (CORS).
 * The text of a file shows as plain text. HTML in a file does not operate.
 * `colour` and `category` on the shortcode are for the markers that have none in the file.
@@ -185,7 +185,7 @@ Yes. These parts keep their look in each theme: the usual CSS rules of a theme o
 
 `.wp-block-waymorphic-map { --waymorphic-map-accent: #b32d2e; --waymorphic-map-radius: 0; --waymorphic-map-list-height: 480px; }`
 
-The variables are `--waymorphic-map-accent`, `--waymorphic-map-accent-text`, `--waymorphic-map-text`, `--waymorphic-map-muted`, `--waymorphic-map-surface`, `--waymorphic-map-border`, `--waymorphic-map-line`, `--waymorphic-map-radius`, `--waymorphic-map-font-size`, `--waymorphic-map-list-height`, `--waymorphic-map-scheme` (`light` or `dark`: the scroll bar of the list and the arrow of the select field, for a dark `--waymorphic-map-surface`) and `--waymorphic-map-scroll-space` (the space above the map after a click on a row of the list, for a header that stays at the top of the window). For a change that the variables do not make, write `!important` in your CSS rule.
+The variables are `--waymorphic-map-accent`, `--waymorphic-map-accent-text`, `--waymorphic-map-text`, `--waymorphic-map-muted`, `--waymorphic-map-surface`, `--waymorphic-map-border`, `--waymorphic-map-line`, `--waymorphic-map-radius`, `--waymorphic-map-font-size`, `--waymorphic-map-list-height`, `--waymorphic-map-scheme` (`light` or `dark`: the parts that the browser draws, such as the scroll bar of the list, for a dark `--waymorphic-map-surface`), `--waymorphic-map-popup-accent` (the colour of the links in a popup; a popup is white on each site, so set this colour when the accent colour is light) and `--waymorphic-map-scroll-space` (the space above the map after a click on a row of the list, for a header that stays at the top of the window). For a change that the variables do not make, write `!important` in your CSS rule.
 
 = Can I draw shapes in the block editor? =
 
@@ -201,7 +201,7 @@ Export the markers as a CSV file, make sure that the first row has `lat` and `ln
 
 = Can developers change the map? =
 
-Yes. The `waymorphic_map_config` filter changes the configuration of a map, `waymorphic_map_tiles_url` changes the tile server, and `waymorphic_map_directions_services` changes the map services of the directions link. The address that the `waymorphic_map_directions_url` filter gives must start with `http` or `https`. A map element that you write by hand (not with the block or the shortcode) starts only with a style from the tile server of the site: the `waymorphic_map_trusted_addresses` filter adds other addresses. In JavaScript, each map element has its MapLibre map in the `waymorphicMap` property.
+Yes. The `waymorphic_map_config` filter changes the configuration of a map, `waymorphic_map_tiles_url` changes the tile server, and `waymorphic_map_directions_services` changes the map services of the directions link. The address that the `waymorphic_map_directions_url` filter gives must start with `http` or `https`. A map element that you write by hand (not with the block or the shortcode) starts only with a style from the tile server of the site: the `waymorphic_map_trusted_addresses` filter adds other addresses. A classic theme that makes a map in a template (with `waymorphic_map_render()` or `do_shortcode()`) must call `wp_enqueue_style( 'waymorphic-map' )` in a function on `wp_enqueue_scripts`: without this, the styles of the map load after the map. In JavaScript, each map element has its MapLibre map in the `waymorphicMap` property.
 
 = How do I get help or report a problem? =
 
@@ -225,7 +225,7 @@ Send an email to contact@waymorphic.com.
 * Security: the plugin cleans the credit text of the map style before MapLibre writes it in the page. MapLibre GL JS 5.21.0 has a fault in this cleaning (GHSA-jrc7-96c5-q579): a tile server that is not the Waymorphic server, or a user with the role of Contributor or Author, could run a script in the page.
 * Security: a map element in the content of a page starts only with a map style and a search from the tile server of the site (or from a filter of the site). Before, a user with the role of Contributor or Author could put a map element with a style of their choice in a post.
 * Fix: in a narrow list (a telephone, a column), a name showed one letter on each line.
-* Fix: the styles of a theme changed the list, the search, the category buttons, the buttons of the map and the close button of the popups. In some themes the popups could not be read. These parts now look the same in each theme. If your site has its own CSS rules for these parts, they have no effect now: use the CSS variables of the plugin, or write `!important` in your rules.
+* Fix: the styles of a theme changed the list, the search, the category buttons, the buttons of the map and the popups. In some themes the popups could not be read. These parts now look the same in each theme: a popup is white with dark text, and a link in a popup shows as a link. If your site has its own CSS rules for these parts, they have no effect now: use the CSS variables of the plugin, or write `!important` in your rules.
 * Fix: the list and the search are as wide as a map that has a width.
 * Fix: the search for the nearest markers found towns in other countries ("Bristol" in the USA). The search now prefers places near the markers, and the result text gives the place that it found.
 * Fix: after a search, a category button did not change the result text. "Show all" did not go back to the first view.
@@ -235,11 +235,11 @@ Send an email to contact@waymorphic.com.
 * Fix: a click on a marker that is on a shape opened two popups.
 * Fix: the keyboard: the Space key on a marker also moved the page, Escape did not close a popup, the focus went away after a popup closed, and the Tab key went to markers that were not in view. The popups of shapes now have buttons for the keyboard.
 * Fix: CSV files with decimal commas, with a quote in a text, or from a spreadsheet program that does not write UTF-8.
-* Fix: a file that gave no answer stopped all the markers of the map. The limit is now 15 seconds.
+* Fix: a file that gave no answer stopped all the markers of the map. The limit is now 15 seconds for the answer and 3 minutes for the download.
 * Fix: markers on the two sides of the 180° line (Fiji and Samoa) showed on a map of the world.
 * Fix: right-to-left pages. The texts of the map buttons (zoom, compass, location) can now be translated.
 * Fix: in the block, the fields for the position took no minus sign and no zero after the decimal point. A height of 50% made the map go away: a height cannot be a percentage. Each new marker and shape is one step for "Undo".
-* New: a user who can edit the page sees a message below a shortcode map when an address was not found or a position is not valid. Before, the marker went away with no message, and a map with an address that was not found showed a desert. There is also a message when the search found an address far from the other places of the map ("Brighton Pier" in New Zealand on a map of England).
+* New: a user who can edit the page sees a message below a shortcode map when an address was not found or a position is not valid. Before, the marker went away with no message, and a map with an address that was not found showed a desert. There is also a message when the search found an address very far from the places that have a `lat` and a `lng` ("Brighton Pier, Brighton" in New Zealand on a map of shops in England).
 * New: markers at the same position stand side by side, so that each one can be clicked.
 * New: polygons with holes from GeoJSON and KML files, tracks of Google Earth (`gx:Track`), and KML positions with spaces.
 * New: `lon` and `long` are accepted for `lng`, and a decimal comma is accepted in `lat` and `lng`.

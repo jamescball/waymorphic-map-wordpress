@@ -156,10 +156,11 @@ function waymorphic_map_clean_number( $value, $min, $max, $comma = false ) {
 		$value = trim( $value );
 		if ( $comma && preg_match( '/^[+-]?\d+,\d+$/', $value ) ) {
 			$value = str_replace( ',', '.', $value );
-		} elseif ( ! $comma && preg_match( '/^\d{1,3}(?:,\d{3})+(?:\.\d+)?$/', $value ) ) {
+		} elseif ( ! $comma && preg_match( '/^[1-9]\d{0,2}(?:,\d{3})+(?:\.\d+)?$/', $value ) ) {
 			$value = str_replace( ',', '', $value );
-		} elseif ( ! $comma && preg_match( '/^\d+,\d{1,2}$/', $value ) ) {
-			// One or two digits after one comma are not thousands: "2,5" kilometres.
+		} elseif ( ! $comma && preg_match( '/^(?:\d+,\d{1,2}|0+,\d+)$/', $value ) ) {
+			// One or two digits after one comma are not thousands: "2,5" kilometres. A number
+			// that starts with 0 has no thousands: "0,500" is 0.5.
 			$value = str_replace( ',', '.', $value );
 		}
 	}

@@ -1,6 +1,12 @@
-/* The Waymorphic Map block in the editor. */
+/* The Waymorphic Map block in the editor. Each map block has its own layers, and the selected block is
+   above the other blocks: the suggestions of its search are above the shield of the next map block. */
 .waymorphic-map-editor {
 	position: relative;
+	isolation: isolate;
+}
+
+.waymorphic-map-editor.is-selected {
+	z-index: 1;
 }
 
 /* The first click on a block that is not selected selects it: the shield is above all parts of the map, also its popups. */
@@ -176,9 +182,16 @@
 	z-index: 5;
 }
 
-/* While the search field is in use, its suggestions are above the form of a marker. */
-.waymorphic-map-editor__search:focus-within {
+/* While the suggestions of the search show, they are above the form of a marker. */
+.waymorphic-map-editor__search:has(.waymorphic-search__list) {
 	z-index: 6;
+}
+
+/* A browser that does not know :has(): while the search field is in use. */
+@supports not selector(:has(a)) {
+	.waymorphic-map-editor__search:focus-within {
+		z-index: 6;
+	}
 }
 
 /* The form in the popup of a marker. */

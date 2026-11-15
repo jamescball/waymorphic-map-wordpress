@@ -55,7 +55,7 @@
 		if ( HEX.test( colour ) ) {
 			return colour;
 		}
-		if ( colour && colour.length < 60 && ! /[;{}<>\\]|url|var|attr|image/i.test( colour ) && window.CSS && window.CSS.supports && window.CSS.supports( 'color', colour ) ) {
+		if ( colour && colour.length < 60 && ! /[;{}<>\\]|url\s*\(|var\s*\(|attr\s*\(|image/i.test( colour ) && window.CSS && window.CSS.supports && window.CSS.supports( 'color', colour ) ) {
 			return colour;
 		}
 		return fallback;
@@ -65,10 +65,10 @@
 	// These are the elements and attributes of the post content of WordPress (wp_kses_post) that
 	// cannot run a script. The server cleans a popup with wp_kses_post: a popup that the server
 	// permits must show as it is. A button is permitted (a site script can use it); it sends no form.
-	var POPUP_TAGS = /^(?:A|ABBR|ADDRESS|ARTICLE|ASIDE|AUDIO|B|BDI|BDO|BIG|BLOCKQUOTE|BR|BUTTON|CAPTION|CITE|CODE|COL|COLGROUP|DD|DEL|DETAILS|DFN|DIV|DL|DT|EM|FIGCAPTION|FIGURE|FONT|FOOTER|H1|H2|H3|H4|H5|H6|HEADER|HR|I|IMG|INS|KBD|LABEL|LI|MAIN|MARK|NAV|OL|P|PICTURE|PRE|Q|RP|RT|RUBY|S|SECTION|SMALL|SOURCE|SPAN|STRIKE|STRONG|SUB|SUMMARY|SUP|TABLE|TBODY|TD|TFOOT|TH|THEAD|TIME|TR|TRACK|U|UL|VAR|VIDEO|WBR)$/;
+	var POPUP_TAGS = /^(?:A|ABBR|ACRONYM|ADDRESS|ARTICLE|ASIDE|AUDIO|B|BDI|BDO|BIG|BLOCKQUOTE|BR|BUTTON|CAPTION|CITE|CODE|COL|COLGROUP|DD|DEL|DETAILS|DFN|DIV|DL|DT|EM|FIELDSET|FIGCAPTION|FIGURE|FONT|FOOTER|H1|H2|H3|H4|H5|H6|HEADER|HGROUP|HR|I|IMG|INS|KBD|LABEL|LEGEND|LI|MAIN|MARK|MENU|NAV|OL|P|PICTURE|PRE|Q|RP|RT|RUBY|S|SAMP|SECTION|SMALL|SOURCE|SPAN|STRIKE|STRONG|SUB|SUMMARY|SUP|TABLE|TBODY|TD|TFOOT|TH|THEAD|TIME|TR|TRACK|TT|U|UL|VAR|VIDEO|WBR)$/;
 	// These elements go, with all that is in them.
 	var POPUP_REMOVE = /^(?:SCRIPT|STYLE|IFRAME|FRAME|FRAMESET|OBJECT|EMBED|APPLET|TEMPLATE|NOSCRIPT|TITLE|HEAD|META|LINK|BASE|FORM|INPUT|SELECT|OPTION|TEXTAREA|CANVAS|DIALOG|MAP|AREA|SLOT)$/;
-	var POPUP_ATTRIBUTES = /^(?:href|src|srcset|sizes|alt|title|class|style|id|width|height|colspan|rowspan|span|headers|scope|border|cellpadding|cellspacing|target|rel|download|lang|dir|controls|loop|muted|autoplay|playsinline|poster|preload|loading|decoding|media|kind|srclang|label|default|datetime|cite|start|reversed|type|open|hreflang|align|valign|color|face|size|for|disabled|role|aria-[a-z]+|data-[a-z0-9_.-]+)$/;
+	var POPUP_ATTRIBUTES = /^(?:href|src|srcset|sizes|alt|title|class|style|id|hidden|width|height|colspan|rowspan|span|headers|scope|abbr|summary|border|bgcolor|nowrap|cellpadding|cellspacing|target|rel|download|lang|dir|controls|loop|muted|autoplay|playsinline|poster|preload|loading|decoding|media|kind|srclang|label|default|datetime|cite|start|reversed|value|type|open|hreflang|align|valign|color|face|size|for|disabled|role|aria-[a-z]+|data-[a-z0-9_.-]+)$/;
 
 	function copyClean( from, to, depth ) {
 		Array.prototype.forEach.call( from.childNodes, function ( node ) {
@@ -332,10 +332,15 @@
 			}
 			var width = menu.offsetWidth;
 			var height = menu.offsetHeight;
-			var left = window.getComputedStyle( button ).direction === 'rtl' ? at.left : at.right - width;
-			var top = at.bottom + 4;
-			if ( top + height > page.clientHeight - 8 && at.top - height - 4 >= 8 ) {
-				top = at.top - height - 4;
+			// The list is at the text of the button: in the list of the markers, the button has space around its text.
+			var style = window.getComputedStyle( button );
+			var space = function ( side ) {
+				return parseFloat( style[ 'padding' + side ] ) || 0;
+			};
+			var left = style.direction === 'rtl' ? at.left + space( 'Left' ) : at.right - space( 'Right' ) - width;
+			var top = at.bottom - space( 'Bottom' ) + 4;
+			if ( top + height > page.clientHeight - 8 && at.top + space( 'Top' ) - height - 4 >= 8 ) {
+				top = at.top + space( 'Top' ) - height - 4;
 			}
 			menu.style.left = Math.max( 8, Math.min( left, page.clientWidth - width - 8 ) ) + 'px';
 			menu.style.top = top + 'px';
@@ -373,6 +378,10 @@
 					api.above = false;
 					menu.removeAttribute( 'popover' );
 				}
+			}
+			if ( ! api.above && menu.scrollIntoView ) {
+				// The services are in the page, below the button: in a list that scrolls, they can be out of view.
+				menu.scrollIntoView( { block: 'nearest', inline: 'nearest' } );
 			}
 			menu.firstChild.focus( { preventScroll: true } );
 		} );
@@ -501,29 +510,58 @@
 	}
 
 	/**
+	 * The first line of the text of a popup, all of it: "Eiffel Tower" for
+	 * "<strong>Eiffel Tower</strong><br>Champ de Mars". '' when the popup has
+	 * no text. A line ends at a line break and at the end of a paragraph, a
+	 * heading or a list item.
+	 */
+	function firstLine( popup ) {
+		var html = String( popup || '' )
+			.replace( /\s+/g, ' ' )
+			.replace( /<\/?(?:br|p|div|li|h[1-6]|tr|td|th)\b/gi, '\n$&' );
+		return (
+			( cleanHtml( html ).textContent || '' )
+				.split( '\n' )
+				.map( function ( line ) {
+					return line.replace( /\s+/g, ' ' ).trim();
+				} )
+				.filter( Boolean )[ 0 ] || ''
+		);
+	}
+
+	/**
+	 * True when a text has a name as full words: "our london shop" has
+	 * "london shop", "dinner from 6 pm" does not have "inn".
+	 */
+	function hasName( words, name ) {
+		// A digit, or a letter that has a small and a large form. Quotation marks and dashes are
+		// not letters. Chinese and Japanese text has no spaces between its words: no test there.
+		function letter( character ) {
+			return !! character && ( /\d/.test( character ) || character.toLowerCase() !== character.toUpperCase() );
+		}
+		if ( ! name ) {
+			return true;
+		}
+		for ( var at = words.indexOf( name ); at !== -1; at = words.indexOf( name, at + 1 ) ) {
+			if ( ! letter( words.charAt( at - 1 ) ) && ! letter( words.charAt( at + name.length ) ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
 	 * The name of a marker: its title, the text of its popup, or its number.
 	 */
 	function markerName( item, index ) {
 		if ( item.title ) {
 			return String( item.title );
 		}
-		if ( item.popup ) {
-			// The first line of the popup: "Eiffel Tower" for "<strong>Eiffel Tower</strong><br>Champ de Mars".
-			// A line ends at a line break and at the end of a paragraph, a heading or a list item.
-			var html = String( item.popup )
-				.replace( /\s+/g, ' ' )
-				.replace( /<\/?(?:br|p|div|li|h[1-6]|tr|td|th)\b/gi, '\n$&' );
-			var words = ( cleanHtml( html ).textContent || '' )
-				.split( '\n' )
-				.map( function ( line ) {
-					return line.replace( /\s+/g, ' ' ).trim();
-				} )
-				.filter( Boolean )[ 0 ];
-			if ( words ) {
-				// Full characters: an emoji is not cut in two.
-				var letters = Array.from ? Array.from( words ) : words.split( '' );
-				return letters.length > 80 ? letters.slice( 0, 77 ).join( '' ) + '…' : words;
-			}
+		var words = item.popup ? firstLine( item.popup ) : '';
+		if ( words ) {
+			// Full characters: an emoji is not cut in two.
+			var letters = Array.from ? Array.from( words ) : words.split( '' );
+			return letters.length > 80 ? letters.slice( 0, 77 ).join( '' ) + '…' : words;
 		}
 		return fill( text.marker || 'Marker %d', [ index + 1 ] );
 	}
@@ -636,10 +674,10 @@
 			var html = String( item.popup || '' );
 			if ( item.title && ( ! config || config.popupTitle !== false ) ) {
 				// The popup starts with the name of the place, if the first line of its text does not
-				// have the name ("Our London shop" has "London shop").
-				var start = markerName( { popup: html }, 0 ).toLowerCase();
+				// have the name as full words ("Our London shop" has "London shop"; "Dinner" does not have "Inn").
+				var start = firstLine( html ).toLowerCase();
 				var title = String( item.title ).replace( /\s+/g, ' ' ).trim().toLowerCase();
-				if ( ! html || start.indexOf( title ) === -1 ) {
+				if ( ! hasName( start, title ) ) {
 					html = '<strong class="waymorphic-map__popup-title">' + escapeHtml( item.title ) + '</strong>' + ( html ? '<br>' : '' ) + html;
 				}
 			}
@@ -912,8 +950,13 @@
 				feature.properties.heat += heatBase;
 			}
 		} );
-		var all = ( map.waymorphicShapes || [] ).concat( features );
 		var source = map.getSource( 'waymorphic-shapes' );
+		if ( ! source && map.waymorphicShapeKeys ) {
+			// A new style of the map (setStyle) removed the shapes of the old style: their buttons go too.
+			map.waymorphicShapeKeys.textContent = '';
+		}
+		// The shapes that the map has now. The list of a style that is not there is not used again.
+		var all = ( source ? map.waymorphicShapes || [] : [] ).concat( features );
 		if ( source ) {
 			// The map has shapes: these go with them.
 			source.setData( { type: 'FeatureCollection', features: all } );
@@ -1234,8 +1277,8 @@
 		}
 		var words = String( value === undefined || value === null ? '' : value ).trim();
 		// A coordinate is a short text. A very long text (a file with thousands of spaces in a
-		// field) must not keep the browser busy.
-		if ( words.length > 40 ) {
+		// field) is not a number.
+		if ( words.length > 100 ) {
 			return NaN;
 		}
 		// 51.5074, "51,5074", "-.1276", "51.", "1e-5".
@@ -1595,17 +1638,19 @@
 			files.map( function ( file ) {
 				// A file that gives no answer in 15 seconds does not stop the map.
 				var controller = window.AbortController ? new window.AbortController() : null;
-				var timer = window.setTimeout( function () {
+				var giveUp = function () {
 					if ( controller ) {
 						controller.abort();
 					}
-				}, 15000 );
+				};
+				var timer = window.setTimeout( giveUp, 15000 );
 				return window
 					.fetch( file.url, controller ? { signal: controller.signal } : {} )
 					.then( function ( response ) {
-						// The server answered: the limit is not for the time of the download. A large
-						// file on a slow connection must not be stopped while it comes.
+						// The server answered. A large file on a slow connection must not be stopped while
+						// it comes: the download has a limit of 3 minutes, for a server that sends without end.
 						window.clearTimeout( timer );
+						timer = window.setTimeout( giveUp, 180000 );
 						if ( ! response.ok ) {
 							throw new Error( 'HTTP ' + response.status );
 						}
@@ -2587,6 +2632,7 @@
 	 * It starts again when the visitor comes back to it.
 	 *
 	 * @param {HTMLElement} element The element whose map starts now.
+	 * @return {boolean} False when this map must wait: it starts when it is in the window.
 	 */
 	function makeRoom( element ) {
 		var live = Array.prototype.filter.call( document.querySelectorAll( '[data-waymorphic-map]' ), function ( other ) {
@@ -2594,23 +2640,53 @@
 		} );
 		var limit = window.matchMedia && window.matchMedia( '(pointer: coarse)' ).matches ? 6 : 12;
 		if ( live.length < limit ) {
-			return;
+			return true;
 		}
-		var farthest = null;
-		// Not a map that is near the window: it would start again immediately.
-		var most = 600;
-		live.forEach( function ( other ) {
+		// The distance of an element from the window: 0 when a part of it is in the window.
+		function awayFrom( other ) {
 			var box = other.getBoundingClientRect();
-			var away = Math.max( -box.bottom, box.top - window.innerHeight, -box.right, box.left - window.innerWidth );
-			if ( away > most ) {
-				most = away;
-				farthest = other;
-			}
-		} );
+			return Math.max( 0, -box.bottom, box.top - window.innerHeight, -box.right, box.left - window.innerWidth );
+		}
+		// The live map that is farthest from the window, and farther than a distance.
+		function farther( than ) {
+			var found = null;
+			var most = than;
+			live.forEach( function ( other ) {
+				var away = awayFrom( other );
+				if ( away > most ) {
+					most = away;
+					found = other;
+				}
+			} );
+			return found;
+		}
+		// Not a map that is near the window: it would start again immediately.
+		var farthest = farther( 600 );
 		if ( farthest ) {
 			stop( farthest, farthest.waymorphicMap );
 			watch( farthest );
+			return true;
 		}
+		if ( ! ( 'IntersectionObserver' in window ) ) {
+			return true;
+		}
+		// All the live maps are near the window (the maps are small). One more map can take the
+		// drawing context of a map that the visitor looks at. Thus the maps that are nearest to the
+		// window are the live maps: a map that is farther from the window than this map stops, and
+		// starts again when it is in the window. If there is no such map, this map waits until it
+		// is in the window.
+		var own = awayFrom( element );
+		farthest = farther( own );
+		if ( farthest ) {
+			stop( farthest, farthest.waymorphicMap );
+			watch( farthest, true );
+			return true;
+		}
+		if ( own > 0 ) {
+			watch( element, true );
+			return false;
+		}
+		return true;
 	}
 
 	/**
@@ -2671,7 +2747,10 @@
 				delete config.locator;
 			}
 		}
-		makeRoom( element );
+		if ( ! makeRoom( element ) ) {
+			// The page has its number of maps: this map starts when it is in the window.
+			return;
+		}
 		try {
 			element.waymorphicMap = create( element, config );
 		} catch ( error ) {
@@ -2684,9 +2763,28 @@
 		var map = element.waymorphicMap;
 		if ( ! map ) {
 			// No map: the space that the page keeps for the search and the category buttons goes away.
+			// The same for the search and the buttons of a map that stopped and cannot start again
+			// (they have the inert attribute): they have no function without a map.
 			var space = element.previousElementSibling;
-			if ( space && space.classList.contains( 'waymorphic-map__tools--wait' ) ) {
+			if ( space && ( space.classList.contains( 'waymorphic-map__tools--wait' ) || ( space.classList.contains( 'waymorphic-map__tools' ) && space.hasAttribute( 'inert' ) ) ) ) {
 				space.parentNode.removeChild( space );
+			}
+			// The list of such a map becomes a list of text, as on a page that starts with no map:
+			// its directions links can be used.
+			var rest = element.nextElementSibling;
+			if ( rest && rest.classList.contains( 'waymorphic-map__list' ) && rest.hasAttribute( 'inert' ) ) {
+				rest.removeAttribute( 'inert' );
+				Array.prototype.forEach.call( rest.querySelectorAll( 'button.waymorphic-map__list-button' ), function ( button ) {
+					var words = document.createElement( 'span' );
+					words.className = 'waymorphic-map__list-button waymorphic-map__list-button--text';
+					while ( button.firstChild ) {
+						words.appendChild( button.firstChild );
+					}
+					button.parentNode.replaceChild( words, button );
+				} );
+				Array.prototype.forEach.call( rest.querySelectorAll( '.is-selected' ), function ( row ) {
+					row.classList.remove( 'is-selected' );
+				} );
 			}
 			return;
 		}
@@ -2738,29 +2836,37 @@
 
 	// Starts the maps when they come near the viewport.
 	var observer = null;
+	// For the maps that wait until they are in the window (see makeRoom()).
+	var windowObserver = null;
 
 	/**
 	 * Starts the map of an element when the element comes near the viewport.
 	 *
-	 * @param {HTMLElement} element An element with a data-waymorphic-map attribute.
+	 * @param {HTMLElement} element    An element with a data-waymorphic-map attribute.
+	 * @param {boolean}     [inWindow] True to start the map only when a part of it is in the window.
 	 */
-	function watch( element ) {
+	function watch( element, inWindow ) {
 		if ( ! ( 'IntersectionObserver' in window ) ) {
 			start( element );
 			return;
 		}
+		function seen( entries, source ) {
+			entries.forEach( function ( entry ) {
+				if ( entry.isIntersecting ) {
+					source.unobserve( entry.target );
+					start( entry.target );
+				}
+			} );
+		}
+		if ( inWindow ) {
+			if ( ! windowObserver ) {
+				windowObserver = new window.IntersectionObserver( seen );
+			}
+			windowObserver.observe( element );
+			return;
+		}
 		if ( ! observer ) {
-			observer = new window.IntersectionObserver(
-				function ( entries ) {
-					entries.forEach( function ( entry ) {
-						if ( entry.isIntersecting ) {
-							observer.unobserve( entry.target );
-							start( entry.target );
-						}
-					} );
-				},
-				{ rootMargin: '300px' }
-			);
+			observer = new window.IntersectionObserver( seen, { rootMargin: '300px' } );
 		}
 		observer.observe( element );
 	}
@@ -2771,7 +2877,10 @@
 	 * @param {ParentNode} [root] Where to look. The document by default.
 	 */
 	function init( root ) {
-		Array.prototype.forEach.call( ( root || document ).querySelectorAll( '[data-waymorphic-map]' ), watch );
+		Array.prototype.forEach.call( ( root || document ).querySelectorAll( '[data-waymorphic-map]' ), function ( element ) {
+			// One argument: forEach gives the number of the element as the second.
+			watch( element );
+		} );
 	}
 
 	window.WaymorphicMap = {

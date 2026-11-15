@@ -50,7 +50,7 @@ Copy this folder to `wp-content/plugins/free-maps` and activate **Free Maps - Wa
 
 `[waymorphic_marker]` takes `lat` and `lng` (or `address`) and `open="true"`. Its content is the popup. Optional: `title` (the name in the list and the first line of the popup), `category`, `colour`, `icon` (URL of a picture) and `animation`. A marker with no popup text can have a slash at the end and no closing tag: `[waymorphic_marker lat="51.5" lng="-0.12" /]`.
 
-Use straight quotes in the shortcodes. When an address is not found, a position is not valid, or the search found an address far from the other places of the map, the users who can edit the page see a message below the map. Visitors do not see it. The search gives the place that it knows best: write the town and the country in an address (`address="Brighton Pier, Brighton, United Kingdom"`).
+Use straight quotes in the shortcodes. When an address is not found, a position is not valid, or the search found an address very far from the places of the map that have a `lat` and a `lng`, the users who can edit the page see a message below the map. Visitors do not see it. The search gives the place that it knows best: write the town in an address, and the area or the full name of the country when other towns have the same name (`address="Buckingham Palace, London"`, `address="Boston, Lincolnshire"`). Write `United Kingdom` and `United States`, not `UK` and `USA`.
 
 **Shapes**, in `[waymorphic_map]`. The points are `latitude,longitude` pairs with `;` between them. The content is the popup.
 
@@ -74,7 +74,7 @@ All shapes take `colour` and `width`. Polygons, circles and rectangles take `fil
 [waymorphic_file url="https://example.com/wp-content/uploads/walk.gpx"]
 ```
 
-A heatmap point can have a weight as a third number. `[waymorphic_file]` shows the markers, lines and areas of a CSV, GeoJSON, KML or GPX file. The browser gets the file on each page view, so the file must be on the site or on a server that permits the site to read it (CORS). A CSV file has a first row with the column names: `lat`, `lng`, and the optional `title`, `description`, `category`, `colour`, `icon`. Text from a file shows as plain text. For a file with some hundreds of markers or more, use `cluster="true"`: the map draws only the markers that are not in a group.
+A heatmap point can have a weight as a third number. `[waymorphic_file]` shows the markers, lines and areas of a CSV, GeoJSON, KML or GPX file. The browser gets the file on each page view, so the file must be on the site or on a server that permits the site to read it (CORS). A CSV file has a first row with the column names: `lat`, `lng`, and the optional `title`, `description`, `category`, `colour`, `icon`. A position is a number (`51.5074`, `51,5074`, `0.1276 W`): a row whose position has other text does not show. Text from a file shows as plain text. For a file with some hundreds of markers or more, use `cluster="true"`: the map draws only the markers that are not in a group.
 
 **In the block:**
 
@@ -102,14 +102,15 @@ A heatmap point can have a weight as a third number. `[waymorphic_file]` shows t
 	--waymorphic-map-radius: 4px;
 	--waymorphic-map-font-size: 14px;
 	--waymorphic-map-list-height: 320px;   /* largest height of the list */
-	--waymorphic-map-scheme: light;        /* light or dark: the scroll bar of the list and the arrow of the select field, for a dark surface */
+	--waymorphic-map-scheme: light;        /* light or dark: the parts that the browser draws (the scroll bar of the list), for a dark surface */
+	--waymorphic-map-popup-accent: #b32d2e; /* links in a popup (the accent colour, if not set). A popup is white on each site: set this when the accent colour is light */
 	--waymorphic-map-scroll-space: 4rem;   /* space above the map after a click in the list, for a header that stays at the top */
 }
 ```
 
 ## For developers
 
-- `waymorphic_map_render( $args )` returns the HTML of a map. Use it in a template.
+- `waymorphic_map_render( $args )` returns the HTML of a map. Use it in a template. A classic theme that makes a map in a template (with this function or with `do_shortcode()`) must call `wp_enqueue_style( 'waymorphic-map' )` in a function on `wp_enqueue_scripts`: without this, the styles of the map load after the map.
 - Filter `waymorphic_map_config`: the configuration of one map before output.
 - Filter `waymorphic_map_tiles_url`: the tile server URL.
 - Filter `waymorphic_map_directions_services`: the map services of the directions link. Each service is `'name' => array( 'label' => ..., 'url' => ... )`. In the URL, `{lat}` and `{lng}` are the position of the marker.

@@ -81,7 +81,7 @@ function waymorphic_map_popup_html( $content ) {
 	$start = 0;
 	$end   = strlen( $html );
 	while ( $start < $end ) {
-		if ( ctype_space( $html[ $start ] ) ) {
+		if ( false !== strpos( " \t\n\r\x0B\f", $html[ $start ] ) ) {
 			++$start;
 		} elseif ( preg_match( '#^(?:<br\s{0,5}/?>|</p>)#i', substr( $html, $start, 12 ), $found ) ) {
 			$start += strlen( $found[0] );
@@ -90,7 +90,7 @@ function waymorphic_map_popup_html( $content ) {
 		}
 	}
 	while ( $end > $start ) {
-		if ( ctype_space( $html[ $end - 1 ] ) ) {
+		if ( false !== strpos( " \t\n\r\x0B\f", $html[ $end - 1 ] ) ) {
 			--$end;
 		} elseif ( preg_match( '#(?:<br\s{0,5}/?>|<p>)$#i', substr( $html, max( $start, $end - 12 ), $end - max( $start, $end - 12 ) ), $found ) ) {
 			$end -= strlen( $found[0] );
@@ -146,7 +146,8 @@ function waymorphic_map_close_tags( $content, $names ) {
 			// The tag before this one has no closing tag.
 			$slashes[] = $open[1];
 		}
-		$open = '/' === substr( rtrim( $tag[3][0] ), -1 ) ? null : array( $tag[2][0], $start + $length - 1 );
+		// WordPress reads only "/]" as the end of a tag with no content: not "/ ]".
+		$open = '/' === substr( $tag[3][0], -1 ) ? null : array( $tag[2][0], $start + $length - 1 );
 	}
 	if ( ! $slashes ) {
 		return $content;
@@ -211,12 +212,15 @@ function waymorphic_map_distance( $a, $b ) {
 }
 
 /**
- * Adds a message for each address that the search found far from the other
- * places of the map: "Brighton Pier" in New Zealand on a map of shops in
- * England. The search gives the place that it knows best, and the map shows
- * the full world. The message is for the editors of the page. There is no
- * message when the address has the name of the country or the area where
- * the place was found: the editor selected that country.
+ * Adds a message for each address that the search found far from the places
+ * that the editor gave as numbers: "Brighton Pier, Brighton" in New Zealand
+ * on a map of shops in England. The search gives the place that it knows
+ * best, and the map shows the full world. The message is for the editors of
+ * the page. Far is a different part of the world (more than 2500 km): two
+ * towns of one country are not far. There is no message when the address has
+ * the name of the country or the area where the place was found: the editor
+ * selected that country. Places that came from the search do not tell where
+ * the map is: the search can be wrong for them too.
  *
  * @param array<int,array<string,mixed>> $places The markers and the centre of the map. Each has
  *                                               lat and lng. 'searched' is the address and the
@@ -242,19 +246,18 @@ function waymorphic_map_far_places( $places ) {
 		if ( ! $searched || ! isset( $points[ $index ] ) || empty( $searched['label'] ) || ! isset( $searched['address'] ) ) {
 			continue;
 		}
-		$others = $points;
-		unset( $others[ $index ] );
-		// Two other places, or a centre that the shortcode gives as numbers, tell where the map is.
-		$sure = count( $others ) >= 2;
-		foreach ( $others as $key => $other ) {
-			if ( ! empty( $places[ $key ]['centre'] ) && empty( $places[ $key ]['searched'] ) ) {
-				$sure = true;
+		// Two places that the editor gave as numbers, or a centre as numbers, tell where the map is.
+		$others = array();
+		$sure   = false;
+		foreach ( $points as $key => $point ) {
+			if ( $key !== $index && empty( $places[ $key ]['searched'] ) ) {
+				$others[] = $point;
+				$sure     = $sure || ! empty( $places[ $key ]['centre'] );
 			}
 		}
-		if ( ! $sure ) {
+		if ( count( $others ) < 2 && ! $sure ) {
 			continue;
 		}
-		$others = array_values( $others );
 		$lats   = wp_list_pluck( $others, 'lat' );
 		$lngs   = wp_list_pluck( $others, 'lng' );
 		sort( $lats );
@@ -270,8 +273,8 @@ function waymorphic_map_far_places( $places ) {
 		sort( $spread );
 		$usual = $spread[ (int) floor( count( $spread ) / 2 ) ];
 		$away  = waymorphic_map_distance( $points[ $index ], $middle );
-		// Far: more than 500 km, and more than ten times the usual distance of the other places.
-		if ( $away <= 500 || $away <= 10 * max( 20, $usual ) ) {
+		// Far: more than 2500 km, and more than ten times the usual distance of these places.
+		if ( $away <= 2500 || $away <= 10 * max( 20, $usual ) ) {
 			continue;
 		}
 		// The address has the country or the area of the place: the editor wanted this place.
@@ -293,7 +296,7 @@ function waymorphic_map_far_places( $places ) {
 			continue;
 		}
 		/* translators: 1: an address, 2: the name of the place that the search found. */
-		waymorphic_map_problems( sprintf( __( 'The address "%1$s" was found here: %2$s. This place is far from the other places of the map. If it is not the correct place, write the town and the country in the address, or use lat and lng.', 'free-maps' ), $address, $searched['label'] ) );
+		waymorphic_map_problems( sprintf( __( 'The address "%1$s" was found here: %2$s. This place is far from the other places of the map. If it is not the correct place, write the town and the area, or the full name of the country, in the address ("Edinburgh, Scotland", "Boston, United Kingdom"), or use lat and lng.', 'free-maps' ), $address, rtrim( (string) $searched['label'], '. ' ) ) );
 	}
 }
 
@@ -324,7 +327,7 @@ function waymorphic_map_attribute_position( $atts ) {
  * @param array        $m      The parts of the shortcode: part 3 is the text of the attributes.
  * @return false|string
  */
-function waymorphic_map_keep_raw_attributes( $output, $tag, $attr, $m ) {
+function waymorphic_map_keep_raw_attributes( $output, $tag = '', $attr = array(), $m = array() ) {
 	if ( is_string( $tag ) && 0 === strpos( $tag, 'waymorphic_' ) ) {
 		waymorphic_map_raw_attributes( array( $attr, isset( $m[3] ) && is_string( $m[3] ) ? $m[3] : '' ) );
 	}
@@ -682,7 +685,7 @@ function waymorphic_map_shape_shortcode( $atts, $content = null, $tag = '' ) {
 		}
 	} else {
 		$count = count( waymorphic_map_clean_points( $points, 5000 ) );
-		if ( $count < ( 'polygon' === $type ? 3 : ( 'heatmap' === $type ? 1 : 2 ) ) ) {
+		if ( $count < ( 'polygon' === $type ? 3 : ( 'heatmap' === $type || 'circle' === $type ? 1 : 2 ) ) ) {
 			/* translators: %s: the name of a shortcode, such as waymorphic_polygon. */
 			waymorphic_map_problems( sprintf( __( 'A shape does not show: [%s] does not have sufficient points that are positions. Write the points as "lat,lng; lat,lng" with a point as the decimal sign.', 'free-maps' ), $tag ) );
 		}

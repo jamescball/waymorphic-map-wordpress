@@ -77,7 +77,7 @@ function waymorphic_map_register_assets() {
 				/* translators: A distance. 1: the number, 2: the unit (km or mi). */
 				'amount'        => __( '%1$s %2$s', 'free-maps' ),
 				// The tile server of the site: a map of the page can have a style and a search from it.
-				'tiles'         => waymorphic_map_tiles_url(),
+				'tiles'         => waymorphic_map_script_tiles( waymorphic_map_tiles_url() ),
 				// The texts of the map itself, for MapLibre.
 				'map'           => array(
 					'AttributionControl.ToggleAttribution'       => __( 'Toggle attribution', 'free-maps' ),
@@ -540,6 +540,22 @@ function waymorphic_map_render( $args ) {
 }
 
 /**
+ * The address of the tile server that the script got (waymorphicMapL10n.tiles).
+ * A filter that a theme adds late, or a filter for some pages only, can give a
+ * different address when a map is made.
+ *
+ * @param string|null $set The address, to keep it. Null to read it.
+ * @return string
+ */
+function waymorphic_map_script_tiles( $set = null ) {
+	static $url = '';
+	if ( null !== $set ) {
+		$url = (string) $set;
+	}
+	return $url;
+}
+
+/**
  * Tells the script that a style or a search address is from this site. The
  * script starts a map of the page only with a style from the tile server of
  * the site or with a style that this function gave: a writer with no right
@@ -573,9 +589,10 @@ function waymorphic_map_trust( $value ) {
 		return;
 	}
 	$json = (string) wp_json_encode( $value, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT );
-	$tile = waymorphic_map_tiles_url() . '/';
-	if ( '' === $json || isset( $told[ $json ] ) || ( is_string( $value ) && 0 === strpos( $value, $tile ) ) ) {
-		// Told before, or an address on the tile server: the script knows the tile server.
+	// The address that the script knows, not the address of this moment: a filter can give a different one now.
+	$tile = waymorphic_map_script_tiles();
+	if ( '' === $json || isset( $told[ $json ] ) || ( is_string( $value ) && '' !== $tile && 0 === strpos( $value, $tile . '/' ) ) ) {
+		// Told before, or an address on the tile server that the script knows.
 		return;
 	}
 	$told[ $json ] = true;
@@ -793,6 +810,14 @@ function waymorphic_map_content_has_map( $content, $depth = 0 ) {
  */
 function waymorphic_map_enqueue_early() {
 	global $wp_query;
+
+	// A block theme makes the page before the head: the styles of a map that it shows are in time.
+	// On a page that lists posts (a blog, a category, a search), a block theme shows mostly excerpts,
+	// with no map: the styles must not load for each such page. For one post or page, the styles
+	// load here: a template of PHP (a page builder) can make the page after the head.
+	if ( ! is_singular() && function_exists( 'wp_is_block_theme' ) && wp_is_block_theme() ) {
+		return;
+	}
 
 	$found = false;
 	$posts = $wp_query instanceof WP_Query && is_array( $wp_query->posts ) ? $wp_query->posts : array();

@@ -206,6 +206,10 @@
 		var openState = useState( false );
 		var open = openState[ 0 ];
 		var setOpen = openState[ 1 ];
+		// A number that changes when the user tries a search again after it did not answer.
+		var attemptState = useState( 0 );
+		var attempt = attemptState[ 0 ];
+		var setAttempt = attemptState[ 1 ];
 		var idRef = useRef( 'waymorphic-search-' + Math.random().toString( 36 ).slice( 2 ) );
 		// The text of the place that was selected: no new search for it.
 		var pickedRef = useRef( '' );
@@ -282,7 +286,7 @@
 					}
 				};
 			},
-			[ text ]
+			[ text, attempt ]
 		);
 
 		function pick( feature ) {
@@ -334,7 +338,11 @@
 				event.preventDefault();
 				if ( count && current ) {
 					pick( result.results[ Math.min( active, count - 1 ) ] );
-				} else if ( text.trim().length >= 2 && ! ( current && ( result.status === 'empty' || result.status === 'error' ) ) ) {
+				} else if ( current && result.status === 'error' ) {
+					// The search did not answer for this text: Enter tries again, and takes the first place.
+					wantRef.current = text.trim();
+					setAttempt( attempt + 1 );
+				} else if ( text.trim().length >= 2 && ! ( current && result.status === 'empty' ) ) {
 					// The results for this text are not there yet: take the first one when they come.
 					// Without this, "Paris" typed quickly gave a place from the list for "Par".
 					wantRef.current = text.trim();
@@ -786,6 +794,13 @@
 			input.addEventListener( 'keydown', function ( event ) {
 				if ( event.key === 'Enter' ) {
 					input.blur();
+					// When the block has this text (Ctrl+S gave it), the marker is not made again and
+					// its form stays open: Enter closes the form each time.
+					var box = form.closest( '.maplibregl-popup' );
+					var close = box ? box.querySelector( '.maplibregl-popup-close-button' ) : null;
+					if ( close ) {
+						close.click();
+					}
 				} else if ( isSave( event ) && ! removed ) {
 					// Ctrl+S goes to the editor: the block gets the text first, or the page is saved
 					// without it. The marker is not made again now: the field must stay in the page
@@ -802,7 +817,9 @@
 			// The text is saved when the field loses the focus, because a
 			// change draws the markers again and that closes the popup.
 			input.addEventListener( 'change', function () {
-				if ( ! removed ) {
+				// Not when the block has this text (Ctrl+S gave it to the block): the page did not change.
+				var now = ( attributesRef.current.markers || [] )[ index ];
+				if ( ! removed && now && ( now.label || '' ) !== input.value ) {
 					updateMarker( index, { label: input.value } );
 				}
 			} );
@@ -880,6 +897,8 @@
 							while ( pin.firstChild ) {
 								holder.appendChild( pin.firstChild );
 							}
+							// The point of this marker is 6.5 pixels above the bottom of its element, as on the page.
+							marker.setOffset( [ 0, 6.5 ] );
 							popup.setOffset( 38 );
 						} );
 						image.src = item.icon;
@@ -1295,10 +1314,9 @@
 					{
 						variant: 'secondary',
 						size: 'small',
-						disabled: page === 0,
-						// The button keeps the keyboard focus when it becomes disabled.
-						accessibleWhenDisabled: true,
-						__experimentalIsFocusable: true,
+						// The button keeps the keyboard focus when it has no function: aria-disabled, not
+						// disabled. Each version of the Button gives this attribute to its element.
+						'aria-disabled': page === 0 ? 'true' : undefined,
 						onClick: function () {
 							if ( page > 0 ) {
 								setPage( page - 1 );
@@ -1324,9 +1342,7 @@
 					{
 						variant: 'secondary',
 						size: 'small',
-						disabled: first + SIDEBAR_LIMIT > count,
-						accessibleWhenDisabled: true,
-						__experimentalIsFocusable: true,
+						'aria-disabled': first + SIDEBAR_LIMIT > count ? 'true' : undefined,
 						onClick: function () {
 							if ( first + SIDEBAR_LIMIT <= count ) {
 								setPage( page + 1 );
@@ -1456,8 +1472,15 @@
 							{
 								variant: 'link',
 								isDestructive: true,
-								onClick: function () {
+								onClick: function ( event ) {
+									// The link of the last marker goes away with its row: the focus goes to the
+									// "Add a marker" button of the panel, not to the top of the page.
+									var panel = index === markers.length - 1 && event && event.currentTarget ? event.currentTarget.closest( '.components-panel__body' ) : null;
+									var next = panel ? panel.querySelector( '.waymorphic-add-marker' ) : null;
 									removeMarker( index );
+									if ( next ) {
+										next.focus();
+									}
 								},
 							},
 							__( 'Remove the marker', 'free-maps' )
@@ -1476,6 +1499,7 @@
 					components.Button,
 					{
 						variant: 'secondary',
+						className: 'waymorphic-add-marker',
 						onClick: function () {
 							addMarker( place );
 						},
@@ -1974,7 +1998,9 @@
 				wp.blockEditor.useBlockProps( { className: 'waymorphic-map-editor' } ),
 				// Before the map: the Tab key goes from the block to the search field first.
 				overlay,
-				el( 'div', { ref: containerRef, className: 'waymorphic-map', style: { height: failed ? '120px' : height } } ),
+				// With no map, the box is low and the message is below it. While the first-step card shows, the
+				// box is as high as the card (244 px, 24 px below the top): the message is below the card.
+				el( 'div', { ref: containerRef, className: 'waymorphic-map', style: { height: failed && ! setup ? '120px' : height, minHeight: failed && setup ? '300px' : undefined } } ),
 				failed
 					? el(
 							'p',

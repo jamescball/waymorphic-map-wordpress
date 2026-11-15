@@ -50,6 +50,11 @@ register_activation_hook( __FILE__, 'waymorphic_map_activate' );
 
 if ( defined( 'WAYMORPHIC_MAP_VERSION' ) ) {
 	// A second copy of the plugin is active (the folder of version 1.1 had a different name). One copy runs.
+	if ( version_compare( WAYMORPHIC_MAP_VERSION, '1.2.0', '<' ) ) {
+		// Version 1.1 is first in the list of the active plugins, and its code runs. The next
+		// administration request keeps the settings and deactivates it; then this version runs.
+		add_action( 'admin_init', 'waymorphic_map_activate' );
+	}
 	return;
 }
 

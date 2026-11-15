@@ -21,6 +21,7 @@
  *   --waymorphic-map-font-size    text size of the parts                14px
  *   --waymorphic-map-list-height  largest height of the list            320px
  *   --waymorphic-map-scheme       light or dark, for the browser parts  light
+ *   --waymorphic-map-popup-accent links in a popup (a popup is white)   the accent colour
  *   --waymorphic-map-scroll-space space above the map after a scroll    4rem
  */
 
@@ -51,8 +52,9 @@
 	--wm-font-size: var(--waymorphic-map-font-size, 14px);
 }
 
-.waymorphic-map__error,
-.waymorphic-map noscript {
+/* The messages are on the grey box of the map: they do not take the text rules of a theme. */
+.waymorphic-map:not(#_) .waymorphic-map__error,
+.waymorphic-map:not(#_) noscript {
 	display: block;
 	margin: 0;
 	padding: 1em;
@@ -62,7 +64,7 @@
 }
 
 /* The map did not load: the message is on the map, above the markers. */
-.waymorphic-map .waymorphic-map__error--over {
+.waymorphic-map:not(#_) .waymorphic-map__error--over {
 	position: absolute;
 	z-index: 2;
 	top: 0;
@@ -114,6 +116,8 @@
 	color: #1d2327;
 	font-size: 14px;
 	line-height: 1.5;
+	/* A long address has no spaces: it stays in the box. */
+	overflow-wrap: anywhere;
 }
 
 .waymorphic-map__notice:not(#_) ul {
@@ -208,6 +212,13 @@
 	text-decoration: underline;
 }
 
+/* The credit is light on each site: the ring has the colour of its text. */
+.waymorphic-map:not(#_) .maplibregl-ctrl-attrib a:focus-visible {
+	outline: 2px solid currentColor;
+	outline-offset: 1px;
+	text-decoration: underline;
+}
+
 /* The map has the keyboard focus (the arrow keys move it). The usual ring is outside the map, where it does not show. */
 .waymorphic-map:not(#_) .maplibregl-canvas:focus-visible {
 	outline: 3px solid var(--wm-accent);
@@ -219,14 +230,38 @@
 	z-index: 3;
 }
 
-/* The popup of a marker or a shape. */
+/* The popup of a marker or a shape. It is white on each site, with dark text. */
 .waymorphic-map:not(#_) .maplibregl-popup-content {
+	/* A site with a dark surface has a light accent colour: the links in the white popup can have their own. */
+	--wm-accent: var(--waymorphic-map-popup-accent, var(--waymorphic-map-accent, #1f6feb));
 	padding: 12px 30px 12px 14px;
+	background: #fff;
 	color: #1d2327;
 	font-size: 14px;
 	line-height: 1.4;
 	text-align: start;
 	overflow-wrap: break-word;
+}
+
+/* The point of the popup has the colour of the popup. */
+.waymorphic-map:not(#_) .maplibregl-popup-anchor-top .maplibregl-popup-tip,
+.waymorphic-map:not(#_) .maplibregl-popup-anchor-top-left .maplibregl-popup-tip,
+.waymorphic-map:not(#_) .maplibregl-popup-anchor-top-right .maplibregl-popup-tip {
+	border-bottom-color: #fff;
+}
+
+.waymorphic-map:not(#_) .maplibregl-popup-anchor-bottom .maplibregl-popup-tip,
+.waymorphic-map:not(#_) .maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip,
+.waymorphic-map:not(#_) .maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip {
+	border-top-color: #fff;
+}
+
+.waymorphic-map:not(#_) .maplibregl-popup-anchor-left .maplibregl-popup-tip {
+	border-right-color: #fff;
+}
+
+.waymorphic-map:not(#_) .maplibregl-popup-anchor-right .maplibregl-popup-tip {
+	border-left-color: #fff;
 }
 
 .waymorphic-map:not(#_) .maplibregl-popup-close-button {
@@ -262,11 +297,14 @@
 	outline-offset: -2px;
 }
 
-.waymorphic-map__popup {
+.waymorphic-map:not(#_) .waymorphic-map__popup {
+	/* The space is for the focus ring of a link at the edge: a box that scrolls cuts what is outside it. */
+	margin: -4px;
+	padding: 4px;
 	overflow-y: auto;
 }
 
-/* The popup is white on each site: its text does not take the colours of a dark theme. */
+/* The text of the popup does not take the colours of a dark theme. */
 .waymorphic-map:not(#_) .waymorphic-map__popup h1,
 .waymorphic-map:not(#_) .waymorphic-map__popup h2,
 .waymorphic-map:not(#_) .waymorphic-map__popup h3,
@@ -341,7 +379,8 @@
 	box-shadow: none;
 }
 
-.waymorphic-map:not(#_) .waymorphic-map__directions-line {
+/* The selector is stronger than the rule for the paragraphs of a popup. */
+.waymorphic-map:not(#_) .waymorphic-map__popup .waymorphic-map__directions-line {
 	margin: 0.5em 0 0;
 }
 
@@ -610,7 +649,8 @@
 	padding: 0 30px 0 10px;
 	/* The text is in the middle of the field: the height less the two borders. */
 	line-height: 38px;
-	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%2350575e' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+	/* The arrow has a grey that shows on a light and on a dark surface. */
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%238c8f94' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 	background-repeat: no-repeat;
 	background-position: right 10px center;
 	cursor: pointer;
@@ -626,6 +666,11 @@
 	.waymorphic-map__tools:not(#_) .waymorphic-map__locator-input,
 	.waymorphic-map__tools:not(#_) .waymorphic-map__locator-radius {
 		font-size: 16px;
+	}
+
+	/* The hint keeps its size (it is not cut): the telephone looks at the size of the text of the field. */
+	.waymorphic-map__tools:not(#_) .waymorphic-map__locator-input::placeholder {
+		font-size: var(--wm-font-size);
 	}
 }
 
@@ -717,8 +762,6 @@
 	color: var(--wm-text);
 	/* The script reads the position of each row in the list. */
 	position: relative;
-	/* The rows change with the width of the list, not of the window. */
-	container: waymorphic-map-list / inline-size;
 	max-width: 100%;
 	max-height: var(--waymorphic-map-list-height, 320px);
 	margin: 10px 0 0;
@@ -744,6 +787,12 @@
 
 .waymorphic-map__list:not(#_) .waymorphic-map__list-item:first-child {
 	border-top: 0;
+}
+
+/* A list that scrolls can have the keyboard focus (the arrow keys move it). */
+.waymorphic-map__list:not(#_):focus-visible {
+	outline: 2px solid var(--wm-accent);
+	outline-offset: -2px;
 }
 
 /* The row is a button: the name with the category and the distance. */
@@ -784,10 +833,20 @@
 	box-shadow: inset -3px 0 0 var(--wm-accent);
 }
 
+/* The accent colour on the colour of the selected row is not easy to read: the link has the text colour. */
+.waymorphic-map__list:not(#_) .waymorphic-map__list-item.is-selected .waymorphic-map__directions {
+	color: var(--wm-text);
+}
+
 /* The accent colour of the site (--waymorphic-map-accent), where the browser can mix colours. */
 @supports (background: color-mix(in srgb, red 10%, transparent)) {
 	.waymorphic-map__list:not(#_) .waymorphic-map__list-item.is-selected {
 		background: color-mix(in srgb, var(--wm-accent) 10%, transparent);
+	}
+
+	/* The link keeps its colour, nearer to the text colour: darker on a light surface, lighter on a dark one. */
+	.waymorphic-map__list:not(#_) .waymorphic-map__list-item.is-selected .waymorphic-map__directions {
+		color: color-mix(in srgb, var(--wm-accent) 70%, var(--wm-text));
 	}
 }
 
@@ -890,7 +949,6 @@
 	flex: 0 0 auto;
 	align-self: center;
 	margin: 0 0 0 auto;
-	padding: 8px 12px;
 }
 
 [dir="rtl"] .waymorphic-map__list:not(#_) .waymorphic-map__list-item > .waymorphic-map__directions,
@@ -898,9 +956,30 @@
 	margin: 0 auto 0 0;
 }
 
+/* The space is on the link or the button itself: all of it takes a click or a tap. */
+.waymorphic-map__list:not(#_) .waymorphic-map__list-item > .waymorphic-map__directions,
+.waymorphic-map__list:not(#_) .waymorphic-map__choice > .waymorphic-map__directions {
+	padding: 8px 12px;
+}
+
 .waymorphic-map:not(#_) .waymorphic-map__choice,
 .waymorphic-map__list:not(#_) .waymorphic-map__choice {
 	display: inline-block;
+}
+
+/* The button stays at the end of the row when the list of the services shows in the page (see below). */
+.waymorphic-map__list:not(#_) .waymorphic-map__list-item > .waymorphic-map__choice {
+	text-align: end;
+}
+
+/* The rows change with the width of the list, not of the window. A list that is a container has no
+   width from its rows: it gets a width of its own, for a parent that is as wide as its content (a Row
+   block, a float, a table cell). A browser that cannot give this width has the usual rows. */
+@supports (contain-intrinsic-inline-size: 1px) {
+	.waymorphic-map__list:not(#_) {
+		container: waymorphic-map-list / inline-size;
+		contain-intrinsic-inline-size: 240px;
+	}
 }
 
 /* In a narrow list (a phone in a column, a sidebar), the link goes below the name, in line with it. */
@@ -913,12 +992,21 @@
 	.waymorphic-map__list:not(#_) .waymorphic-map__list-item > .waymorphic-map__directions,
 	.waymorphic-map__list:not(#_) .waymorphic-map__list-item > .waymorphic-map__choice {
 		margin: 0;
+		text-align: start;
+	}
+
+	.waymorphic-map__list:not(#_) .waymorphic-map__list-item > .waymorphic-map__directions,
+	.waymorphic-map__list:not(#_) .waymorphic-map__choice > .waymorphic-map__directions {
 		padding: 0 12px 10px 32px;
 	}
 
 	[dir="rtl"] .waymorphic-map__list:not(#_) .waymorphic-map__list-item > .waymorphic-map__directions,
 	[dir="rtl"] .waymorphic-map__list:not(#_) .waymorphic-map__list-item > .waymorphic-map__choice {
 		margin: 0;
+	}
+
+	[dir="rtl"] .waymorphic-map__list:not(#_) .waymorphic-map__list-item > .waymorphic-map__directions,
+	[dir="rtl"] .waymorphic-map__list:not(#_) .waymorphic-map__choice > .waymorphic-map__directions {
 		padding: 0 32px 10px 12px;
 	}
 }
@@ -955,6 +1043,25 @@
 	inset: auto;
 	margin: 0;
 	overflow: visible;
+}
+
+/* A browser with no popover shows the services in the row, below the button and in line with it. */
+.waymorphic-map__list:not(#_) .waymorphic-map__menu:not([popover]) {
+	margin: 0 12px 8px 0;
+}
+
+[dir="rtl"] .waymorphic-map__list:not(#_) .waymorphic-map__menu:not([popover]) {
+	margin: 0 0 8px 12px;
+}
+
+@container waymorphic-map-list (max-width: 300px) {
+	.waymorphic-map__list:not(#_) .waymorphic-map__menu:not([popover]) {
+		margin: 0 12px 10px 32px;
+	}
+
+	[dir="rtl"] .waymorphic-map__list:not(#_) .waymorphic-map__menu:not([popover]) {
+		margin: 0 32px 10px 12px;
+	}
 }
 
 .waymorphic-map:not(#_) .waymorphic-map__menu-item,
@@ -1005,5 +1112,34 @@
 	/* The dot has the colour of its marker. */
 	.waymorphic-map__list:not(#_) .waymorphic-map__list-dot {
 		forced-color-adjust: none;
+	}
+
+	/* The arrow of the browser: it has the colours of the contrast theme. */
+	.waymorphic-map__tools:not(#_) .waymorphic-map__locator-radius {
+		appearance: auto;
+		background-image: none;
+	}
+
+	/* The arrow of the button is made of borders: the sides that do not show get no colour. */
+	.waymorphic-map:not(#_) .waymorphic-map__directions--menu::after,
+	.waymorphic-map__list:not(#_) .waymorphic-map__directions--menu::after {
+		forced-color-adjust: none;
+		border-top-color: CanvasText;
+	}
+
+	.waymorphic-map__list:not(#_) .waymorphic-map__list-item.is-selected .waymorphic-map__directions--menu::after {
+		border-top-color: HighlightText;
+	}
+}
+
+/* A browser that runs no scripts: the search and the category buttons do not come, and their space goes
+   away. The directions link of a row opens the first map service: it has no arrow for a list. */
+@media (scripting: none) {
+	.waymorphic-map__tools--wait:not(#_) {
+		display: none;
+	}
+
+	.waymorphic-map__list:not(#_) .waymorphic-map__directions--menu::after {
+		content: none;
 	}
 }

@@ -159,7 +159,7 @@ From the plugin directory:
 From a zip file:
 
 1. Go to Plugins > Add New Plugin > Upload Plugin.
-2. Select the file `free-maps-waymorphic-map.zip`, then "Install Now".
+2. Select the zip file of the plugin, then "Install Now".
 3. Select "Activate Plugin".
 
 The plugin has no account, no API key and no setup: you can add a map immediately.

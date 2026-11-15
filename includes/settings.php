@@ -90,7 +90,7 @@ function waymorphic_map_field( $args ) {
 			foreach ( waymorphic_map_directions_services() as $value => $service ) {
 				echo '<option value="' . esc_attr( $value ) . '"' . selected( $current, $value, false ) . '>' . esc_html( $service['label'] ) . '</option>';
 			}
-			echo '<option value="choice"' . selected( $current, 'choice', false ) . '>' . esc_html__( 'The visitor selects (a list of these services)', 'free-maps' ) . '</option>';
+			echo '<option value="choice"' . selected( $current, 'choice', false ) . '>' . esc_html__( 'The visitor selects (a list of the services)', 'free-maps' ) . '</option>';
 			echo '</select>';
 			echo '<p class="description">' . esc_html__( 'The map service that the directions link of a map opens. The link shows on the maps that have the directions link on. A map can have its own service.', 'free-maps' ) . '</p>';
 			break;

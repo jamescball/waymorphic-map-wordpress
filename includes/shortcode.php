@@ -136,7 +136,8 @@ function waymorphic_map_close_tags( $content, $names ) {
 			continue;
 		}
 		if ( '/' === $tag[1][0] ) {
-			if ( $open && $open[0] === $tag[2][0] ) {
+			// WordPress reads only the exact text [/name] as a closing tag.
+			if ( $open && $open[0] === $tag[2][0] && '' === $tag[3][0] ) {
 				$open = null;
 			}
 			continue;
@@ -196,6 +197,107 @@ function waymorphic_map_address_problem( $address ) {
 }
 
 /**
+ * The distance between two positions in kilometres.
+ *
+ * @param array{lat:float,lng:float} $a The first position.
+ * @param array{lat:float,lng:float} $b The second position.
+ * @return float
+ */
+function waymorphic_map_distance( $a, $b ) {
+	$lat = deg2rad( $b['lat'] - $a['lat'] );
+	$lng = deg2rad( $b['lng'] - $a['lng'] );
+	$h   = sin( $lat / 2 ) * sin( $lat / 2 ) + cos( deg2rad( $a['lat'] ) ) * cos( deg2rad( $b['lat'] ) ) * sin( $lng / 2 ) * sin( $lng / 2 );
+	return 6371 * 2 * asin( min( 1, sqrt( $h ) ) );
+}
+
+/**
+ * Adds a message for each address that the search found far from the other
+ * places of the map: "Brighton Pier" in New Zealand on a map of shops in
+ * England. The search gives the place that it knows best, and the map shows
+ * the full world. The message is for the editors of the page. There is no
+ * message when the address has the name of the country or the area where
+ * the place was found: the editor selected that country.
+ *
+ * @param array<int,array<string,mixed>> $places The markers and the centre of the map. Each has
+ *                                               lat and lng. 'searched' is the address and the
+ *                                               answer of the search, when the position came
+ *                                               from an address. 'centre' is true for the centre.
+ */
+function waymorphic_map_far_places( $places ) {
+	$points = array();
+	foreach ( $places as $index => $place ) {
+		$position = waymorphic_map_clean_position( isset( $place['lat'] ) ? $place['lat'] : null, isset( $place['lng'] ) ? $place['lng'] : null );
+		if ( $position ) {
+			$points[ $index ] = $position;
+		}
+	}
+	// Other names that editors write for two countries.
+	$names = array(
+		'US' => array( 'USA', 'United States', 'U.S.' ),
+		'GB' => array( 'UK', 'Great Britain', 'U.K.' ),
+	);
+	foreach ( $places as $index => $place ) {
+		$searched = isset( $place['searched'] ) && is_array( $place['searched'] ) ? $place['searched'] : null;
+		// An answer that the site kept from version 1.1 has no name: no message.
+		if ( ! $searched || ! isset( $points[ $index ] ) || empty( $searched['label'] ) || ! isset( $searched['address'] ) ) {
+			continue;
+		}
+		$others = $points;
+		unset( $others[ $index ] );
+		// Two other places, or a centre that the shortcode gives as numbers, tell where the map is.
+		$sure = count( $others ) >= 2;
+		foreach ( $others as $key => $other ) {
+			if ( ! empty( $places[ $key ]['centre'] ) && empty( $places[ $key ]['searched'] ) ) {
+				$sure = true;
+			}
+		}
+		if ( ! $sure ) {
+			continue;
+		}
+		$others = array_values( $others );
+		$lats   = wp_list_pluck( $others, 'lat' );
+		$lngs   = wp_list_pluck( $others, 'lng' );
+		sort( $lats );
+		sort( $lngs );
+		$middle = array(
+			'lat' => $lats[ (int) floor( count( $lats ) / 2 ) ],
+			'lng' => $lngs[ (int) floor( count( $lngs ) / 2 ) ],
+		);
+		$spread = array();
+		foreach ( $others as $other ) {
+			$spread[] = waymorphic_map_distance( $other, $middle );
+		}
+		sort( $spread );
+		$usual = $spread[ (int) floor( count( $spread ) / 2 ) ];
+		$away  = waymorphic_map_distance( $points[ $index ], $middle );
+		// Far: more than 500 km, and more than ten times the usual distance of the other places.
+		if ( $away <= 500 || $away <= 10 * max( 20, $usual ) ) {
+			continue;
+		}
+		// The address has the country or the area of the place: the editor wanted this place.
+		$address = (string) $searched['address'];
+		$code    = isset( $searched['countrycode'] ) ? strtoupper( (string) $searched['countrycode'] ) : '';
+		$known   = isset( $names[ $code ] ) ? $names[ $code ] : array();
+		foreach ( array( 'country', 'state' ) as $part ) {
+			if ( ! empty( $searched[ $part ] ) ) {
+				$known[] = (string) $searched[ $part ];
+			}
+		}
+		$named = 2 === strlen( $code ) && 1 === preg_match( '/(?<![A-Za-z])' . preg_quote( $code, '/' ) . '(?![A-Za-z])/', $address );
+		foreach ( $known as $name ) {
+			if ( false !== stripos( $address, $name ) ) {
+				$named = true;
+			}
+		}
+		if ( $named ) {
+			continue;
+		}
+		/* translators: 1: an address, 2: the name of the place that the search found. */
+		waymorphic_map_problems( sprintf( __( 'The address "%1$s" was found here: %2$s. This place is far from the other places of the map. If it is not the correct place, write the town and the country in the address, or use lat and lng.', 'free-maps' ), $address, $searched['label'] ) );
+	}
+}
+
+/**
  * The lat and lng of a shortcode: lon and long are other names for lng.
  *
  * @param array<string,mixed> $atts The attributes of the shortcode.
@@ -224,7 +326,7 @@ function waymorphic_map_attribute_position( $atts ) {
  */
 function waymorphic_map_keep_raw_attributes( $output, $tag, $attr, $m ) {
 	if ( is_string( $tag ) && 0 === strpos( $tag, 'waymorphic_' ) ) {
-		waymorphic_map_raw_attributes( isset( $m[3] ) && is_string( $m[3] ) ? $m[3] : '' );
+		waymorphic_map_raw_attributes( array( $attr, isset( $m[3] ) && is_string( $m[3] ) ? $m[3] : '' ) );
 	}
 	return $output;
 }
@@ -232,8 +334,9 @@ function waymorphic_map_keep_raw_attributes( $output, $tag, $attr, $m ) {
 /**
  * The text of the attributes of the shortcode that WordPress reads now.
  *
- * @param string|null $set The text, to keep it. Null to get the text: it is given one time.
- * @return string|null
+ * @param array|null $set The attributes as WordPress read them and their text, to keep them.
+ *                        Null to get them: they are given one time.
+ * @return array|null
  */
 function waymorphic_map_raw_attributes( $set = null ) {
 	static $raw = null;
@@ -241,9 +344,9 @@ function waymorphic_map_raw_attributes( $set = null ) {
 		$raw = $set;
 		return null;
 	}
-	$text = $raw;
+	$kept = $raw;
 	$raw  = null;
-	return $text;
+	return $kept;
 }
 
 /**
@@ -259,7 +362,10 @@ function waymorphic_map_raw_attributes( $set = null ) {
  * @return array<string|int,mixed>
  */
 function waymorphic_map_fix_quotes( $atts ) {
-	$raw  = waymorphic_map_raw_attributes();
+	$kept = waymorphic_map_raw_attributes();
+	// The text is for these attributes only: not for a call of the function from PHP code that
+	// comes after a shortcode which a different plugin stopped.
+	$raw  = is_array( $kept ) && $kept[0] === $atts ? $kept[1] : null;
 	$atts = is_array( $atts ) ? $atts : array();
 	// Each kind of curly quote and prime that text programs make.
 	$quote = '[“”„‟″‶«»‘’‚′]';
@@ -276,22 +382,6 @@ function waymorphic_map_fix_quotes( $atts ) {
 	);
 	$parsed = is_string( $fixed ) ? shortcode_parse_atts( $fixed ) : '';
 	return is_array( $parsed ) ? $parsed : $atts;
-}
-
-/**
- * A point near the markers of the map shortcode that is open: the address
- * lookup prefers places near it. Without it, "Brighton Pier, Brighton" is in
- * New Zealand.
- *
- * @param array<int,float>|null|false $point [ lat, lng ] to set the point, null to clear it, false to read it.
- * @return array<int,float>|null
- */
-function waymorphic_map_near( $point = false ) {
-	static $near = null;
-	if ( false !== $point ) {
-		$near = $point;
-	}
-	return $near;
 }
 
 /**
@@ -354,11 +444,14 @@ function waymorphic_map_shortcode( $atts, $content = null ) {
 	waymorphic_map_problems();
 
 	list( $lat, $lng ) = waymorphic_map_attribute_position( $atts );
+	$searched          = null;
 	if ( ( '' === $lat || '' === $lng ) && '' !== $atts['address'] ) {
 		$found = waymorphic_map_geocode( $atts['address'] );
 		if ( $found ) {
 			$lat = $found['lat'];
 			$lng = $found['lng'];
+			// For the message about a place that is far from the other places of the map.
+			$searched = array_merge( $found, array( 'address' => $atts['address'] ) );
 		} else {
 			waymorphic_map_address_problem( $atts['address'] );
 			// No centre: the zoom was for the address. Without this, the map showed a small part of a desert.
@@ -370,10 +463,8 @@ function waymorphic_map_shortcode( $atts, $content = null ) {
 		$atts['zoom'] = '';
 	}
 
-	// The markers inside the shortcode. Their address lookups prefer places near the centre of the map.
+	// The markers inside the shortcode.
 	waymorphic_map_marker_stack( 'open' );
-	$centre = waymorphic_map_clean_position( $lat, $lng );
-	waymorphic_map_near( $centre ? array( $centre['lat'], $centre['lng'] ) : null );
 	if ( null !== $content && '' !== $content ) {
 		// A marker or a shape with no closing tag must not take the popup text of the next one.
 		do_shortcode(
@@ -383,7 +474,6 @@ function waymorphic_map_shortcode( $atts, $content = null ) {
 			)
 		);
 	}
-	waymorphic_map_near( null );
 	$markers = array();
 	$shapes  = array();
 	$files   = array();
@@ -396,6 +486,20 @@ function waymorphic_map_shortcode( $atts, $content = null ) {
 			$markers[] = $item;
 		}
 	}
+
+	waymorphic_map_far_places(
+		array_merge(
+			$markers,
+			array(
+				array(
+					'lat'      => $lat,
+					'lng'      => $lng,
+					'centre'   => true,
+					'searched' => $searched,
+				),
+			)
+		)
+	);
 
 	// A marker at the centre: on request, or when there is a label or an address.
 	$want_marker = waymorphic_map_clean_bool( $atts['marker'], '' !== $atts['label'] || '' !== $atts['address'] );
@@ -484,10 +588,12 @@ function waymorphic_map_marker_shortcode( $atts, $content = null ) {
 
 	list( $lat, $lng ) = waymorphic_map_attribute_position( $atts );
 	if ( ( '' === $lat || '' === $lng ) && '' !== $atts['address'] ) {
-		$found = waymorphic_map_geocode( $atts['address'], waymorphic_map_near() );
+		$found = waymorphic_map_geocode( $atts['address'] );
 		if ( $found ) {
 			$lat = $found['lat'];
 			$lng = $found['lng'];
+			// For the message about a place that is far from the other places of the map.
+			$searched = array_merge( $found, array( 'address' => $atts['address'] ) );
 		} else {
 			waymorphic_map_address_problem( $atts['address'] );
 		}
@@ -496,17 +602,14 @@ function waymorphic_map_marker_shortcode( $atts, $content = null ) {
 		waymorphic_map_problems( sprintf( __( 'A marker does not show: lat="%1$s" lng="%2$s" is not a position. The lat is a number from -90 to 90, the lng a number from -180 to 180.', 'free-maps' ), $lat, $lng ) );
 	}
 	$position = waymorphic_map_clean_position( $lat, $lng );
-	if ( null === waymorphic_map_near() && $position ) {
-		// The first marker with a position: the lookups of the next markers prefer places near it.
-		waymorphic_map_near( array( $position['lat'], $position['lng'] ) );
-	}
 
 	if ( $position ) {
 		waymorphic_map_marker_stack(
 			'add',
 			array(
-				'lat'   => $lat,
-				'lng'   => $lng,
+				'searched'  => isset( $searched ) ? $searched : null,
+				'lat'       => $lat,
+				'lng'       => $lng,
 				'popup'     => waymorphic_map_popup_html( $content ),
 				'open'      => waymorphic_map_clean_bool( $atts['open'], false ),
 				'title'     => $atts['title'],
@@ -562,7 +665,7 @@ function waymorphic_map_shape_shortcode( $atts, $content = null, $tag = '' ) {
 		// The centre of a circle: lat and lng, or an address.
 		list( $lat, $lng ) = waymorphic_map_attribute_position( $atts );
 		if ( ( '' === $lat || '' === $lng ) && '' !== $atts['address'] ) {
-			$found = waymorphic_map_geocode( $atts['address'], waymorphic_map_near() );
+			$found = waymorphic_map_geocode( $atts['address'] );
 			if ( $found ) {
 				$lat = $found['lat'];
 				$lng = $found['lng'];
@@ -572,7 +675,8 @@ function waymorphic_map_shape_shortcode( $atts, $content = null, $tag = '' ) {
 		}
 		// A list of one point, not text: a decimal comma in the text would divide the numbers.
 		$points = array( array( $lat, $lng ) );
-		if ( '' !== $lat && '' !== $lng && ! waymorphic_map_clean_position( $lat, $lng ) ) {
+		// No message for a circle whose address was not found: the address has its message.
+		if ( ! waymorphic_map_clean_position( $lat, $lng ) && ( '' === $atts['address'] || ( '' !== $lat && '' !== $lng ) ) ) {
 			/* translators: 1: a latitude, 2: a longitude. */
 			waymorphic_map_problems( sprintf( __( 'A circle does not show: lat="%1$s" lng="%2$s" is not a position. The lat is a number from -90 to 90, the lng a number from -180 to 180.', 'free-maps' ), $lat, $lng ) );
 		}

@@ -1730,15 +1730,15 @@
 							components.SelectControl,
 							next( {
 								label: __( 'The directions link opens', 'free-maps' ),
-								help: __( 'With the list, the visitor selects the map service.', 'free-maps' ),
+								help: __( 'With "The visitor selects", each link shows a list of the map services.', 'free-maps' ),
 								value: attributes.directionsService || '',
 								options: [
 									{
 										label: sprintf(
-											/* translators: %s: the name of a map service, or "a list of the map services". */
-											__( 'The value of the settings (%s)', 'free-maps' ),
+											/* translators: %s: the name of a map service, or "The visitor selects". */
+											__( '%s (the value of the settings)', 'free-maps' ),
 											settings.defaultDirections === 'choice'
-												? __( 'a list of the map services', 'free-maps' )
+												? __( 'The visitor selects', 'free-maps' )
 												: directionsServices[ settings.defaultDirections ] || settings.defaultDirections
 										),
 										value: '',
@@ -1749,7 +1749,7 @@
 											return { label: directionsServices[ name ], value: name };
 										} )
 									)
-									.concat( [ { label: __( 'A list of the map services', 'free-maps' ), value: 'choice' } ] ),
+									.concat( [ { label: __( 'The visitor selects (a list of the services)', 'free-maps' ), value: 'choice' } ] ),
 								onChange: function ( value ) {
 									setAttributes( { directionsService: value } );
 								},

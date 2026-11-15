@@ -62,6 +62,13 @@ function waymorphic_map_options() {
  * come back. Runs in the administration pages.
  */
 function waymorphic_map_keep_options() {
+	// Version 1.1 is active too (it was activated after this version, or this site is in a
+	// network): its copy does nothing but write PHP warnings. Deactivate it on this site.
+	$old = 'wp-free-maps/wp-free-maps.php';
+	if ( function_exists( 'is_plugin_active' ) && is_plugin_active( $old ) && ! is_plugin_active_for_network( $old ) ) {
+		deactivate_plugins( $old, true, false );
+	}
+
 	$saved = get_option( 'waymorphic_map_options', null );
 	$copy  = get_option( 'waymorphic_map_options_copy', null );
 	if ( is_array( $saved ) ) {
@@ -151,6 +158,9 @@ function waymorphic_map_clean_number( $value, $min, $max, $comma = false ) {
 			$value = str_replace( ',', '.', $value );
 		} elseif ( ! $comma && preg_match( '/^\d{1,3}(?:,\d{3})+(?:\.\d+)?$/', $value ) ) {
 			$value = str_replace( ',', '', $value );
+		} elseif ( ! $comma && preg_match( '/^\d+,\d{1,2}$/', $value ) ) {
+			// One or two digits after one comma are not thousands: "2,5" kilometres.
+			$value = str_replace( ',', '.', $value );
 		}
 	}
 	if ( ! is_numeric( $value ) ) {

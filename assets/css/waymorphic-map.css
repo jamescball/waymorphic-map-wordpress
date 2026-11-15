@@ -784,6 +784,13 @@
 	box-shadow: inset -3px 0 0 var(--wm-accent);
 }
 
+/* The accent colour of the site (--waymorphic-map-accent), where the browser can mix colours. */
+@supports (background: color-mix(in srgb, red 10%, transparent)) {
+	.waymorphic-map__list:not(#_) .waymorphic-map__list-item.is-selected {
+		background: color-mix(in srgb, var(--wm-accent) 10%, transparent);
+	}
+}
+
 .waymorphic-map__list:not(#_) .waymorphic-map__list-dot {
 	display: block;
 	flex: 0 0 10px;

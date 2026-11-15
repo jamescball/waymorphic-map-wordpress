@@ -29,7 +29,7 @@ Copy this folder to `wp-content/plugins/free-maps` and activate **Free Maps - Wa
 | `address` | Address or place name, used when `lat` and `lng` are not given | |
 | `zoom` | 0 to 22. When the view fits two or more markers: the upper limit of the view | Setting (12); 15 for a view that fits markers |
 | `style` | `positron`, `bright`, `liberty`, `dark`, `fiord` | Setting (`positron`) |
-| `height` | CSS length (`400px`, `60vh`); a number is in pixels; not a percentage. Units: `px`, `vh`, `vw`, `dvh`, `svh`, `lvh`, `vmin`, `vmax`, `em`, `rem`, `ch` | Setting (`400px`) |
+| `height` | CSS length (`400px`, `60vh`); a number is in pixels; not a percentage. Units: `px`, `vh`, `vw`, `dvh`, `svh`, `lvh`, `dvw`, `svw`, `lvw`, `vmin`, `vmax`, `em`, `rem`, `ch` | Setting (`400px`) |
 | `width` | CSS length (`300px`, `50%`); a number is in pixels | `100%` |
 | `marker` | `true` puts a marker at the centre | On with `label` or `address` |
 | `label` | Popup text of the marker at the centre | |
@@ -50,7 +50,7 @@ Copy this folder to `wp-content/plugins/free-maps` and activate **Free Maps - Wa
 
 `[waymorphic_marker]` takes `lat` and `lng` (or `address`) and `open="true"`. Its content is the popup. Optional: `title` (the name in the list and the first line of the popup), `category`, `colour`, `icon` (URL of a picture) and `animation`. A marker with no popup text can have a slash at the end and no closing tag: `[waymorphic_marker lat="51.5" lng="-0.12" /]`.
 
-Use straight quotes in the shortcodes. When an address is not found or a position is not valid, the users who can edit the page see a message below the map. Visitors do not see it.
+Use straight quotes in the shortcodes. When an address is not found, a position is not valid, or the search found an address far from the other places of the map, the users who can edit the page see a message below the map. Visitors do not see it. The search gives the place that it knows best: write the town and the country in an address (`address="Brighton Pier, Brighton, United Kingdom"`).
 
 **Shapes**, in `[waymorphic_map]`. The points are `latitude,longitude` pairs with `;` between them. The content is the popup.
 
@@ -88,7 +88,7 @@ A heatmap point can have a weight as a third number. `[waymorphic_file]` shows t
 
 **Directions.** The directions link opens Google Maps, Apple Maps, Waze or OpenStreetMap with the position of the marker. Select the service in the settings, or for one map (`directions="google"` on the shortcode, "The directions link opens" in the "Features" panel of the block). With `choice`, the link is a button: it shows the list of the services and the visitor selects one.
 
-**Colours.** The parts around the map (the search, the category buttons, the list) keep their look in each theme. To change them, set CSS variables on a parent of the map, for example in Appearance > Customize > Additional CSS:
+**Colours.** The parts around the map (the search, the category buttons, the list) keep their look in each theme: the usual CSS rules of a theme or of the site do not change them. To change them, set CSS variables on a parent of the map, for example in Appearance > Customize > Additional CSS (for a change that the variables do not make, write `!important` in your CSS rule):
 
 ```css
 .wp-block-waymorphic-map {
@@ -102,6 +102,7 @@ A heatmap point can have a weight as a third number. `[waymorphic_file]` shows t
 	--waymorphic-map-radius: 4px;
 	--waymorphic-map-font-size: 14px;
 	--waymorphic-map-list-height: 320px;   /* largest height of the list */
+	--waymorphic-map-scheme: light;        /* light or dark: the scroll bar of the list and the arrow of the select field, for a dark surface */
 	--waymorphic-map-scroll-space: 4rem;   /* space above the map after a click in the list, for a header that stays at the top */
 }
 ```

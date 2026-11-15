@@ -58,14 +58,14 @@ function waymorphic_map_register_assets() {
 				'reset'         => __( 'Show all', 'free-maps' ),
 				'searching'     => __( 'Searching…', 'free-maps' ),
 				/* translators: 1: a number of places, 2: a distance such as 10 km. */
-				'found'         => __( 'Places in %2$s: %1$d', 'free-maps' ),
+				'found'         => __( 'Places within %2$s: %1$d', 'free-maps' ),
 				/* translators: %s: a distance such as 10 km. */
-				'none'          => __( 'No places in %s.', 'free-maps' ),
+				'none'          => __( 'No places within %s.', 'free-maps' ),
 				/* translators: 1: a number of places, 2: a distance such as 10 km, 3: the place of the search, such as Leeds, England. */
-				'foundAt'       => __( 'Places in %2$s of %3$s: %1$d', 'free-maps' ),
+				'foundAt'       => __( 'Places within %2$s of %3$s: %1$d', 'free-maps' ),
 				/* translators: 1: a distance such as 10 km, 2: the place of the search, such as Leeds, England. */
-				'noneAt'        => __( 'No places in %1$s of %2$s.', 'free-maps' ),
-				/* translators: The place of a search, in a text such as: Places in 10 km of your location: 2 */
+				'noneAt'        => __( 'No places within %1$s of %2$s.', 'free-maps' ),
+				/* translators: The place of a search, in a text such as: Places within 10 km of your location: 2 */
 				'here'          => __( 'your location', 'free-maps' ),
 				'notFound'      => __( 'The address was not found. Try a town or a postcode.', 'free-maps' ),
 				'searchError'   => __( 'The search did not answer. Try again.', 'free-maps' ),
@@ -717,7 +717,7 @@ function waymorphic_map_tools_space( $config, $width ) {
 				'<option%1$s>%2$s</option>',
 				$value === $first ? ' selected' : '',
 				/* translators: A distance. 1: the number, 2: the unit (km or mi). */
-				esc_html( sprintf( __( '%1$s %2$s', 'free-maps' ), number_format_i18n( $value, floor( $value ) === $value ? 0 : 2 ), $unit ) )
+				esc_html( sprintf( __( '%1$s %2$s', 'free-maps' ), number_format_i18n( $value, floor( $value ) === $value ? 0 : ( round( $value, 1 ) === $value ? 1 : 2 ) ), $unit ) )
 			);
 		}
 		$parts .= sprintf(
@@ -749,19 +749,46 @@ function waymorphic_map_tools_space( $config, $width ) {
 	if ( '' === $parts ) {
 		return '';
 	}
+	// The style attribute: the copy is not visible also when the style file of the plugin comes
+	// late (a map that a template of a classic theme makes). The script removes it.
 	return sprintf(
-		'<div class="waymorphic-map__tools waymorphic-map__tools--wait" aria-hidden="true"%1$s>%2$s</div>',
-		'' !== $width ? ' style="' . esc_attr( $width ) . '"' : '',
+		'<div class="waymorphic-map__tools waymorphic-map__tools--wait" aria-hidden="true" style="visibility:hidden;%1$s">%2$s</div>',
+		esc_attr( $width ),
 		waymorphic_map_plain_brackets( $parts )
 	);
 }
 
 /**
+ * Tells if the content of a post has a map: the block, the shortcode, or a
+ * synced pattern that has one of them.
+ *
+ * @param string $content The content of a post.
+ * @param int    $depth   The number of patterns that were opened to get here.
+ * @return bool
+ */
+function waymorphic_map_content_has_map( $content, $depth = 0 ) {
+	// Plain text searches: has_shortcode() needs much time for a post with a very large block.
+	if ( false !== strpos( $content, '<!-- wp:waymorphic/map' ) || false !== strpos( $content, '[waymorphic_map' ) ) {
+		return true;
+	}
+	if ( $depth < 2 && false !== strpos( $content, '<!-- wp:block ' ) && preg_match_all( '/<!-- wp:block \{[^}]*"ref":(\d+)/', $content, $found ) ) {
+		foreach ( array_slice( array_unique( $found[1] ), 0, 10 ) as $id ) {
+			$pattern = get_post( (int) $id );
+			if ( $pattern instanceof WP_Post && 'wp_block' === $pattern->post_type && waymorphic_map_content_has_map( (string) $pattern->post_content, $depth + 1 ) ) {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+/**
  * Loads the styles in the head of a page that has a map: in a post of the
- * page (one post, or the posts of a blog or search page), or in a widget. On
- * other pages (a map that a template makes with do_shortcode(), a map in a
- * synced pattern) the styles come when the map is made, which can be after
- * the head: WordPress then prints them at the end of the page.
+ * page (one post, or the posts of a blog or search page), in a synced
+ * pattern of such a post, or in a widget of a sidebar. For a map that a
+ * template makes with do_shortcode(), the styles come when the map is made,
+ * which can be after the head: such a theme can call
+ * wp_enqueue_style( 'waymorphic-map' ) before wp_head().
  */
 function waymorphic_map_enqueue_early() {
 	global $wp_query;
@@ -769,20 +796,30 @@ function waymorphic_map_enqueue_early() {
 	$found = false;
 	$posts = $wp_query instanceof WP_Query && is_array( $wp_query->posts ) ? $wp_query->posts : array();
 	foreach ( $posts as $post ) {
-		// Plain text searches: has_shortcode() needs much time for a post with a very large block.
-		$content = $post instanceof WP_Post ? (string) $post->post_content : '';
-		if ( false !== strpos( $content, '<!-- wp:waymorphic/map' ) || false !== strpos( $content, '[waymorphic_map' ) ) {
+		if ( $post instanceof WP_Post && waymorphic_map_content_has_map( (string) $post->post_content ) ) {
 			$found = true;
 			break;
 		}
 	}
-	if ( ! $found ) {
-		// The widgets of the site. WordPress has these options in memory: no database query.
-		foreach ( array( 'widget_block', 'widget_text', 'widget_custom_html' ) as $name ) {
-			$widgets = get_option( $name );
-			if ( is_array( $widgets ) && false !== strpos( (string) wp_json_encode( $widgets ), 'waymorphic' ) ) {
-				$found = true;
-				break;
+	// The widgets of the sidebars that the theme has. A block theme makes the page before the
+	// head: its styles are in time. WordPress has these options in memory: no database query.
+	if ( ! $found && ! ( function_exists( 'wp_is_block_theme' ) && wp_is_block_theme() ) ) {
+		$sidebars = wp_get_sidebars_widgets();
+		foreach ( is_array( $sidebars ) ? $sidebars : array() as $sidebar => $widgets ) {
+			if ( 'wp_inactive_widgets' === $sidebar || ! is_array( $widgets ) || ! is_registered_sidebar( $sidebar ) ) {
+				continue;
+			}
+			foreach ( $widgets as $widget ) {
+				if ( ! is_string( $widget ) || ! preg_match( '/^(block|text|custom_html)-(\d+)$/', $widget, $part ) ) {
+					continue;
+				}
+				$all  = get_option( 'widget_' . $part[1] );
+				$one  = is_array( $all ) && isset( $all[ (int) $part[2] ] ) && is_array( $all[ (int) $part[2] ] ) ? $all[ (int) $part[2] ] : array();
+				$text = ( isset( $one['content'] ) && is_string( $one['content'] ) ? $one['content'] : '' ) . ( isset( $one['text'] ) && is_string( $one['text'] ) ? $one['text'] : '' );
+				if ( '' !== $text && waymorphic_map_content_has_map( $text ) ) {
+					$found = true;
+					break 2;
+				}
 			}
 		}
 	}
@@ -795,11 +832,11 @@ function waymorphic_map_enqueue_early() {
  * Finds the coordinates of an address with the search of the tile server.
  * The answer is kept, so a page view does not make a request.
  *
- * @param string                $address The address or place name.
- * @param array<int,float>|null $near    A point ([ lat, lng ]): the search prefers places near it.
- * @return array{lat:float,lng:float}|null
+ * @param string $address The address or place name.
+ * @return array{lat:float,lng:float,label?:string,state?:string,country?:string,countrycode?:string}|null The position,
+ *         and the name, the area and the country of the place that the search found.
  */
-function waymorphic_map_geocode( $address, $near = null ) {
+function waymorphic_map_geocode( $address ) {
 	// True when the search did not answer in this page view.
 	static $down = false;
 	// The number of addresses that the search refused in this page view.
@@ -816,16 +853,9 @@ function waymorphic_map_geocode( $address, $near = null ) {
 		'q'     => rawurlencode( $address ),
 		'limit' => 1,
 	);
-	$place = '';
-	if ( is_array( $near ) && isset( $near[0], $near[1] ) && is_numeric( $near[0] ) && is_numeric( $near[1] ) && abs( (float) $near[0] ) <= 90 && abs( (float) $near[1] ) <= 180 ) {
-		// To the full degree: the kept answer is the same for all the markers of an area.
-		$query['lat']  = round( (float) $near[0] );
-		$query['lon']  = round( (float) $near[1] );
-		$query['zoom'] = 7;
-		$place         = '|' . $query['lat'] . ',' . $query['lon'];
-	}
 
-	$key    = 'waymorphic_map_geo_' . md5( waymorphic_map_tiles_url() . '|' . strtolower( $address ) . $place );
+	// The same key as in version 1.1: the answers that a site kept are used.
+	$key    = 'waymorphic_map_geo_' . md5( waymorphic_map_tiles_url() . '|' . strtolower( $address ) );
 	$cached = get_transient( $key );
 	if ( is_array( $cached ) ) {
 		$found = isset( $cached['lat'], $cached['lng'] );
@@ -868,6 +898,15 @@ function waymorphic_map_geocode( $address, $near = null ) {
 			'lat' => (float) $point[1],
 			'lng' => (float) $point[0],
 		);
+		// The name, the area and the country of the place: for the message that the editors of
+		// a page see when the place is far from the other places of the map.
+		$properties = isset( $data['features'][0]['properties'] ) && is_array( $data['features'][0]['properties'] ) ? $data['features'][0]['properties'] : array();
+		foreach ( array( 'label' => 200, 'state' => 80, 'country' => 80, 'countrycode' => 2 ) as $name => $limit ) {
+			$text = isset( $properties[ $name ] ) && is_string( $properties[ $name ] ) ? sanitize_text_field( $properties[ $name ] ) : '';
+			if ( '' !== $text ) {
+				$result[ $name ] = function_exists( 'mb_substr' ) ? mb_substr( $text, 0, $limit ) : substr( $text, 0, $limit );
+			}
+		}
 	}
 
 	// Keep a position for a year: an address does not move, and a marker must not go off the

@@ -1977,14 +1977,14 @@
 				// With the name of the place that the search found: the visitor sees a wrong town.
 				say(
 					shown.length
-						? fill( text.foundAt || 'Places in %2$s of %3$s: %1$d', [ shown.length, range, state.where ] )
-						: fill( text.noneAt || 'No places in %1$s of %2$s.', [ range, state.where ] )
+						? fill( text.foundAt || 'Places within %2$s of %3$s: %1$d', [ shown.length, range, state.where ] )
+						: fill( text.noneAt || 'No places within %1$s of %2$s.', [ range, state.where ] )
 				);
 			} else {
 				say(
 					shown.length
-						? fill( text.found || 'Places in %2$s: %1$d', [ shown.length, range ] )
-						: fill( text.none || 'No places in %s.', [ range ] )
+						? fill( text.found || 'Places within %2$s: %1$d', [ shown.length, range ] )
+						: fill( text.none || 'No places within %s.', [ range ] )
 				);
 			}
 		}
@@ -2040,8 +2040,9 @@
 		top.className = 'waymorphic-map__tools';
 		top.textContent = '';
 		top.removeAttribute( 'inert' );
-		// The copy that PHP made was not for screen readers.
+		// The copy that PHP made was not for screen readers, and it was not visible.
 		top.removeAttribute( 'aria-hidden' );
+		top.style.removeProperty( 'visibility' );
 
 		if ( config.locator ) {
 			var form = document.createElement( 'form' );

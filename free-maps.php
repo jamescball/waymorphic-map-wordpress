@@ -19,6 +19,35 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+if ( ! function_exists( 'waymorphic_map_activate' ) ) {
+	/**
+	 * Runs when the plugin is activated. The folder of version 1.1 had a
+	 * different name (wp-free-maps), so WordPress installs this version as
+	 * a second plugin. Two active copies write PHP warnings in each page
+	 * view, and the delete of version 1.1 removes the settings. This
+	 * function keeps a copy of the settings and deactivates version 1.1.
+	 * It uses only functions of WordPress: at this time, the other
+	 * functions of the plugin can be those of version 1.1.
+	 *
+	 * @param bool $network_wide True when the plugin is activated for a network.
+	 */
+	function waymorphic_map_activate( $network_wide = false ) {
+		$saved = get_option( 'waymorphic_map_options', null );
+		if ( is_array( $saved ) ) {
+			update_option( 'waymorphic_map_options_copy', $saved );
+		}
+		if ( ! function_exists( 'deactivate_plugins' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/plugin.php';
+		}
+		$old = 'wp-free-maps/wp-free-maps.php';
+		if ( is_plugin_active( $old ) && ( $network_wide || ! is_plugin_active_for_network( $old ) ) ) {
+			// For one site, only this site: the other sites of a network can use version 1.1.
+			deactivate_plugins( $old, true, $network_wide ? null : false );
+		}
+	}
+}
+register_activation_hook( __FILE__, 'waymorphic_map_activate' );
+
 if ( defined( 'WAYMORPHIC_MAP_VERSION' ) ) {
 	// A second copy of the plugin is active (the folder of version 1.1 had a different name). One copy runs.
 	return;

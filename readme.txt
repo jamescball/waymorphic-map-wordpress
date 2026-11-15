@@ -48,7 +48,7 @@ A map with many markers. Without `lat` and `lng`, the view fits the markers:
 `[waymorphic_map height="500"]
 [waymorphic_marker lat="48.8584" lng="2.2945"]<strong>Eiffel Tower</strong>[/waymorphic_marker]
 [waymorphic_marker lat="48.8606" lng="2.3376" open="true"]The Louvre[/waymorphic_marker]
-[waymorphic_marker address="Notre-Dame de Paris"]Notre-Dame[/waymorphic_marker]
+[waymorphic_marker address="Cathédrale Notre-Dame de Paris"]Notre-Dame[/waymorphic_marker]
 [/waymorphic_map]`
 
 Attributes of `[waymorphic_map]`:
@@ -59,7 +59,7 @@ Attributes of `[waymorphic_map]`:
 * `style` - `positron`, `bright`, `liberty`, `dark` or `fiord`.
 * `height` - a CSS length such as `400px` or `60vh`. A number is in pixels. A percentage is not a height.
 * `width` - a CSS length such as `300px` or `50%`. A number is in pixels.
-* The units of `height` and `width` are `px`, `vh`, `vw`, `dvh`, `svh`, `lvh`, `vmin`, `vmax`, `em`, `rem` and `ch` (and `%` for the width). Other values, such as `calc()`, give the default.
+* The units of `height` and `width` are `px`, `vh`, `vw`, `dvh`, `svh`, `lvh`, `dvw`, `svw`, `lvw`, `vmin`, `vmax`, `em`, `rem` and `ch` (and `%` for the width). Other values, such as `calc()`, give the default.
 * `marker` - `true` puts a marker at the centre.
 * `label` - popup text for the marker at the centre.
 * `controls` - `false` hides the zoom and fullscreen buttons.
@@ -80,7 +80,7 @@ Attributes of `[waymorphic_map]`:
 
 Attributes of `[waymorphic_marker]`: `lat` and `lng`, or `address`; `open="true"` shows the popup when the page opens. The text between the tags is the popup. Optional: `title` (the name in the list and the first line of the popup), `category`, `colour` (such as `#d63638`), `icon` (the URL of a picture to use as the marker) and `animation` (`drop` or `bounce`). A marker with no popup text can have a slash at the end and no closing tag: `[waymorphic_marker lat="51.5" lng="-0.12" /]`.
 
-Use straight quotes (`"`) in the shortcodes. A user who can edit the page sees a message below the map when an address was not found or a position is not valid. Visitors do not see this message.
+Use straight quotes (`"`) in the shortcodes. A user who can edit the page sees a message below the map when an address was not found, when a position is not valid, or when the search found an address far from the other places of the map. Visitors do not see this message. The search gives the place that it knows best: write the town and the country in an address (`address="Brighton Pier, Brighton, United Kingdom"`).
 
 = Shapes =
 
@@ -129,7 +129,7 @@ In the block, "Import a file" in the Markers panel reads a file from your comput
 This plugin shows maps from the Waymorphic Map tile server, `https://tiles.waymorphic.com`.
 
 * When a visitor sees a map, the browser of the visitor gets the map style, map tiles, fonts and icons from that server. As with all web requests, the server sees the IP address and the browser of the visitor, and the tiles requested.
-* When you use an `address` in a shortcode, your WordPress site sends that address to the search of the server and keeps the position for one year. For the address of a marker or a circle, the site also sends the centre of the map or the position of the first marker, as full degrees: the search then prefers places near the map. If the search does not find the address, the site asks again after one day. If the search does not answer, the site asks again after five minutes.
+* When you use an `address` in a shortcode, your WordPress site sends that address to the search of the server and keeps the position for one year. If the search does not find the address, the site asks again after one day. If the search does not answer, the site asks again after five minutes.
 * When you search for a place in the block editor, your browser sends the search text to the server, with the centre and the zoom of the map of the block.
 * When a map has the search for the nearest markers (`locator`), the browser of the visitor sends the search text to the server, with the centre of the markers of the map: the server prefers places near the markers. With "Use my location", the position stays in the browser.
 
@@ -181,11 +181,11 @@ You select it: Google Maps, Apple Maps, Waze or OpenStreetMap. Set the service f
 
 = Can I change the colours of the list, the search and the buttons? =
 
-Yes. These parts keep their look in each theme. To change them, set CSS variables in Appearance > Customize > Additional CSS, for example:
+Yes. These parts keep their look in each theme: the usual CSS rules of a theme or of the site do not change them. To change them, set CSS variables in Appearance > Customize > Additional CSS, for example:
 
 `.wp-block-waymorphic-map { --waymorphic-map-accent: #b32d2e; --waymorphic-map-radius: 0; --waymorphic-map-list-height: 480px; }`
 
-The variables are `--waymorphic-map-accent`, `--waymorphic-map-accent-text`, `--waymorphic-map-text`, `--waymorphic-map-muted`, `--waymorphic-map-surface`, `--waymorphic-map-border`, `--waymorphic-map-line`, `--waymorphic-map-radius`, `--waymorphic-map-font-size`, `--waymorphic-map-list-height` and `--waymorphic-map-scroll-space` (the space above the map after a click on a row of the list, for a header that stays at the top of the window).
+The variables are `--waymorphic-map-accent`, `--waymorphic-map-accent-text`, `--waymorphic-map-text`, `--waymorphic-map-muted`, `--waymorphic-map-surface`, `--waymorphic-map-border`, `--waymorphic-map-line`, `--waymorphic-map-radius`, `--waymorphic-map-font-size`, `--waymorphic-map-list-height`, `--waymorphic-map-scheme` (`light` or `dark`: the scroll bar of the list and the arrow of the select field, for a dark `--waymorphic-map-surface`) and `--waymorphic-map-scroll-space` (the space above the map after a click on a row of the list, for a header that stays at the top of the window). For a change that the variables do not make, write `!important` in your CSS rule.
 
 = Can I draw shapes in the block editor? =
 
@@ -193,7 +193,7 @@ Yes. Open the "Shapes" panel, select a type and click the map. For a heatmap, us
 
 = Can I show a route? =
 
-Yes, as a line. Import a GPX or KML file of the route, or draw a line. The plugin does not calculate a route between two addresses: the directions link opens openstreetmap.org for that.
+Yes, as a line. Import a GPX or KML file of the route, or draw a line. The plugin does not calculate a route between two addresses: the directions link opens a map service (Google Maps, Apple Maps, Waze or OpenStreetMap) for that.
 
 = Can I import my markers from a different map plugin? =
 
@@ -220,26 +220,26 @@ Send an email to contact@waymorphic.com.
 * New: a setting for the map service of the directions link: Google Maps, Apple Maps, Waze or OpenStreetMap. Or the visitor selects the service from a list. Each map can have its own value (`directions="google"`, or the "Features" panel of the block).
 * New: the list shows the row of the marker that has its popup open. A click on a marker shows its row in the list.
 * New: CSS variables for the colours of the search, the category buttons and the list.
-* New: the page has the list before the map starts, also without JavaScript and in a browser that cannot show the map. The page does not jump when the map starts.
+* New: the page has the list before the map starts, also without JavaScript and in a browser that cannot show the map. The page does not jump when the map starts. The markers of a file come into the list when the browser has the file.
 * Security: the script cleans the HTML of each popup again in the browser. Before, a user with the role of Contributor or Author could put an element in a post that ran a script in the browser of a visitor or an administrator.
 * Security: the plugin cleans the credit text of the map style before MapLibre writes it in the page. MapLibre GL JS 5.21.0 has a fault in this cleaning (GHSA-jrc7-96c5-q579): a tile server that is not the Waymorphic server, or a user with the role of Contributor or Author, could run a script in the page.
 * Security: a map element in the content of a page starts only with a map style and a search from the tile server of the site (or from a filter of the site). Before, a user with the role of Contributor or Author could put a map element with a style of their choice in a post.
 * Fix: in a narrow list (a telephone, a column), a name showed one letter on each line.
-* Fix: the styles of a theme changed the list, the search, the category buttons, the buttons of the map and the close button of the popups. In some themes the popups could not be read. These parts now look the same in each theme.
+* Fix: the styles of a theme changed the list, the search, the category buttons, the buttons of the map and the close button of the popups. In some themes the popups could not be read. These parts now look the same in each theme. If your site has its own CSS rules for these parts, they have no effect now: use the CSS variables of the plugin, or write `!important` in your rules.
 * Fix: the list and the search are as wide as a map that has a width.
 * Fix: the search for the nearest markers found towns in other countries ("Bristol" in the USA). The search now prefers places near the markers, and the result text gives the place that it found.
 * Fix: after a search, a category button did not change the result text. "Show all" did not go back to the first view.
 * Fix: a click on a group of markers on a small map moved the map away from the markers.
-* Fix: a map that was less than 121 pixels high or wide did not show its markers.
+* Fix: a map that was less than 121 pixels high or wide did not show its markers. A map that is less than 240 pixels high has no compass button.
 * Fix: a popup with a long text went out of the map. The map now moves, and a long text scrolls.
 * Fix: a click on a marker that is on a shape opened two popups.
 * Fix: the keyboard: the Space key on a marker also moved the page, Escape did not close a popup, the focus went away after a popup closed, and the Tab key went to markers that were not in view. The popups of shapes now have buttons for the keyboard.
 * Fix: CSV files with decimal commas, with a quote in a text, or from a spreadsheet program that does not write UTF-8.
 * Fix: a file that gave no answer stopped all the markers of the map. The limit is now 15 seconds.
 * Fix: markers on the two sides of the 180° line (Fiji and Samoa) showed on a map of the world.
-* Fix: right-to-left pages, and the texts of the map buttons are now in the language of the site.
+* Fix: right-to-left pages. The texts of the map buttons (zoom, compass, location) can now be translated.
 * Fix: in the block, the fields for the position took no minus sign and no zero after the decimal point. A height of 50% made the map go away: a height cannot be a percentage. Each new marker and shape is one step for "Undo".
-* New: a user who can edit the page sees a message below a shortcode map when an address was not found or a position is not valid. Before, the marker went away with no message, and a map with an address that was not found showed a desert.
+* New: a user who can edit the page sees a message below a shortcode map when an address was not found or a position is not valid. Before, the marker went away with no message, and a map with an address that was not found showed a desert. There is also a message when the search found an address far from the other places of the map ("Brighton Pier" in New Zealand on a map of England).
 * New: markers at the same position stand side by side, so that each one can be clicked.
 * New: polygons with holes from GeoJSON and KML files, tracks of Google Earth (`gx:Track`), and KML positions with spaces.
 * New: `lon` and `long` are accepted for `lng`, and a decimal comma is accepted in `lat` and `lng`.
@@ -261,9 +261,9 @@ Send an email to contact@waymorphic.com.
 * Fix: on the settings page, a value that is not valid keeps the saved value and shows a message. Before, the default value replaced it with no message.
 * Fix: in the block, Enter in the place search took a suggestion for an older text, the map could be turned (the page does not show this), and a map in a wide block kept its first width.
 * Fix: `animation` on the map shortcode is for the markers of files too. The result text of the search shows the distance that the visitor selected ("12.5 km", not "13 km").
-* New: the units `dvh`, `svh`, `lvh`, `vmin`, `vmax` and `ch` for the height and the width.
+* New: the units `dvh`, `svh`, `lvh`, `dvw`, `svw`, `lvw`, `vmin`, `vmax` and `ch` for the height and the width.
 * New for developers: the map element sends the `waymorphic-map:ready` event when its map is ready. `WaymorphicMap.addShapes()` adds shapes to a map that has shapes.
-* Change: the plugin folder, the main file and the text domain are now `free-maps`. The plugin directory does not permit the name `wp-free-maps`. If you installed version 1.1.0 from a zip file: install and activate this version first, then deactivate and delete version 1.1.0 (the folder `wp-free-maps`), then empty your page cache. The settings and the maps stay. If you delete version 1.1.0 before you activate this version, the settings go back to the defaults (the maps stay).
+* Change: the plugin folder, the main file and the text domain are now `free-maps`. The plugin directory does not permit the name `wp-free-maps`. If you installed version 1.1.0 from a zip file: install and activate this version first (this deactivates version 1.1.0), then delete version 1.1.0 (the folder `wp-free-maps`), then empty your page cache. The settings and the maps stay. If you delete version 1.1.0 before you activate this version, the settings go back to the defaults (the maps stay).
 * Change: the popup of a marker that has a `title` now starts with the title, if the first line of the popup text does not have it. A marker with a title and no popup text now has a popup with its title. Set `popup_title="false"` on the map shortcode to turn this off.
 * Change: the name of a marker with no title (in the list, and for screen readers) is the first line of its popup text.
 
@@ -284,7 +284,7 @@ Send an email to contact@waymorphic.com.
 == Upgrade Notice ==
 
 = 1.2.0 =
-Security fixes, a setting for the map service of the directions link, and many fixes for the list and the search. The plugin folder is now `free-maps`: if you installed version 1.1.0 from a zip file, install and activate this version first, then delete version 1.1.0.
+Security fixes, a setting for the map service of the directions link, and many fixes for the list and the search. The plugin folder is now `free-maps`: if you installed version 1.1.0 from a zip file, install and activate this version first (this deactivates version 1.1.0), then delete version 1.1.0.
 
 == Third-party code ==
 

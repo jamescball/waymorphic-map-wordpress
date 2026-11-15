@@ -3,10 +3,11 @@
 	position: relative;
 }
 
+/* The first click on a block that is not selected selects it: the shield is above all parts of the map, also its popups. */
 .waymorphic-map-editor__shield {
 	position: absolute;
 	inset: 0;
-	z-index: 3;
+	z-index: 7;
 }
 
 .waymorphic-map-editor__search {
@@ -170,8 +171,14 @@
 	isolation: auto;
 }
 
-.waymorphic-map-editor .maplibregl-popup {
+/* Three class names: this rule must be stronger than the rule of the page styles, which come after this file when the editor has no iframe. */
+.waymorphic-map-editor .waymorphic-map .maplibregl-popup {
 	z-index: 5;
+}
+
+/* While the search field is in use, its suggestions are above the form of a marker. */
+.waymorphic-map-editor__search:focus-within {
+	z-index: 6;
 }
 
 /* The form in the popup of a marker. */
@@ -370,13 +377,11 @@
 	cursor: pointer;
 }
 
-/* The browser cannot show the map in the editor. */
+/* The browser cannot show the map in the editor. The message is below the grey box of the map,
+   above the veil of the first-step card and not below the search field. */
 .waymorphic-map-editor__error {
-	position: absolute;
-	z-index: 2;
-	top: 0;
-	right: 0;
-	left: 0;
+	position: relative;
+	z-index: 5;
 	margin: 0;
 	padding: 12px 16px;
 	background: #fcf9e8;

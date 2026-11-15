@@ -42,5 +42,7 @@ add_action( 'init', 'waymorphic_map_register_block' );
 add_action( 'enqueue_block_assets', 'waymorphic_map_editor_assets' );
 add_action( 'wp_enqueue_scripts', 'waymorphic_map_enqueue_early' );
 add_action( 'admin_init', 'waymorphic_map_register_settings' );
+add_action( 'admin_init', 'waymorphic_map_keep_options', 20 );
+add_filter( 'pre_do_shortcode_tag', 'waymorphic_map_keep_raw_attributes', 10, 4 );
 add_action( 'admin_menu', 'waymorphic_map_add_settings_page' );
 add_filter( 'plugin_action_links_' . plugin_basename( __FILE__ ), 'waymorphic_map_action_links' );

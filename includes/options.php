@@ -45,11 +45,35 @@ function waymorphic_map_option_defaults() {
  * @return array<string,mixed>
  */
 function waymorphic_map_options() {
-	$saved = get_option( 'waymorphic_map_options', array() );
+	$saved = get_option( 'waymorphic_map_options', null );
 	if ( ! is_array( $saved ) ) {
-		$saved = array();
+		// Not there: see waymorphic_map_keep_options().
+		$saved = get_option( 'waymorphic_map_options_copy', null );
 	}
-	return array_merge( waymorphic_map_option_defaults(), $saved );
+	return array_merge( waymorphic_map_option_defaults(), is_array( $saved ) ? $saved : array() );
+}
+
+/**
+ * Keeps a second copy of the options, with a name that version 1.1 does not
+ * know. Version 1.1 of the plugin was in a folder with a different name
+ * (wp-free-maps). When a user deletes that version, its uninstall code removes
+ * the options, also when this version is active: the settings of the site
+ * (the tile server, the style, the height) were lost. With the copy, they
+ * come back. Runs in the administration pages.
+ */
+function waymorphic_map_keep_options() {
+	$saved = get_option( 'waymorphic_map_options', null );
+	$copy  = get_option( 'waymorphic_map_options_copy', null );
+	if ( is_array( $saved ) ) {
+		if ( $saved !== $copy ) {
+			update_option( 'waymorphic_map_options_copy', $saved );
+		}
+	} elseif ( is_array( $copy ) ) {
+		update_option( 'waymorphic_map_options', $copy );
+	} else {
+		// A new site: with the two options in the database, a page view makes no query for them.
+		add_option( 'waymorphic_map_options', waymorphic_map_option_defaults() );
+	}
 }
 
 /**
@@ -115,14 +139,18 @@ function waymorphic_map_clean_length( $value, $fallback, $percent = true ) {
  * @param mixed $value The input.
  * @param float $min   The smallest value.
  * @param float $max   The largest value.
+ * @param bool  $comma How to read a comma. True: the decimal sign of many countries, for a
+ *                     position, a zoom or an opacity ("51,5074" is 51.5074). False: the sign
+ *                     between thousands, for a distance ("2,500" metres is 2500).
  * @return float|null
  */
-function waymorphic_map_clean_number( $value, $min, $max ) {
+function waymorphic_map_clean_number( $value, $min, $max, $comma = false ) {
 	if ( is_string( $value ) ) {
 		$value = trim( $value );
-		// "51,5074": many countries write a comma for the decimals.
-		if ( preg_match( '/^[+-]?\d+,\d+$/', $value ) ) {
+		if ( $comma && preg_match( '/^[+-]?\d+,\d+$/', $value ) ) {
 			$value = str_replace( ',', '.', $value );
+		} elseif ( ! $comma && preg_match( '/^\d{1,3}(?:,\d{3})+(?:\.\d+)?$/', $value ) ) {
+			$value = str_replace( ',', '', $value );
 		}
 	}
 	if ( ! is_numeric( $value ) ) {
@@ -141,8 +169,8 @@ function waymorphic_map_clean_number( $value, $min, $max ) {
  * @return array{lat:float,lng:float}|null
  */
 function waymorphic_map_clean_position( $lat, $lng ) {
-	$lat = waymorphic_map_clean_number( $lat, -91, 91 );
-	$lng = waymorphic_map_clean_number( $lng, -181, 181 );
+	$lat = waymorphic_map_clean_number( $lat, -91, 91, true );
+	$lng = waymorphic_map_clean_number( $lng, -181, 181, true );
 	if ( null === $lat || null === $lng || abs( $lat ) > 90 || abs( $lng ) > 180 ) {
 		return null;
 	}
@@ -204,7 +232,7 @@ function waymorphic_map_sanitize_options( $input ) {
 		}
 		$url   = untrailingslashit( esc_url_raw( $typed, array( 'http', 'https' ) ) );
 		$parts = '' !== $url ? wp_parse_url( $url ) : false;
-		if ( is_array( $parts ) && ! empty( $parts['host'] ) && ! empty( $parts['scheme'] ) && empty( $parts['query'] ) && empty( $parts['fragment'] ) ) {
+		if ( is_array( $parts ) && ! empty( $parts['host'] ) && ! empty( $parts['scheme'] ) && false === strpbrk( $url, '?#' ) ) {
 			$tiles_url = $url;
 		} else {
 			$tiles_url = $saved['tiles_url'];
@@ -220,9 +248,9 @@ function waymorphic_map_sanitize_options( $input ) {
 		}
 	}
 
-	$zoom = waymorphic_map_clean_number( $text( 'zoom' ), 0, 22 );
+	$zoom = waymorphic_map_clean_number( $text( 'zoom' ), 0, 22, true );
 	if ( null === $zoom ) {
-		$zoom = waymorphic_map_clean_number( $saved['zoom'], 0, 22 );
+		$zoom = waymorphic_map_clean_number( $saved['zoom'], 0, 22, true );
 		$zoom = null === $zoom ? $defaults['zoom'] : $zoom;
 		if ( '' !== $text( 'zoom' ) ) {
 			$tell( 'zoom', __( 'The zoom is not valid, and was not changed. Use a number from 0 to 22.', 'free-maps' ) );

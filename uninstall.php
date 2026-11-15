@@ -16,6 +16,7 @@ function waymorphic_map_uninstall_site() {
 	global $wpdb;
 
 	delete_option( 'waymorphic_map_options' );
+	delete_option( 'waymorphic_map_options_copy' );
 	delete_transient( 'waymorphic_map_geo_down' );
 
 	// The kept answers of the address lookup.

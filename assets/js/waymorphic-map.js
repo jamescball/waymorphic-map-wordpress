@@ -28,22 +28,47 @@
 
 	/**
 	 * Tells if an address is safe in a link or a picture: http and https, and
-	 * for a link also mailto and tel. Not javascript: or data:.
+	 * for a link also mailto and tel. Not javascript:. A data: address only for
+	 * a picture (an img element does not run the script of an SVG picture).
 	 */
 	function safeUrl( value, link ) {
 		try {
-			var protocol = new window.URL( String( value ), document.baseURI ).protocol;
-			return protocol === 'http:' || protocol === 'https:' || ( !! link && ( protocol === 'mailto:' || protocol === 'tel:' ) );
+			var address = String( value );
+			var protocol = new window.URL( address, document.baseURI ).protocol;
+			return (
+				protocol === 'http:' ||
+				protocol === 'https:' ||
+				( !! link && ( protocol === 'mailto:' || protocol === 'tel:' ) ) ||
+				( ! link && /^\s*data:image\/(?:png|jpeg|gif|webp|svg\+xml)[;,]/i.test( address ) )
+			);
 		} catch ( error ) {
 			return false;
 		}
 	}
 
+	/**
+	 * The colour of a marker or a shape. PHP gives hex colours. A site script or
+	 * a filter can give each colour that CSS has (red, rgb(0, 128, 0)).
+	 */
+	function safeColour( value, fallback ) {
+		var colour = typeof value === 'string' ? value.trim() : '';
+		if ( HEX.test( colour ) ) {
+			return colour;
+		}
+		if ( colour && colour.length < 60 && ! /[;{}<>\\]|url|var|attr|image/i.test( colour ) && window.CSS && window.CSS.supports && window.CSS.supports( 'color', colour ) ) {
+			return colour;
+		}
+		return fallback;
+	}
+
 	// The elements and the attributes that the HTML of a popup can have.
-	var POPUP_TAGS = /^(?:A|ABBR|ADDRESS|ARTICLE|ASIDE|AUDIO|B|BDI|BDO|BIG|BLOCKQUOTE|BR|CAPTION|CITE|CODE|COL|COLGROUP|DD|DEL|DETAILS|DFN|DIV|DL|DT|EM|FIGCAPTION|FIGURE|FOOTER|H1|H2|H3|H4|H5|H6|HEADER|HR|I|IMG|INS|KBD|LI|MARK|OL|P|PICTURE|PRE|Q|S|SECTION|SMALL|SOURCE|SPAN|STRIKE|STRONG|SUB|SUMMARY|SUP|TABLE|TBODY|TD|TFOOT|TH|THEAD|TIME|TR|U|UL|VAR|VIDEO|WBR)$/;
+	// These are the elements and attributes of the post content of WordPress (wp_kses_post) that
+	// cannot run a script. The server cleans a popup with wp_kses_post: a popup that the server
+	// permits must show as it is. A button is permitted (a site script can use it); it sends no form.
+	var POPUP_TAGS = /^(?:A|ABBR|ADDRESS|ARTICLE|ASIDE|AUDIO|B|BDI|BDO|BIG|BLOCKQUOTE|BR|BUTTON|CAPTION|CITE|CODE|COL|COLGROUP|DD|DEL|DETAILS|DFN|DIV|DL|DT|EM|FIGCAPTION|FIGURE|FONT|FOOTER|H1|H2|H3|H4|H5|H6|HEADER|HR|I|IMG|INS|KBD|LABEL|LI|MAIN|MARK|NAV|OL|P|PICTURE|PRE|Q|RP|RT|RUBY|S|SECTION|SMALL|SOURCE|SPAN|STRIKE|STRONG|SUB|SUMMARY|SUP|TABLE|TBODY|TD|TFOOT|TH|THEAD|TIME|TR|TRACK|U|UL|VAR|VIDEO|WBR)$/;
 	// These elements go, with all that is in them.
-	var POPUP_REMOVE = /^(?:SCRIPT|STYLE|IFRAME|FRAME|FRAMESET|OBJECT|EMBED|APPLET|TEMPLATE|NOSCRIPT|TITLE|HEAD|META|LINK|BASE|FORM|INPUT|BUTTON|SELECT|OPTION|TEXTAREA|CANVAS|DIALOG|MAP|AREA|SLOT)$/;
-	var POPUP_ATTRIBUTES = /^(?:href|src|srcset|sizes|alt|title|class|style|width|height|colspan|rowspan|scope|target|rel|lang|dir|controls|loop|muted|poster|preload|loading|decoding|datetime|cite|start|reversed|type|open|hreflang|align|valign|role|aria-[a-z]+)$/;
+	var POPUP_REMOVE = /^(?:SCRIPT|STYLE|IFRAME|FRAME|FRAMESET|OBJECT|EMBED|APPLET|TEMPLATE|NOSCRIPT|TITLE|HEAD|META|LINK|BASE|FORM|INPUT|SELECT|OPTION|TEXTAREA|CANVAS|DIALOG|MAP|AREA|SLOT)$/;
+	var POPUP_ATTRIBUTES = /^(?:href|src|srcset|sizes|alt|title|class|style|id|width|height|colspan|rowspan|span|headers|scope|border|cellpadding|cellspacing|target|rel|download|lang|dir|controls|loop|muted|autoplay|playsinline|poster|preload|loading|decoding|media|kind|srclang|label|default|datetime|cite|start|reversed|type|open|hreflang|align|valign|color|face|size|for|disabled|role|aria-[a-z]+|data-[a-z0-9_.-]+)$/;
 
 	function copyClean( from, to, depth ) {
 		Array.prototype.forEach.call( from.childNodes, function ( node ) {
@@ -73,6 +98,10 @@
 				if ( ( name === 'src' || name === 'poster' ) && ! safeUrl( value, false ) ) {
 					return;
 				}
+				if ( name === 'type' && node.nodeName === 'BUTTON' ) {
+					// Set below: a button of a popup does not send a form.
+					return;
+				}
 				if (
 					name === 'srcset' &&
 					! value.split( ',' ).every( function ( part ) {
@@ -83,9 +112,16 @@
 				}
 				element.setAttribute( name, value );
 			} );
+			if ( node.nodeName === 'BUTTON' ) {
+				element.setAttribute( 'type', 'button' );
+			}
 			if ( element.hasAttribute( 'target' ) ) {
-				// A page that opens in a new tab gets no access to this page.
-				element.setAttribute( 'rel', 'noopener' );
+				// A page that opens in a new tab gets no access to this page. The other words of rel stay (nofollow).
+				var rel = ( element.getAttribute( 'rel' ) || '' ).split( /\s+/ ).filter( Boolean );
+				if ( rel.indexOf( 'noopener' ) === -1 ) {
+					rel.push( 'noopener' );
+				}
+				element.setAttribute( 'rel', rel.join( ' ' ) );
 			}
 			copyClean( node, element, depth + 1 );
 			to.appendChild( element );
@@ -135,11 +171,14 @@
 	 */
 	function addCredit( map, gl ) {
 		function clean( source ) {
-			if ( ! source || typeof source.attribution !== 'string' || source.attribution === source.waymorphicCredit ) {
+			var credit = source ? source.attribution : null;
+			if ( credit === undefined || credit === null || credit === source.waymorphicCredit ) {
 				return;
 			}
 			var holder = document.createElement( 'div' );
-			holder.appendChild( cleanHtml( source.attribution ) );
+			// A credit that is not text (a list, a number) is no credit. MapLibre makes text of a
+			// list and writes that text in the page: a list must not go through.
+			holder.appendChild( cleanHtml( typeof credit === 'string' ? credit : '' ) );
 			source.attribution = holder.innerHTML;
 			source.waymorphicCredit = source.attribution;
 		}
@@ -536,7 +575,7 @@
 			} );
 		} );
 		var made = ( markers || [] ).map( function ( item, index ) {
-			var colour = HEX.test( item.colour || '' ) ? item.colour : MARKER_COLOUR;
+			var colour = safeColour( item.colour, MARKER_COLOUR );
 			var shift = shifts[ index ] || null;
 			var options = { color: colour };
 			if ( shift ) {
@@ -573,10 +612,12 @@
 
 			var control = directionsControl( config, item, name );
 			var html = String( item.popup || '' );
-			if ( item.title ) {
-				// The popup starts with the name of the place, if its text does not.
-				var words = ( cleanHtml( html ).textContent || '' ).replace( /\s+/g, ' ' ).trim().toLowerCase();
-				if ( words.indexOf( String( item.title ).replace( /\s+/g, ' ' ).trim().toLowerCase() ) !== 0 ) {
+			if ( item.title && ( ! config || config.popupTitle !== false ) ) {
+				// The popup starts with the name of the place, if the first line of its text does not
+				// have the name ("Our London shop" has "London shop").
+				var start = markerName( { popup: html }, 0 ).toLowerCase();
+				var title = String( item.title ).replace( /\s+/g, ' ' ).trim().toLowerCase();
+				if ( ! html || start.indexOf( title ) === -1 ) {
 					html = '<strong class="waymorphic-map__popup-title">' + escapeHtml( item.title ) + '</strong>' + ( html ? '<br>' : '' ) + html;
 				}
 			}
@@ -609,6 +650,11 @@
 					// The map can have a different height now.
 					content.style.maxHeight = popupHeight( map ) + 'px';
 					element.classList.add( 'waymorphic-map__marker--active' );
+					if ( image && element.classList.contains( 'waymorphic-map__icon' ) && element.offsetWidth && element.offsetHeight ) {
+						// The size of the picture on the map. When the picture came, the marker was
+						// possibly in a group and not in the page: the size of the picture file is larger.
+						popup.setOffset( popupOffsets( element.offsetWidth, element.offsetHeight, shift, false ) );
+					}
 					keepInView( map, popup );
 					var box = popup.getElement();
 					// Escape closes the popup.
@@ -656,8 +702,11 @@
 				image.addEventListener( 'load', function () {
 					// The popup goes at the edge of the picture: above, below or at the side of it.
 					// MapLibre does this for its own marker.
-					var width = element.offsetWidth || image.naturalWidth;
-					var height = element.offsetHeight || image.naturalHeight;
+					// The stylesheet shows a picture at 64 x 48 pixels at most. The marker is possibly not
+					// in the page now (it is in a group): then its size comes from the size of the file.
+					var scale = Math.min( 1, 64 / ( image.naturalWidth || 64 ), 48 / ( image.naturalHeight || 48 ) );
+					var width = element.offsetWidth || Math.round( ( image.naturalWidth || 64 ) * scale );
+					var height = element.offsetHeight || Math.round( ( image.naturalHeight || 48 ) * scale );
 					if ( marker.getPopup() ) {
 						marker.getPopup().setOffset( popupOffsets( width, height, shift, false ) );
 					}
@@ -832,20 +881,26 @@
 		if ( ! features.length ) {
 			return;
 		}
-		var before = map.getSource( 'waymorphic-shapes' );
-		if ( before ) {
-			// The map has shapes: these go with them. A new heatmap needs its layer, which is made
-			// with the first shapes only.
-			map.waymorphicShapes = ( map.waymorphicShapes || [] ).concat(
-				features.filter( function ( feature ) {
-					return typeof feature.properties.heat !== 'number';
-				} )
-			);
-			before.setData( { type: 'FeatureCollection', features: map.waymorphicShapes } );
-			return;
+		// The heatmaps of a second call get new numbers: each heatmap has its layer.
+		var heatBase = map.waymorphicHeats || 0;
+		var heatCount = 0;
+		features.forEach( function ( feature ) {
+			if ( typeof feature.properties.heat === 'number' ) {
+				heatCount = Math.max( heatCount, feature.properties.heat + 1 );
+				feature.properties.heat += heatBase;
+			}
+		} );
+		var all = ( map.waymorphicShapes || [] ).concat( features );
+		var source = map.getSource( 'waymorphic-shapes' );
+		if ( source ) {
+			// The map has shapes: these go with them.
+			source.setData( { type: 'FeatureCollection', features: all } );
+		} else {
+			map.addSource( 'waymorphic-shapes', { type: 'geojson', data: { type: 'FeatureCollection', features: all } } );
 		}
-		map.waymorphicShapes = features.slice();
-		map.addSource( 'waymorphic-shapes', { type: 'geojson', data: { type: 'FeatureCollection', features: features } } );
+		map.waymorphicShapes = all;
+		map.waymorphicHeats = heatBase + heatCount;
+
 		// One layer for each heatmap, below the shapes.
 		var heats = {};
 		features.forEach( function ( feature ) {
@@ -854,33 +909,38 @@
 				return;
 			}
 			heats[ number ] = true;
-			map.addLayer( {
-				id: 'waymorphic-shapes-heat-' + number,
-				type: 'heatmap',
-				source: 'waymorphic-shapes',
-				filter: [ '==', [ 'get', 'heat' ], number ],
-				paint: {
-					'heatmap-weight': [ 'get', 'weight' ],
-					'heatmap-radius': feature.properties.radius,
-					'heatmap-opacity': feature.properties.opacity,
+			map.addLayer(
+				{
+					id: 'waymorphic-shapes-heat-' + number,
+					type: 'heatmap',
+					source: 'waymorphic-shapes',
+					filter: [ '==', [ 'get', 'heat' ], number ],
+					paint: {
+						'heatmap-weight': [ 'get', 'weight' ],
+						'heatmap-radius': feature.properties.radius,
+						'heatmap-opacity': feature.properties.opacity,
+					},
 				},
+				map.getLayer( 'waymorphic-shapes-fill' ) ? 'waymorphic-shapes-fill' : undefined
+			);
+		} );
+		if ( ! source ) {
+			map.addLayer( {
+				id: 'waymorphic-shapes-fill',
+				type: 'fill',
+				source: 'waymorphic-shapes',
+				filter: [ '==', [ 'geometry-type' ], 'Polygon' ],
+				paint: { 'fill-color': [ 'get', 'fill' ], 'fill-opacity': [ 'get', 'opacity' ] },
 			} );
-		} );
-		map.addLayer( {
-			id: 'waymorphic-shapes-fill',
-			type: 'fill',
-			source: 'waymorphic-shapes',
-			filter: [ '==', [ 'geometry-type' ], 'Polygon' ],
-			paint: { 'fill-color': [ 'get', 'fill' ], 'fill-opacity': [ 'get', 'opacity' ] },
-		} );
-		map.addLayer( {
-			id: 'waymorphic-shapes-line',
-			type: 'line',
-			source: 'waymorphic-shapes',
-			filter: [ '!=', [ 'geometry-type' ], 'Point' ],
-			layout: { 'line-join': 'round', 'line-cap': 'round' },
-			paint: { 'line-color': [ 'get', 'colour' ], 'line-width': [ 'get', 'width' ] },
-		} );
+			map.addLayer( {
+				id: 'waymorphic-shapes-line',
+				type: 'line',
+				source: 'waymorphic-shapes',
+				filter: [ '!=', [ 'geometry-type' ], 'Point' ],
+				layout: { 'line-join': 'round', 'line-cap': 'round' },
+				paint: { 'line-color': [ 'get', 'colour' ], 'line-width': [ 'get', 'width' ] },
+			} );
+		}
 
 		// Shows the popup of a shape at a point. One shape popup shows at a time.
 		function showShape( html, lngLat ) {
@@ -895,8 +955,18 @@
 
 		// A shape has no element in the page: the keyboard and a screen reader cannot get to
 		// its popup. Thus each shape with a popup has a button, which shows when it has the focus.
-		var keys = document.createElement( 'div' );
-		keys.className = 'waymorphic-map__shape-keys';
+		var keys = map.waymorphicShapeKeys;
+		if ( ! keys ) {
+			keys = document.createElement( 'div' );
+			keys.className = 'waymorphic-map__shape-keys';
+			map.waymorphicShapeKeys = keys;
+			// The buttons go away with the map (a map can start again).
+			map.on( 'remove', function () {
+				if ( keys.parentNode ) {
+					keys.parentNode.removeChild( keys );
+				}
+			} );
+		}
 		features.forEach( function ( feature ) {
 			var name = ( cleanHtml( feature.properties.popup || '' ).textContent || '' ).replace( /\s+/g, ' ' ).trim();
 			if ( ! name ) {
@@ -930,8 +1000,12 @@
 			} );
 			keys.appendChild( button );
 		} );
-		if ( keys.children.length ) {
+		if ( keys.children.length && ! keys.parentNode ) {
 			map.getContainer().appendChild( keys );
+		}
+		if ( source ) {
+			// The click functions of the layers are there.
+			return;
 		}
 
 		[ 'waymorphic-shapes-fill', 'waymorphic-shapes-line' ].forEach( function ( layer ) {
@@ -1136,7 +1210,14 @@
 		if ( typeof value === 'number' ) {
 			return value;
 		}
-		var match = /^([nsew])?\s*([+-]?\d+(?:[.,]\d+)?(?:e[+-]?\d+)?)\s*°?\s*([nsew])?$/i.exec( String( value === undefined || value === null ? '' : value ).trim() );
+		var words = String( value === undefined || value === null ? '' : value ).trim();
+		// A coordinate is a short text. A very long text (a file with thousands of spaces in a
+		// field) must not keep the browser busy.
+		if ( words.length > 40 ) {
+			return NaN;
+		}
+		// 51.5074, "51,5074", "-.1276", "51.", "1e-5".
+		var match = /^([nsew])?\s*([+-]?(?:\d+(?:[.,]\d*)?|[.,]\d+)(?:e[+-]?\d+)?)\s*(?:°\s*)?([nsew])?$/i.exec( words );
 		if ( ! match ) {
 			return NaN;
 		}
@@ -1377,10 +1458,11 @@
 			};
 			var kml = function ( node ) {
 				return ( node.textContent || '' )
+					.replace( /\s+/g, ' ' )
 					.trim()
 					// "-0.1276, 51.5074, 0": some programs write a space after the comma.
-					.replace( /\s*,\s*/g, ',' )
-					.split( /\s+/ )
+					.replace( / ?, ?/g, ',' )
+					.split( ' ' )
 					.map( function ( pair ) {
 						return pair.split( ',' );
 					} );
@@ -1499,6 +1581,9 @@
 				return window
 					.fetch( file.url, controller ? { signal: controller.signal } : {} )
 					.then( function ( response ) {
+						// The server answered: the limit is not for the time of the download. A large
+						// file on a slow connection must not be stopped while it comes.
+						window.clearTimeout( timer );
 						if ( ! response.ok ) {
 							throw new Error( 'HTTP ' + response.status );
 						}
@@ -1813,7 +1898,7 @@
 					var swatch = document.createElement( 'span' );
 					swatch.className = 'waymorphic-map__list-dot';
 					swatch.setAttribute( 'aria-hidden', 'true' );
-					swatch.style.background = HEX.test( item.colour || '' ) ? item.colour : MARKER_COLOUR;
+					swatch.style.background = safeColour( item.colour, MARKER_COLOUR );
 					button.appendChild( swatch );
 					var words = document.createElement( 'span' );
 					words.className = 'waymorphic-map__list-text';
@@ -1933,6 +2018,8 @@
 		top.className = 'waymorphic-map__tools';
 		top.textContent = '';
 		top.removeAttribute( 'inert' );
+		// The copy that PHP made was not for screen readers.
+		top.removeAttribute( 'aria-hidden' );
 
 		if ( config.locator ) {
 			var form = document.createElement( 'form' );
@@ -2373,11 +2460,24 @@
 		}
 		var styleReady = false;
 		var shapesWait = false;
+		// True when the markers and the parts around the map are there.
+		var finished = false;
+		var told = false;
+		// For the scripts of a site: the markers and the shapes are on the map, and the style of
+		// the map is ready (a script can add layers). The map is in event.detail.map.
+		function ready() {
+			if ( told || gone || ! finished || ! styleReady || typeof window.CustomEvent !== 'function' ) {
+				return;
+			}
+			told = true;
+			element.dispatchEvent( new window.CustomEvent( 'waymorphic-map:ready', { bubbles: true, detail: { map: map } } ) );
+		}
 		map.on( 'load', function () {
 			styleReady = true;
 			if ( shapesWait ) {
 				addShapes( map, shapes );
 			}
+			ready();
 		} );
 
 		// The markers, the shapes and the parts around the map, when the files are there.
@@ -2413,14 +2513,9 @@
 				addPanels( element, map, all, glMarkers, regroup );
 			}
 			element.classList.add( 'is-ready' );
-			// For the scripts of a site: the map is in event.detail.map and in element.waymorphicMap.
-			if ( typeof window.CustomEvent === 'function' ) {
-				window.setTimeout( function () {
-					if ( ! gone ) {
-						element.dispatchEvent( new window.CustomEvent( 'waymorphic-map:ready', { bubbles: true, detail: { map: map } } ) );
-					}
-				}, 0 );
-			}
+			finished = true;
+			// After start() put the map in element.waymorphicMap.
+			window.setTimeout( ready, 0 );
 		}
 
 		if ( Array.isArray( config.files ) && config.files.length ) {
@@ -2437,6 +2532,64 @@
 	 *
 	 * @param {HTMLElement} element An element with a data-waymorphic-map attribute.
 	 */
+	/**
+	 * Stops the map of an element: the browser gets its drawing context back.
+	 * The element can start a new map later.
+	 *
+	 * @param {HTMLElement} element The element of the map.
+	 * @param {Object}      map     Its MapLibre map.
+	 */
+	function stop( element, map ) {
+		try {
+			map.remove();
+		} catch ( error ) {
+			// The map is not usable. Its parts go away below.
+		}
+		Array.prototype.forEach.call(
+			element.querySelectorAll( '.maplibregl-canvas-container, .maplibregl-control-container, .maplibregl-popup, .waymorphic-map__error, .waymorphic-map__shape-keys' ),
+			function ( part ) {
+				part.parentNode.removeChild( part );
+			}
+		);
+		element.classList.remove( 'is-ready', 'maplibregl-map' );
+		element.waymorphicMap = undefined;
+	}
+
+	/**
+	 * A browser has a limit for the number of maps that can draw at the same
+	 * time (Chrome: 16 on a computer, 8 on a telephone). When one more map
+	 * starts, the browser takes the drawing context of a different map away,
+	 * possibly of a map that the visitor looks at. Thus, before a map starts on
+	 * a page that has many maps, the map that is farthest from the window stops.
+	 * It starts again when the visitor comes back to it.
+	 *
+	 * @param {HTMLElement} element The element whose map starts now.
+	 */
+	function makeRoom( element ) {
+		var live = Array.prototype.filter.call( document.querySelectorAll( '[data-waymorphic-map]' ), function ( other ) {
+			return other !== element && !! other.waymorphicMap;
+		} );
+		var limit = window.matchMedia && window.matchMedia( '(pointer: coarse)' ).matches ? 6 : 12;
+		if ( live.length < limit ) {
+			return;
+		}
+		var farthest = null;
+		// Not a map that is near the window: it would start again immediately.
+		var most = 600;
+		live.forEach( function ( other ) {
+			var box = other.getBoundingClientRect();
+			var away = Math.max( -box.bottom, box.top - window.innerHeight, -box.right, box.left - window.innerWidth );
+			if ( away > most ) {
+				most = away;
+				farthest = other;
+			}
+		} );
+		if ( farthest ) {
+			stop( farthest, farthest.waymorphicMap );
+			watch( farthest );
+		}
+	}
+
 	function start( element ) {
 		if ( element.waymorphicMap !== undefined ) {
 			return;
@@ -2452,6 +2605,7 @@
 		if ( ! config || typeof config !== 'object' ) {
 			return;
 		}
+		makeRoom( element );
 		try {
 			element.waymorphicMap = create( element, config );
 		} catch ( error ) {
@@ -2470,27 +2624,15 @@
 			}
 			return;
 		}
-		// A browser has a limit for the number of maps that can draw at the same time (8 to 16).
-		// On a page with more maps it takes the drawing context of the oldest map away: that map
-		// was empty for the remaining time. Now the map starts again when it is near the viewport.
+		// The browser took the drawing context of this map away (see makeRoom(): this occurs when the
+		// page has more maps in view than the browser permits, or after a fault of the graphics
+		// driver). Before, the map was empty for the remaining time.
 		map.on( 'webglcontextlost', function () {
 			var timer = window.setTimeout( function () {
 				if ( element.waymorphicMap !== map ) {
 					return;
 				}
-				try {
-					map.remove();
-				} catch ( error ) {
-					// The map is not usable. Its parts go away below.
-				}
-				Array.prototype.forEach.call(
-					element.querySelectorAll( '.maplibregl-canvas-container, .maplibregl-control-container, .maplibregl-popup, .waymorphic-map__error' ),
-					function ( part ) {
-						part.parentNode.removeChild( part );
-					}
-				);
-				element.classList.remove( 'is-ready', 'maplibregl-map' );
-				element.waymorphicMap = undefined;
+				stop( element, map );
 
 				// A new map takes the drawing context of a different map. When the page shows more maps
 				// at one time than the browser permits, the maps would start again without end. Thus a
@@ -2514,6 +2656,10 @@
 				again.addEventListener( 'click', function () {
 					element.removeChild( again );
 					start( element );
+					if ( element.waymorphicMap ) {
+						// The button had the keyboard focus and is not there now.
+						element.waymorphicMap.getCanvas().focus( { preventScroll: true } );
+					}
 				} );
 				element.appendChild( again );
 			}, 1500 );

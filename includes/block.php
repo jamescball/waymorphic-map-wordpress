@@ -77,7 +77,7 @@ function waymorphic_map_render_block( $attributes ) {
 			if ( ! is_array( $marker ) ) {
 				continue;
 			}
-			$label     = isset( $marker['label'] ) ? (string) $marker['label'] : '';
+			$label     = isset( $marker['label'] ) && is_scalar( $marker['label'] ) ? (string) $marker['label'] : '';
 			$markers[] = array(
 				'lat'   => isset( $marker['lat'] ) ? $marker['lat'] : null,
 				'lng'   => isset( $marker['lng'] ) ? $marker['lng'] : null,
@@ -96,7 +96,7 @@ function waymorphic_map_render_block( $attributes ) {
 	if ( ! empty( $attributes['shapes'] ) && is_array( $attributes['shapes'] ) ) {
 		foreach ( $attributes['shapes'] as $shape ) {
 			if ( is_array( $shape ) ) {
-				$shape['popup'] = esc_html( isset( $shape['label'] ) ? (string) $shape['label'] : '' );
+				$shape['popup'] = esc_html( isset( $shape['label'] ) && is_scalar( $shape['label'] ) ? (string) $shape['label'] : '' );
 				$shapes[]       = $shape;
 			}
 		}

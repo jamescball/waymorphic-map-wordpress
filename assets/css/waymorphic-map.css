@@ -567,24 +567,10 @@
 	margin: 0 0 10px;
 }
 
-/* The space for the search and the category buttons before the script makes them: the page does not jump. */
-.waymorphic-map__tools--wait:not(#_).has-locator,
-.waymorphic-map__tools--wait:not(#_).has-filter {
-	min-height: 40px;
-}
-
-.waymorphic-map__tools--wait:not(#_).has-locator.has-filter {
-	min-height: 80px;
-}
-
-@media (max-width: 600px) {
-	.waymorphic-map__tools--wait:not(#_).has-locator {
-		min-height: 88px;
-	}
-
-	.waymorphic-map__tools--wait:not(#_).has-locator.has-filter {
-		min-height: 128px;
-	}
+/* The search and the category buttons that the page has before the script makes them: they keep
+   the space, so that the page does not jump. They are not visible and cannot be used. */
+.waymorphic-map__tools--wait:not(#_) {
+	visibility: hidden;
 }
 
 .waymorphic-map__tools:not(#_) .waymorphic-map__locator {

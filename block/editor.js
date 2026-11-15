@@ -89,6 +89,12 @@
 		return props;
 	}
 
+	// For a switch: it has no size property (React wrote a warning for it in its development mode).
+	function nextSwitch( props ) {
+		props.__nextHasNoMarginBottom = true;
+		return props;
+	}
+
 	function styleUrl( name ) {
 		return settings.tilesUrl + '/styles/' + ( name || settings.defaultStyle );
 	}
@@ -117,6 +123,8 @@
 		var draftState = useState( null );
 		var draft = draftState[ 0 ];
 		var setDraft = draftState[ 1 ];
+		// The number that the field had when the user started to type.
+		var startRef = useRef( undefined );
 
 		return el(
 			components.TextControl,
@@ -130,9 +138,16 @@
 				value: draft !== null ? draft : isNumber( props.value ) ? String( props.value ) : '',
 				onChange: function ( value ) {
 					var number = parseFloat( value );
+					if ( draft === null ) {
+						startRef.current = props.value;
+					}
 					setDraft( value );
 					if ( isFinite( number ) ) {
 						props.onChange( Math.max( props.min, Math.min( props.max, number ) ) );
+					} else if ( value.trim() === '' && isNumber( startRef.current ) && startRef.current !== props.value ) {
+						// An empty field: the number goes back to the value before the typing. Without
+						// this, 900 became 9 when the user removed the digits with Backspace.
+						props.onChange( startRef.current );
 					}
 				},
 				onBlur: function () {
@@ -253,7 +268,7 @@
 								return;
 							}
 							wantRef.current = '';
-							setResult( { status: 'error', results: [] } );
+							setResult( { status: 'error', results: [], query: words } );
 							if ( wp.a11y && wp.a11y.speak ) {
 								wp.a11y.speak( __( 'The search did not answer. Try again.', 'free-maps' ) );
 							}
@@ -319,7 +334,7 @@
 				event.preventDefault();
 				if ( count && current ) {
 					pick( result.results[ Math.min( active, count - 1 ) ] );
-				} else if ( text.trim().length >= 2 && result.status !== 'empty' && result.status !== 'error' ) {
+				} else if ( text.trim().length >= 2 && ! ( current && ( result.status === 'empty' || result.status === 'error' ) ) ) {
 					// The results for this text are not there yet: take the first one when they come.
 					// Without this, "Paris" typed quickly gave a place from the list for "Par".
 					wantRef.current = text.trim();
@@ -552,6 +567,9 @@
 		// A new block: ask for the place first.
 		var setup = ! hasCentre && markers.length === 0 && shapes.length === 0 && ! skipped;
 
+		// False after the first run of the style effect: the map is made with its style.
+		var firstStyle = useRef( true );
+
 		// Make the map. MapLibre comes from the window the block is in: the
 		// editor canvas is an iframe, and the map must use that window.
 		useEffect( function () {
@@ -601,6 +619,8 @@
 					return;
 				}
 				map.touchZoomRotate.disableRotation();
+				// Shift + the arrow keys turned the map.
+				map.keyboard.disableRotation();
 				map.addControl( new view.maplibregl.NavigationControl( { showCompass: false } ), 'top-right' );
 				// A wide or a full block gets its width a moment after the block is made, and
 				// MapLibre does not see this first change: the map kept its first width.
@@ -688,6 +708,16 @@
 				if ( watcher ) {
 					watcher.disconnect();
 				}
+				// The markers of this map go away with it. The development mode of React makes the
+				// map two times: the records of the first map must not stay, or the second map
+				// gets no markers.
+				markersRef.current.forEach( function ( record ) {
+					if ( record && record.marker ) {
+						record.marker.remove();
+					}
+				} );
+				markersRef.current = [];
+				firstStyle.current = true;
 				if ( map ) {
 					map.remove();
 				}
@@ -696,7 +726,6 @@
 		}, [] );
 
 		// The style.
-		var firstStyle = useRef( true );
 		useEffect(
 			function () {
 				if ( ! mapRef.current ) {
@@ -757,6 +786,17 @@
 			input.addEventListener( 'keydown', function ( event ) {
 				if ( event.key === 'Enter' ) {
 					input.blur();
+				} else if ( isSave( event ) && ! removed ) {
+					// Ctrl+S goes to the editor: the block gets the text first, or the page is saved
+					// without it. The marker is not made again now: the field must stay in the page
+					// while the editor reads the key.
+					var now = ( attributesRef.current.markers || [] )[ index ];
+					if ( now && ( now.label || '' ) !== input.value ) {
+						if ( markersRef.current[ index ] ) {
+							markersRef.current[ index ].key = JSON.stringify( Object.assign( {}, now, { label: input.value } ) );
+						}
+						updateMarker( index, { label: input.value } );
+					}
 				}
 			} );
 			// The text is saved when the field loses the focus, because a
@@ -830,6 +870,17 @@
 								left: [ width / 2, -height / 2 ],
 								right: [ -width / 2, -height / 2 ],
 							} );
+						} );
+						image.addEventListener( 'error', function () {
+							// The picture did not come: the usual marker shows, as on the page.
+							var holder = markerOptions.element;
+							var pin = new view.maplibregl.Marker( { color: item.colour || MARKER_COLOUR } ).getElement();
+							holder.classList.remove( 'waymorphic-map__icon' );
+							holder.textContent = '';
+							while ( pin.firstChild ) {
+								holder.appendChild( pin.firstChild );
+							}
+							popup.setOffset( 38 );
 						} );
 						image.src = item.icon;
 					}
@@ -908,9 +959,14 @@
 		// changes of the same attribute (three new markers) in one step.
 		function commit( change ) {
 			var editor = wp.data && wp.data.dispatch ? wp.data.dispatch( 'core/block-editor' ) : null;
+			var mark = editor && editor.__unstableMarkLastChangeAsPersistent ? editor.__unstableMarkLastChangeAsPersistent : null;
+			// Before: the text that the user typed before this action is a step of its own.
+			if ( mark ) {
+				mark();
+			}
 			setAttributes( change );
-			if ( editor && editor.__unstableMarkLastChangeAsPersistent ) {
-				editor.__unstableMarkLastChangeAsPersistent();
+			if ( mark ) {
+				mark();
 			}
 		}
 
@@ -935,8 +991,9 @@
 			);
 		}
 
-		function updateShape( index, change ) {
-			setAttributes( {
+		// step: the change is one step for "Undo" (a colour). Not for each letter of a text.
+		function updateShape( index, change, step ) {
+			( step ? commit : setAttributes )( {
 				shapes: ( attributesRef.current.shapes || [] ).map( function ( item, i ) {
 					return i === index ? Object.assign( {}, item, change ) : item;
 				} ),
@@ -1022,7 +1079,11 @@
 					return shape;
 				} );
 				if ( ! newMarkers.length && ! newShapes.length ) {
-					setNote( __( 'The file has no markers or shapes that the plugin can read.', 'free-maps' ) );
+					setNote(
+						data.markers.length
+							? __( 'The block has 1000 markers: it can have no more.', 'free-maps' )
+							: __( 'The file has no markers or shapes that the plugin can read.', 'free-maps' )
+					);
 					return;
 				}
 				var change = {
@@ -1235,15 +1296,21 @@
 						variant: 'secondary',
 						size: 'small',
 						disabled: page === 0,
+						// The button keeps the keyboard focus when it becomes disabled.
+						accessibleWhenDisabled: true,
+						__experimentalIsFocusable: true,
 						onClick: function () {
-							setPage( page - 1 );
+							if ( page > 0 ) {
+								setPage( page - 1 );
+							}
 						},
 					},
 					__( 'Previous', 'free-maps' )
 				),
 				el(
 					'span',
-					{ role: 'status' },
+					// One of the two texts is for screen readers: the page is spoken one time.
+					key === 'top' ? { role: 'status' } : { 'aria-hidden': 'true' },
 					sprintf(
 						/* translators: 1: the number of the first item that shows, 2: the number of the last one, 3: the number of all the items. */
 						__( '%1$d to %2$d of %3$d', 'free-maps' ),
@@ -1258,8 +1325,12 @@
 						variant: 'secondary',
 						size: 'small',
 						disabled: first + SIDEBAR_LIMIT > count,
+						accessibleWhenDisabled: true,
+						__experimentalIsFocusable: true,
 						onClick: function () {
-							setPage( page + 1 );
+							if ( first + SIDEBAR_LIMIT <= count ) {
+								setPage( page + 1 );
+							}
 						},
 					},
 					__( 'Next', 'free-maps' )
@@ -1315,12 +1386,12 @@
 						el( 'div', { style: { height: '8px' } } ),
 						el(
 							components.ToggleControl,
-							next( {
+							nextSwitch( {
 								label: __( 'Show the popup when the page opens', 'free-maps' ),
 								checked: !! item.open,
 								disabled: ! item.label,
 								onChange: function ( value ) {
-									updateMarker( index, { open: value } );
+									updateMarker( index, { open: value }, true );
 								},
 							} )
 						),
@@ -1343,7 +1414,7 @@
 							clearable: false,
 							onChange: function ( value ) {
 								// The page shows hex colours only.
-								updateMarker( index, { colour: /^#[0-9a-f]{6}$/i.test( value || '' ) ? value : undefined } );
+								updateMarker( index, { colour: /^#[0-9a-f]{6}$/i.test( value || '' ) ? value : undefined }, true );
 							},
 						} ),
 						el(
@@ -1353,7 +1424,7 @@
 								allowedTypes: [ 'image' ],
 								onSelect: function ( media ) {
 									if ( media && media.url ) {
-										updateMarker( index, { icon: media.url } );
+										updateMarker( index, { icon: media.url }, true );
 									}
 								},
 								render: function ( media ) {
@@ -1374,7 +1445,7 @@
 										variant: 'link',
 										style: { display: 'block', marginBottom: '8px' },
 										onClick: function () {
-											updateMarker( index, { icon: undefined } );
+											updateMarker( index, { icon: undefined }, true );
 										},
 									},
 									__( 'Use the usual marker', 'free-maps' )
@@ -1498,7 +1569,7 @@
 							clearable: false,
 							onChange: function ( value ) {
 								if ( /^#[0-9a-f]{6}$/i.test( value || '' ) ) {
-									updateShape( index, { colour: value, fill: undefined } );
+									updateShape( index, { colour: value, fill: undefined }, true );
 								}
 							},
 						} ),
@@ -1584,7 +1655,7 @@
 				{ title: __( 'Features', 'free-maps' ), initialOpen: false },
 				el(
 					components.ToggleControl,
-					next( {
+					nextSwitch( {
 						label: __( 'List of the markers below the map', 'free-maps' ),
 						help: __( 'A click on a name shows that marker.', 'free-maps' ),
 						checked: !! attributes.list,
@@ -1595,7 +1666,7 @@
 				),
 				el(
 					components.ToggleControl,
-					next( {
+					nextSwitch( {
 						label: __( 'Search for the nearest markers', 'free-maps' ),
 						help: __( 'Visitors type an address and see the markers in a distance. Their browser sends the address to the map server.', 'free-maps' ),
 						checked: !! attributes.locator,
@@ -1623,7 +1694,7 @@
 				attributes.locator || attributes.list ? el( 'div', { style: { height: '16px' } } ) : null,
 				el(
 					components.ToggleControl,
-					next( {
+					nextSwitch( {
 						label: __( 'Groups of markers', 'free-maps' ),
 						help: __( 'Markers that are near to each other show as one circle with their number.', 'free-maps' ),
 						checked: !! attributes.cluster,
@@ -1634,7 +1705,7 @@
 				),
 				el(
 					components.ToggleControl,
-					next( {
+					nextSwitch( {
 						label: __( 'Category buttons', 'free-maps' ),
 						help: __( 'Visitors select a category and see only its markers.', 'free-maps' ),
 						checked: !! attributes.filter,
@@ -1645,7 +1716,7 @@
 				),
 				el(
 					components.ToggleControl,
-					next( {
+					nextSwitch( {
 						label: __( 'Directions link', 'free-maps' ),
 						help: __( 'Each popup and each row of the list gets a link to the directions to that marker.', 'free-maps' ),
 						checked: !! attributes.directions,
@@ -1688,7 +1759,7 @@
 				attributes.directions ? el( 'div', { style: { height: '16px' } } ) : null,
 				el(
 					components.ToggleControl,
-					next( {
+					nextSwitch( {
 						label: __( 'Button for the location of the visitor', 'free-maps' ),
 						checked: !! attributes.locate,
 						disabled: ! attributes.interactive,
@@ -1723,7 +1794,7 @@
 				{ title: __( 'Behaviour', 'free-maps' ), initialOpen: false },
 				el(
 					components.ToggleControl,
-					next( {
+					nextSwitch( {
 						label: __( 'Visitors can move the map', 'free-maps' ),
 						checked: attributes.interactive,
 						onChange: function ( value ) {
@@ -1733,7 +1804,7 @@
 				),
 				el(
 					components.ToggleControl,
-					next( {
+					nextSwitch( {
 						label: __( 'Show the zoom and fullscreen buttons', 'free-maps' ),
 						checked: attributes.controls,
 						disabled: ! attributes.interactive,
@@ -1744,7 +1815,7 @@
 				),
 				el(
 					components.ToggleControl,
-					next( {
+					nextSwitch( {
 						label: __( 'Scroll to zoom', 'free-maps' ),
 						help: __( 'When this is off, the page scrolls, and ctrl or cmd + scroll zooms the map.', 'free-maps' ),
 						checked: attributes.scrollZoom,
@@ -1903,7 +1974,7 @@
 				wp.blockEditor.useBlockProps( { className: 'waymorphic-map-editor' } ),
 				// Before the map: the Tab key goes from the block to the search field first.
 				overlay,
-				el( 'div', { ref: containerRef, className: 'waymorphic-map', style: { height: height } } ),
+				el( 'div', { ref: containerRef, className: 'waymorphic-map', style: { height: failed ? '120px' : height } } ),
 				failed
 					? el(
 							'p',

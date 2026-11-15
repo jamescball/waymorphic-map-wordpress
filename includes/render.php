@@ -838,7 +838,9 @@ function waymorphic_map_enqueue_early() {
 	// The widgets of the sidebars that the theme has. A block theme makes the page before the
 	// head: its styles are in time. WordPress has these options in memory: no database query.
 	if ( ! $found && ! ( function_exists( 'wp_is_block_theme' ) && wp_is_block_theme() ) ) {
-		$sidebars = wp_get_sidebars_widgets();
+		// The list of the widgets of each sidebar, as the site saved it. A plugin can hide a widget
+		// on some pages: there the styles load with no map, which does no harm.
+		$sidebars = get_option( 'sidebars_widgets' );
 		foreach ( is_array( $sidebars ) ? $sidebars : array() as $sidebar => $widgets ) {
 			if ( 'wp_inactive_widgets' === $sidebar || ! is_array( $widgets ) || ! is_registered_sidebar( $sidebar ) ) {
 				continue;

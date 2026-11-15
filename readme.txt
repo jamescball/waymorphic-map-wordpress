@@ -66,6 +66,7 @@ Attributes of `[waymorphic_map]`:
 * `scroll_zoom` - `true` lets plain scroll zoom the map. Without it, ctrl or cmd + scroll zooms the map, and on a touch screen two fingers move the map (one finger scrolls the page).
 * `interactive` - `false` makes a still map.
 * `title` - the name of the map for screen readers.
+* `popup_title` - `false`: the popup of a marker does not start with the `title` of the marker.
 * `cluster` - `true` puts markers that are near to each other in a group.
 * `list` - `true` shows the list of the markers below the map.
 * `locator` - `true` shows the search for the nearest markers above the map.
@@ -77,7 +78,7 @@ Attributes of `[waymorphic_map]`:
 * `animation` - `drop` or `bounce`, for all the markers.
 * `colour` - the colour of the marker at the centre, such as `#d63638`.
 
-Attributes of `[waymorphic_marker]`: `lat` and `lng`, or `address`; `open="true"` shows the popup when the page opens. The text between the tags is the popup. Optional: `title` (the name in the list), `category`, `colour` (such as `#d63638`), `icon` (the URL of a picture to use as the marker) and `animation` (`drop` or `bounce`). A marker with no popup text can have a slash at the end and no closing tag: `[waymorphic_marker lat="51.5" lng="-0.12" /]`.
+Attributes of `[waymorphic_marker]`: `lat` and `lng`, or `address`; `open="true"` shows the popup when the page opens. The text between the tags is the popup. Optional: `title` (the name in the list and the first line of the popup), `category`, `colour` (such as `#d63638`), `icon` (the URL of a picture to use as the marker) and `animation` (`drop` or `bounce`). A marker with no popup text can have a slash at the end and no closing tag: `[waymorphic_marker lat="51.5" lng="-0.12" /]`.
 
 Use straight quotes (`"`) in the shortcodes. A user who can edit the page sees a message below the map when an address was not found or a position is not valid. Visitors do not see this message.
 
@@ -128,7 +129,7 @@ In the block, "Import a file" in the Markers panel reads a file from your comput
 This plugin shows maps from the Waymorphic Map tile server, `https://tiles.waymorphic.com`.
 
 * When a visitor sees a map, the browser of the visitor gets the map style, map tiles, fonts and icons from that server. As with all web requests, the server sees the IP address and the browser of the visitor, and the tiles requested.
-* When you use an `address` in a shortcode, your WordPress site sends that address to the search of the server and keeps the position for one year. If the search does not find the address, the site asks again after one day.
+* When you use an `address` in a shortcode, your WordPress site sends that address to the search of the server and keeps the position for one year. For the address of a marker or a circle, the site also sends the centre of the map or the position of the first marker, as full degrees: the search then prefers places near the map. If the search does not find the address, the site asks again after one day. If the search does not answer, the site asks again after five minutes.
 * When you search for a place in the block editor, your browser sends the search text to the server, with the centre and the zoom of the map of the block.
 * When a map has the search for the nearest markers (`locator`), the browser of the visitor sends the search text to the server, with the centre of the markers of the map: the server prefers places near the markers. With "Use my location", the position stays in the browser.
 
@@ -261,7 +262,9 @@ Send an email to contact@waymorphic.com.
 * Fix: `animation` on the map shortcode is for the markers of files too. The result text of the search shows the distance that the visitor selected ("12.5 km", not "13 km").
 * New: the units `dvh`, `svh`, `lvh`, `vmin`, `vmax` and `ch` for the height and the width.
 * New for developers: the map element sends the `waymorphic-map:ready` event when its map is ready. `WaymorphicMap.addShapes()` adds shapes to a map that has shapes.
-* Change: the plugin folder, the main file and the text domain are now `free-maps`. The plugin directory does not permit the name `wp-free-maps`. If you installed version 1.1.0 from a zip file, deactivate and delete it, then install this version. The settings and the maps stay.
+* Change: the plugin folder, the main file and the text domain are now `free-maps`. The plugin directory does not permit the name `wp-free-maps`. If you installed version 1.1.0 from a zip file: install and activate this version first, then deactivate and delete version 1.1.0 (the folder `wp-free-maps`), then empty your page cache. The settings and the maps stay. If you delete version 1.1.0 before you activate this version, the settings go back to the defaults (the maps stay).
+* Change: the popup of a marker that has a `title` now starts with the title, if the first line of the popup text does not have it. A marker with a title and no popup text now has a popup with its title. Set `popup_title="false"` on the map shortcode to turn this off.
+* Change: the name of a marker with no title (in the list, and for screen readers) is the first line of its popup text.
 
 = 1.1.0 =
 * New: polygons, lines, circles and rectangles, with the `[waymorphic_polygon]`, `[waymorphic_line]`, `[waymorphic_circle]` and `[waymorphic_rectangle]` shortcodes. In the block, draw them on the map.
@@ -276,6 +279,11 @@ Send an email to contact@waymorphic.com.
 
 = 1.0.0 =
 * First release: block, shortcodes, settings page.
+
+== Upgrade Notice ==
+
+= 1.2.0 =
+Security fixes, a setting for the map service of the directions link, and many fixes for the list and the search. The plugin folder is now `free-maps`: if you installed version 1.1.0 from a zip file, install and activate this version first, then delete version 1.1.0.
 
 == Third-party code ==
 

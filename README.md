@@ -37,6 +37,7 @@ Copy this folder to `wp-content/plugins/free-maps` and activate **Free Maps - Wa
 | `scroll_zoom` | `true`: plain scroll zooms the map. `false`: ctrl or cmd + scroll, and two fingers move the map on a touch screen | `false` |
 | `interactive` | `false` makes a still map | `true` |
 | `title` | Name of the map for screen readers | `Map` |
+| `popup_title` | `false`: the popup of a marker does not start with the `title` of the marker | `true` |
 | `cluster` | `true` puts markers that are near to each other in a group | `false` |
 | `list` | `true` shows the list of the markers below the map | `false` |
 | `locator` | `true` shows the search for the nearest markers | `false` |
@@ -47,7 +48,7 @@ Copy this folder to `wp-content/plugins/free-maps` and activate **Free Maps - Wa
 | `animation` | `drop` or `bounce`, for all the markers | |
 | `colour` | Colour of the marker at the centre, such as `#d63638` | |
 
-`[waymorphic_marker]` takes `lat` and `lng` (or `address`) and `open="true"`. Its content is the popup. Optional: `title`, `category`, `colour`, `icon` (URL of a picture) and `animation`. A marker with no popup text can have a slash at the end and no closing tag: `[waymorphic_marker lat="51.5" lng="-0.12" /]`.
+`[waymorphic_marker]` takes `lat` and `lng` (or `address`) and `open="true"`. Its content is the popup. Optional: `title` (the name in the list and the first line of the popup), `category`, `colour`, `icon` (URL of a picture) and `animation`. A marker with no popup text can have a slash at the end and no closing tag: `[waymorphic_marker lat="51.5" lng="-0.12" /]`.
 
 Use straight quotes in the shortcodes. When an address is not found or a position is not valid, the users who can edit the page see a message below the map. Visitors do not see it.
 

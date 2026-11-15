@@ -579,7 +579,8 @@ function waymorphic_map_trust( $value ) {
 		return;
 	}
 	$told[ $json ] = true;
-	wp_add_inline_script( 'waymorphic-map', 'window.waymorphicMapTrust = ( window.waymorphicMapTrust || [] ).concat( [ ' . $json . ' ] );', 'before' );
+	// Array.isArray(): an element of the page with the ID "waymorphicMapTrust" is not the list.
+	wp_add_inline_script( 'waymorphic-map', 'window.waymorphicMapTrust = ( Array.isArray( window.waymorphicMapTrust ) ? window.waymorphicMapTrust : [] ).concat( [ ' . $json . ' ] );', 'before' );
 }
 
 /**

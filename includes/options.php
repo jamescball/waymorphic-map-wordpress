@@ -16,11 +16,11 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 function waymorphic_map_styles() {
 	return array(
-		'positron' => __( 'Positron (light, muted)', 'free-maps' ),
-		'bright'   => __( 'Bright (full colour)', 'free-maps' ),
-		'liberty'  => __( 'Liberty (classic OpenStreetMap look)', 'free-maps' ),
-		'dark'     => __( 'Dark', 'free-maps' ),
-		'fiord'    => __( 'Fiord (dark, blue)', 'free-maps' ),
+		'positron' => __( 'Positron (light, muted)', 'free-maps-waymorphic-map' ),
+		'bright'   => __( 'Bright (full colour)', 'free-maps-waymorphic-map' ),
+		'liberty'  => __( 'Liberty (classic OpenStreetMap look)', 'free-maps-waymorphic-map' ),
+		'dark'     => __( 'Dark', 'free-maps-waymorphic-map' ),
+		'fiord'    => __( 'Fiord (dark, blue)', 'free-maps-waymorphic-map' ),
 	);
 }
 
@@ -247,7 +247,7 @@ function waymorphic_map_sanitize_options( $input ) {
 			$tiles_url = $url;
 		} else {
 			$tiles_url = $saved['tiles_url'];
-			$tell( 'tiles_url', __( 'The address of the tile server is not valid, and was not changed. Use an address such as https://tiles.example.com, with no "?" and no "#".', 'free-maps' ) );
+			$tell( 'tiles_url', __( 'The address of the tile server is not valid, and was not changed. Use an address such as https://tiles.example.com, with no "?" and no "#".', 'free-maps-waymorphic-map' ) );
 		}
 	}
 
@@ -255,7 +255,7 @@ function waymorphic_map_sanitize_options( $input ) {
 	if ( '' === $height ) {
 		$height = waymorphic_map_clean_length( $saved['height'], $defaults['height'], false );
 		if ( '' !== $text( 'height' ) ) {
-			$tell( 'height', __( 'The height is not valid, and was not changed. Use a number of pixels (400) or a value such as 60vh. A percentage is not permitted.', 'free-maps' ) );
+			$tell( 'height', __( 'The height is not valid, and was not changed. Use a number of pixels (400) or a value such as 60vh. A percentage is not permitted.', 'free-maps-waymorphic-map' ) );
 		}
 	}
 
@@ -264,7 +264,7 @@ function waymorphic_map_sanitize_options( $input ) {
 		$zoom = waymorphic_map_clean_number( $saved['zoom'], 0, 22, true );
 		$zoom = null === $zoom ? $defaults['zoom'] : $zoom;
 		if ( '' !== $text( 'zoom' ) ) {
-			$tell( 'zoom', __( 'The zoom is not valid, and was not changed. Use a number from 0 to 22.', 'free-maps' ) );
+			$tell( 'zoom', __( 'The zoom is not valid, and was not changed. Use a number from 0 to 22.', 'free-maps-waymorphic-map' ) );
 		}
 	}
 

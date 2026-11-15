@@ -26,74 +26,74 @@ function waymorphic_map_register_assets() {
 		'window.waymorphicMapL10n = ' . wp_json_encode(
 			array(
 				/* translators: %d: a number of markers. */
-				'group'         => __( 'Markers here: %d. Zoom in.', 'free-maps' ),
-				'noMap'         => __( 'The map cannot be shown in this browser.', 'free-maps' ),
-				'noStyle'       => __( 'The map did not load. Try again later.', 'free-maps' ),
-				'again'         => __( 'Show the map', 'free-maps' ),
-				'directions'    => __( 'Directions', 'free-maps' ),
+				'group'         => __( 'Markers here: %d. Zoom in.', 'free-maps-waymorphic-map' ),
+				'noMap'         => __( 'The map cannot be shown in this browser.', 'free-maps-waymorphic-map' ),
+				'noStyle'       => __( 'The map did not load. Try again later.', 'free-maps-waymorphic-map' ),
+				'again'         => __( 'Show the map', 'free-maps-waymorphic-map' ),
+				'directions'    => __( 'Directions', 'free-maps-waymorphic-map' ),
 				/* translators: %s: the name of a place. Keep the word of "Directions" in it. */
-				'directionsTo'  => __( 'Directions to %s (opens in a new tab)', 'free-maps' ),
+				'directionsTo'  => __( 'Directions to %s (opens in a new tab)', 'free-maps-waymorphic-map' ),
 				/* translators: %s: the name of a place. Keep the word of "Directions" in it. */
-				'directionsFor' => __( 'Directions to %s', 'free-maps' ),
+				'directionsFor' => __( 'Directions to %s', 'free-maps-waymorphic-map' ),
 				/* translators: The name of a list of map services, such as Google Maps. */
-				'directionsIn'  => __( 'Open the directions in', 'free-maps' ),
+				'directionsIn'  => __( 'Open the directions in', 'free-maps-waymorphic-map' ),
 				/* translators: %s: the name of a map service, such as Google Maps. */
-				'newTab'        => __( '%s (opens in a new tab)', 'free-maps' ),
-				'origin'        => __( 'The place of your search', 'free-maps' ),
+				'newTab'        => __( '%s (opens in a new tab)', 'free-maps-waymorphic-map' ),
+				'origin'        => __( 'The place of your search', 'free-maps-waymorphic-map' ),
 				/* translators: %s: the popup text of a polygon, a line or a circle on the map. */
-				'shape'         => __( 'Shape on the map: %s', 'free-maps' ),
+				'shape'         => __( 'Shape on the map: %s', 'free-maps-waymorphic-map' ),
 				/* translators: %d: the number of the marker. */
-				'marker'        => __( 'Marker %d', 'free-maps' ),
-				'list'          => __( 'Places on the map', 'free-maps' ),
+				'marker'        => __( 'Marker %d', 'free-maps-waymorphic-map' ),
+				'list'          => __( 'Places on the map', 'free-maps-waymorphic-map' ),
 				/* translators: The button that shows the markers of all the categories. */
-				'all'           => __( 'All', 'free-maps' ),
-				'filter'        => __( 'Show a category', 'free-maps' ),
+				'all'           => __( 'All', 'free-maps-waymorphic-map' ),
+				'filter'        => __( 'Show a category', 'free-maps-waymorphic-map' ),
 				/* translators: The button that starts the search for the nearest places (a verb). */
-				'search'        => __( 'Search', 'free-maps' ),
-				'searchLabel'   => __( 'Find the nearest places', 'free-maps' ),
-				'searchHint'    => __( 'Address, town or postcode', 'free-maps' ),
+				'search'        => __( 'Search', 'free-maps-waymorphic-map' ),
+				'searchLabel'   => __( 'Find the nearest places', 'free-maps-waymorphic-map' ),
+				'searchHint'    => __( 'Address, town or postcode', 'free-maps-waymorphic-map' ),
 				/* translators: The name of the list of distances (10 km, 25 km) of the search for the nearest places. */
-				'radius'        => __( 'Distance', 'free-maps' ),
-				'useLocation'   => __( 'Use my location', 'free-maps' ),
-				'reset'         => __( 'Show all', 'free-maps' ),
-				'searching'     => __( 'Searching…', 'free-maps' ),
+				'radius'        => __( 'Distance', 'free-maps-waymorphic-map' ),
+				'useLocation'   => __( 'Use my location', 'free-maps-waymorphic-map' ),
+				'reset'         => __( 'Show all', 'free-maps-waymorphic-map' ),
+				'searching'     => __( 'Searching…', 'free-maps-waymorphic-map' ),
 				/* translators: 1: a number of places, 2: a distance such as 10 km. */
-				'found'         => __( 'Places within %2$s: %1$d', 'free-maps' ),
+				'found'         => __( 'Places within %2$s: %1$d', 'free-maps-waymorphic-map' ),
 				/* translators: %s: a distance such as 10 km. */
-				'none'          => __( 'No places within %s.', 'free-maps' ),
+				'none'          => __( 'No places within %s.', 'free-maps-waymorphic-map' ),
 				/* translators: 1: a number of places, 2: a distance such as 10 km, 3: the place of the search, such as Leeds, England. */
-				'foundAt'       => __( 'Places within %2$s of %3$s: %1$d', 'free-maps' ),
+				'foundAt'       => __( 'Places within %2$s of %3$s: %1$d', 'free-maps-waymorphic-map' ),
 				/* translators: 1: a distance such as 10 km, 2: the place of the search, such as Leeds, England. */
-				'noneAt'        => __( 'No places within %1$s of %2$s.', 'free-maps' ),
+				'noneAt'        => __( 'No places within %1$s of %2$s.', 'free-maps-waymorphic-map' ),
 				/* translators: The place of a search, in a text such as: Places within 10 km of your location: 2 */
-				'here'          => __( 'your location', 'free-maps' ),
-				'notFound'      => __( 'The address was not found. Try a town or a postcode.', 'free-maps' ),
-				'searchError'   => __( 'The search did not answer. Try again.', 'free-maps' ),
-				'locationError' => __( 'The browser did not give your location.', 'free-maps' ),
+				'here'          => __( 'your location', 'free-maps-waymorphic-map' ),
+				'notFound'      => __( 'The address was not found. Try a town or a postcode.', 'free-maps-waymorphic-map' ),
+				'searchError'   => __( 'The search did not answer. Try again.', 'free-maps-waymorphic-map' ),
+				'locationError' => __( 'The browser did not give your location.', 'free-maps-waymorphic-map' ),
 				/* translators: The short form of "kilometres", after a number: 10 km. */
-				'km'            => __( 'km', 'free-maps' ),
+				'km'            => __( 'km', 'free-maps-waymorphic-map' ),
 				/* translators: The short form of "miles", after a number: 10 mi. */
-				'mi'            => __( 'mi', 'free-maps' ),
+				'mi'            => __( 'mi', 'free-maps-waymorphic-map' ),
 				/* translators: A distance. 1: the number, 2: the unit (km or mi). */
-				'amount'        => __( '%1$s %2$s', 'free-maps' ),
+				'amount'        => __( '%1$s %2$s', 'free-maps-waymorphic-map' ),
 				// The tile server of the site: a map of the page can have a style and a search from it.
 				'tiles'         => waymorphic_map_script_tiles( waymorphic_map_tiles_url() ),
 				// The texts of the map itself, for MapLibre.
 				'map'           => array(
-					'AttributionControl.ToggleAttribution'       => __( 'Toggle attribution', 'free-maps' ),
-					'FullscreenControl.Enter'                    => __( 'Enter fullscreen', 'free-maps' ),
-					'FullscreenControl.Exit'                     => __( 'Exit fullscreen', 'free-maps' ),
-					'GeolocateControl.FindMyLocation'            => __( 'Find my location', 'free-maps' ),
-					'GeolocateControl.LocationNotAvailable'      => __( 'Location not available', 'free-maps' ),
-					'Map.Title'                                  => __( 'Map', 'free-maps' ),
-					'Marker.Title'                               => __( 'Map marker', 'free-maps' ),
-					'NavigationControl.ResetBearing'             => __( 'Drag to rotate map, click to reset north', 'free-maps' ),
-					'NavigationControl.ZoomIn'                   => __( 'Zoom in', 'free-maps' ),
-					'NavigationControl.ZoomOut'                  => __( 'Zoom out', 'free-maps' ),
-					'Popup.Close'                                => __( 'Close popup', 'free-maps' ),
-					'CooperativeGesturesHandler.WindowsHelpText' => __( 'Use Ctrl + scroll to zoom the map', 'free-maps' ),
-					'CooperativeGesturesHandler.MacHelpText'     => __( 'Use ⌘ + scroll to zoom the map', 'free-maps' ),
-					'CooperativeGesturesHandler.MobileHelpText'  => __( 'Use two fingers to move the map', 'free-maps' ),
+					'AttributionControl.ToggleAttribution'       => __( 'Toggle attribution', 'free-maps-waymorphic-map' ),
+					'FullscreenControl.Enter'                    => __( 'Enter fullscreen', 'free-maps-waymorphic-map' ),
+					'FullscreenControl.Exit'                     => __( 'Exit fullscreen', 'free-maps-waymorphic-map' ),
+					'GeolocateControl.FindMyLocation'            => __( 'Find my location', 'free-maps-waymorphic-map' ),
+					'GeolocateControl.LocationNotAvailable'      => __( 'Location not available', 'free-maps-waymorphic-map' ),
+					'Map.Title'                                  => __( 'Map', 'free-maps-waymorphic-map' ),
+					'Marker.Title'                               => __( 'Map marker', 'free-maps-waymorphic-map' ),
+					'NavigationControl.ResetBearing'             => __( 'Drag to rotate map, click to reset north', 'free-maps-waymorphic-map' ),
+					'NavigationControl.ZoomIn'                   => __( 'Zoom in', 'free-maps-waymorphic-map' ),
+					'NavigationControl.ZoomOut'                  => __( 'Zoom out', 'free-maps-waymorphic-map' ),
+					'Popup.Close'                                => __( 'Close popup', 'free-maps-waymorphic-map' ),
+					'CooperativeGesturesHandler.WindowsHelpText' => __( 'Use Ctrl + scroll to zoom the map', 'free-maps-waymorphic-map' ),
+					'CooperativeGesturesHandler.MacHelpText'     => __( 'Use ⌘ + scroll to zoom the map', 'free-maps-waymorphic-map' ),
+					'CooperativeGesturesHandler.MobileHelpText'  => __( 'Use two fingers to move the map', 'free-maps-waymorphic-map' ),
 				),
 			)
 		) . ';',
@@ -501,7 +501,7 @@ function waymorphic_map_render( $args ) {
 		$css  .= $width;
 	}
 
-	$title   = '' !== trim( (string) $args['title'] ) ? trim( (string) $args['title'] ) : __( 'Map', 'free-maps' );
+	$title   = '' !== trim( (string) $args['title'] ) ? trim( (string) $args['title'] ) : __( 'Map', 'free-maps-waymorphic-map' );
 	$wrapper = '' !== $args['wrapper'] ? $args['wrapper'] : 'class="wp-block-waymorphic-map"';
 
 	// The HEX flags keep &, <, > and quotes out of the JSON, so the attribute
@@ -532,7 +532,7 @@ function waymorphic_map_render( $args ) {
 		esc_attr( $css ),
 		waymorphic_map_plain_brackets( esc_attr( $title ) ),
 		waymorphic_map_plain_brackets( esc_attr( $json ) ),
-		esc_html__( 'Turn on JavaScript to see the map.', 'free-maps' ),
+		esc_html__( 'Turn on JavaScript to see the map.', 'free-maps-waymorphic-map' ),
 		waymorphic_map_tools_space( $config, $width ),
 		waymorphic_map_plain_brackets( waymorphic_map_list_html( $config, $width ) ),
 		$data
@@ -651,7 +651,7 @@ function waymorphic_map_marker_name( $marker, $index ) {
 		}
 	}
 	/* translators: %d: the number of the marker. */
-	return sprintf( __( 'Marker %d', 'free-maps' ), $index + 1 );
+	return sprintf( __( 'Marker %d', 'free-maps-waymorphic-map' ), $index + 1 );
 }
 
 /**
@@ -688,8 +688,8 @@ function waymorphic_map_list_html( $config, $width ) {
 				count( $services ) > 1 ? ' waymorphic-map__directions--menu' : '',
 				$url,
 				/* translators: %s: the name of a place. Keep the word of "Directions" in it. */
-				esc_attr( sprintf( __( 'Directions to %s (opens in a new tab)', 'free-maps' ), $name ) ),
-				esc_html__( 'Directions', 'free-maps' )
+				esc_attr( sprintf( __( 'Directions to %s (opens in a new tab)', 'free-maps-waymorphic-map' ), $name ) ),
+				esc_html__( 'Directions', 'free-maps-waymorphic-map' )
 			);
 		}
 		$rows .= sprintf(
@@ -705,7 +705,7 @@ function waymorphic_map_list_html( $config, $width ) {
 	}
 	return sprintf(
 		'<ul class="waymorphic-map__list" role="list" aria-label="%1$s"%2$s>%3$s</ul>',
-		esc_attr__( 'Places on the map', 'free-maps' ),
+		esc_attr__( 'Places on the map', 'free-maps-waymorphic-map' ),
 		'' !== $width ? ' style="' . esc_attr( $width ) . '"' : '',
 		$rows
 	);
@@ -725,7 +725,7 @@ function waymorphic_map_tools_space( $config, $width ) {
 	$parts = '';
 
 	if ( ! empty( $config['locator'] ) ) {
-		$unit    = isset( $config['unit'] ) && 'mi' === $config['unit'] ? __( 'mi', 'free-maps' ) : __( 'km', 'free-maps' );
+		$unit    = isset( $config['unit'] ) && 'mi' === $config['unit'] ? __( 'mi', 'free-maps-waymorphic-map' ) : __( 'km', 'free-maps-waymorphic-map' );
 		$first   = isset( $config['locator']['radius'] ) && is_numeric( $config['locator']['radius'] ) && (float) $config['locator']['radius'] > 0 ? (float) $config['locator']['radius'] : 25.0;
 		$values  = array_unique( array( 1.0, 5.0, 10.0, 25.0, 50.0, 100.0, 200.0, $first ) );
 		$options = '';
@@ -735,16 +735,16 @@ function waymorphic_map_tools_space( $config, $width ) {
 				'<option%1$s>%2$s</option>',
 				$value === $first ? ' selected' : '',
 				/* translators: A distance. 1: the number, 2: the unit (km or mi). */
-				esc_html( sprintf( __( '%1$s %2$s', 'free-maps' ), number_format_i18n( $value, floor( $value ) === $value ? 0 : ( round( $value, 1 ) === $value ? 1 : 2 ) ), $unit ) )
+				esc_html( sprintf( __( '%1$s %2$s', 'free-maps-waymorphic-map' ), number_format_i18n( $value, floor( $value ) === $value ? 0 : ( round( $value, 1 ) === $value ? 1 : 2 ) ), $unit ) )
 			);
 		}
 		$parts .= sprintf(
 			// A div, not a form: the map can be in a form of the page, and a form cannot be in a form.
 			'<div class="waymorphic-map__locator"><input type="search" class="waymorphic-map__locator-input" placeholder="%1$s" disabled><select class="waymorphic-map__locator-radius" disabled>%2$s</select><button type="button" class="waymorphic-map__button" disabled>%3$s</button><button type="button" class="waymorphic-map__button waymorphic-map__button--plain" disabled>%4$s</button><p class="waymorphic-map__status"></p></div>',
-			esc_attr__( 'Address, town or postcode', 'free-maps' ),
+			esc_attr__( 'Address, town or postcode', 'free-maps-waymorphic-map' ),
 			$options,
-			esc_html__( 'Search', 'free-maps' ),
-			esc_html__( 'Use my location', 'free-maps' )
+			esc_html__( 'Search', 'free-maps-waymorphic-map' ),
+			esc_html__( 'Use my location', 'free-maps-waymorphic-map' )
 		);
 	}
 
@@ -756,7 +756,7 @@ function waymorphic_map_tools_space( $config, $width ) {
 			}
 		}
 		if ( $categories ) {
-			$chips = '<button type="button" class="waymorphic-map__chip" aria-pressed="true" disabled>' . esc_html__( 'All', 'free-maps' ) . '</button>';
+			$chips = '<button type="button" class="waymorphic-map__chip" aria-pressed="true" disabled>' . esc_html__( 'All', 'free-maps-waymorphic-map' ) . '</button>';
 			foreach ( array_keys( $categories ) as $category ) {
 				$chips .= '<button type="button" class="waymorphic-map__chip" aria-pressed="false" disabled>' . esc_html( (string) $category ) . '</button>';
 			}

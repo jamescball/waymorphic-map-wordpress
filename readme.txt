@@ -148,7 +148,7 @@ Map data © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributor
 
 == Installation ==
 
-1. Upload the `free-maps` folder to `/wp-content/plugins/`, or install the plugin from the Plugins screen.
+1. Upload the `free-maps-waymorphic-map` folder to `/wp-content/plugins/`, or install the plugin from the Plugins screen.
 2. Activate the plugin.
 3. Add the "Waymorphic Map" block to a post or a page, or use the `[waymorphic_map]` shortcode.
 4. Optional: set the default style, height and zoom, and the map service of the directions link, in Settings > Waymorphic Map.
@@ -263,7 +263,7 @@ Send an email to contact@waymorphic.com.
 * Fix: `animation` on the map shortcode is for the markers of files too. The result text of the search shows the distance that the visitor selected ("12.5 km", not "13 km").
 * New: the units `dvh`, `svh`, `lvh`, `dvw`, `svw`, `lvw`, `vmin`, `vmax` and `ch` for the height and the width.
 * New for developers: the map element sends the `waymorphic-map:ready` event when its map is ready. `WaymorphicMap.addShapes()` adds shapes to a map that has shapes.
-* Change: the plugin folder, the main file and the text domain are now `free-maps`. The plugin directory does not permit the name `wp-free-maps`. If you installed version 1.1.0 from a zip file: install and activate this version first (this deactivates version 1.1.0), then delete version 1.1.0 (the folder `wp-free-maps`), then empty your page cache. The settings and the maps stay. If you delete version 1.1.0 before you activate this version, the settings go back to the defaults (the maps stay).
+* Change: the plugin folder, the main file and the text domain are now `free-maps-waymorphic-map`. This is the name of the plugin in the plugin directory of WordPress, which does not permit the name `wp-free-maps`. If you installed version 1.1.0 from a zip file: install and activate this version first (this deactivates version 1.1.0), then delete version 1.1.0 (the folder `wp-free-maps`), then empty your page cache. The settings and the maps stay. If you delete version 1.1.0 before you activate this version, the settings go back to the defaults (the maps stay).
 * Change: the popup of a marker that has a `title` now starts with the title, if the first line of the popup text does not have it. A marker with a title and no popup text now has a popup with its title. Set `popup_title="false"` on the map shortcode to turn this off.
 * Change: the name of a marker with no title (in the list, and for screen readers) is the first line of its popup text.
 
@@ -284,7 +284,7 @@ Send an email to contact@waymorphic.com.
 == Upgrade Notice ==
 
 = 1.2.0 =
-Security fixes, a setting for the map service of the directions link, and many fixes for the list and the search. The plugin folder is now `free-maps`: if you installed version 1.1.0 from a zip file, install and activate this version first (this deactivates version 1.1.0), then delete version 1.1.0.
+Security fixes, a setting for the map service of the directions link, and many fixes for the list and the search. The plugin folder is now `free-maps-waymorphic-map`. If you installed version 1.1.0 from a zip file, install and activate this version first, then delete version 1.1.0.
 
 == Third-party code ==
 

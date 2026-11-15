@@ -190,10 +190,10 @@ function waymorphic_map_problems( $message = null ) {
  */
 function waymorphic_map_address_problem( $address ) {
 	if ( 'down' === waymorphic_map_geocode_state() ) {
-		waymorphic_map_problems( __( 'The address search did not answer. The places that have an address and no lat and lng do not show until it answers.', 'free-maps' ) );
+		waymorphic_map_problems( __( 'The address search did not answer. The places that have an address and no lat and lng do not show until it answers.', 'free-maps-waymorphic-map' ) );
 	} else {
 		/* translators: %s: an address. */
-		waymorphic_map_problems( sprintf( __( 'The address "%s" was not found. Write it in a different way, or use lat and lng.', 'free-maps' ), $address ) );
+		waymorphic_map_problems( sprintf( __( 'The address "%s" was not found. Write it in a different way, or use lat and lng.', 'free-maps-waymorphic-map' ), $address ) );
 	}
 }
 
@@ -313,20 +313,20 @@ function waymorphic_map_far_places( $places ) {
 	}
 	if ( 1 === count( $far ) ) {
 		/* translators: 1: an address, 2: the name of the place that the search found. */
-		waymorphic_map_problems( sprintf( __( 'The address "%1$s" was found here: %2$s. This place is far from the other places of the map. If it is not the correct place, write the town and the area, or the full name of the country, in the address ("Edinburgh, Scotland", "Boston, United Kingdom"), or use lat and lng. If it is the correct place, write the full name of its area or of its country in the address too ("Perth, Western Australia"): then this message goes away.', 'free-maps' ), $far[0][0], $far[0][1] ) );
+		waymorphic_map_problems( sprintf( __( 'The address "%1$s" was found here: %2$s. This place is far from the other places of the map. If it is not the correct place, write the town and the area, or the full name of the country, in the address ("Edinburgh, Scotland", "Boston, United Kingdom"), or use lat and lng. If it is the correct place, write the full name of its area or of its country in the address too ("Perth, Western Australia"): then this message goes away.', 'free-maps-waymorphic-map' ), $far[0][0], $far[0][1] ) );
 	} elseif ( $far ) {
 		// One message for the map: a map of a large country or of the world can have many such places.
 		$list = array();
 		foreach ( array_slice( $far, 0, 10 ) as $one ) {
 			/* translators: 1: an address, 2: the name of the place that the search found. */
-			$list[] = sprintf( __( '"%1$s" (%2$s)', 'free-maps' ), $one[0], $one[1] );
+			$list[] = sprintf( __( '"%1$s" (%2$s)', 'free-maps-waymorphic-map' ), $one[0], $one[1] );
 		}
 		if ( count( $far ) > 10 ) {
 			/* translators: %d: a number of addresses. */
-			$list[] = sprintf( __( 'and %d more', 'free-maps' ), count( $far ) - 10 );
+			$list[] = sprintf( __( 'and %d more', 'free-maps-waymorphic-map' ), count( $far ) - 10 );
 		}
 		/* translators: %s: a list of addresses, each with the name of the place that the search found: "Perth" (Perth, Scotland, United Kingdom); "Boston" (Boston, Massachusetts, United States). */
-		waymorphic_map_problems( sprintf( __( 'These addresses were found far from the other places of the map: %s. If a place is not correct, write the town and the area, or the full name of the country, in its address ("Edinburgh, Scotland", "Boston, United Kingdom"), or use lat and lng. If a place is correct, write the full name of its area or of its country in its address too ("Perth, Western Australia"): then the address is not in this message.', 'free-maps' ), implode( '; ', $list ) ) );
+		waymorphic_map_problems( sprintf( __( 'These addresses were found far from the other places of the map: %s. If a place is not correct, write the town and the area, or the full name of the country, in its address ("Edinburgh, Scotland", "Boston, United Kingdom"), or use lat and lng. If a place is correct, write the full name of its area or of its country in its address too ("Perth, Western Australia"): then the address is not in this message.', 'free-maps-waymorphic-map' ), implode( '; ', $list ) ) );
 	}
 }
 
@@ -492,7 +492,7 @@ function waymorphic_map_shortcode( $atts, $content = null ) {
 		}
 	} elseif ( ( '' !== $lat || '' !== $lng ) && ! waymorphic_map_clean_position( $lat, $lng ) ) {
 		/* translators: 1: a latitude, 2: a longitude. */
-		waymorphic_map_problems( sprintf( __( 'The centre of the map (lat="%1$s" lng="%2$s") is not a position. The lat is a number from -90 to 90, the lng a number from -180 to 180.', 'free-maps' ), $lat, $lng ) );
+		waymorphic_map_problems( sprintf( __( 'The centre of the map (lat="%1$s" lng="%2$s") is not a position. The lat is a number from -90 to 90, the lng a number from -180 to 180.', 'free-maps-waymorphic-map' ), $lat, $lng ) );
 		$atts['zoom'] = '';
 	}
 
@@ -556,7 +556,7 @@ function waymorphic_map_shortcode( $atts, $content = null ) {
 	$post_id  = get_the_ID();
 	if ( $problems && ( $post_id ? current_user_can( 'edit_post', $post_id ) : current_user_can( 'edit_posts' ) ) ) {
 		$notice = '<div class="waymorphic-map__notice" role="note"><strong>'
-			. esc_html__( 'Map: only the editors of this page see this message.', 'free-maps' )
+			. esc_html__( 'Map: only the editors of this page see this message.', 'free-maps-waymorphic-map' )
 			. '</strong><ul><li>' . waymorphic_map_plain_brackets( implode( '</li><li>', array_map( 'esc_html', $problems ) ) ) . '</li></ul></div>';
 	}
 
@@ -632,7 +632,7 @@ function waymorphic_map_marker_shortcode( $atts, $content = null ) {
 		}
 	} elseif ( ! waymorphic_map_clean_position( $lat, $lng ) ) {
 		/* translators: 1: a latitude, 2: a longitude. */
-		waymorphic_map_problems( sprintf( __( 'A marker does not show: lat="%1$s" lng="%2$s" is not a position. The lat is a number from -90 to 90, the lng a number from -180 to 180.', 'free-maps' ), $lat, $lng ) );
+		waymorphic_map_problems( sprintf( __( 'A marker does not show: lat="%1$s" lng="%2$s" is not a position. The lat is a number from -90 to 90, the lng a number from -180 to 180.', 'free-maps-waymorphic-map' ), $lat, $lng ) );
 	}
 	$position = waymorphic_map_clean_position( $lat, $lng );
 
@@ -711,13 +711,13 @@ function waymorphic_map_shape_shortcode( $atts, $content = null, $tag = '' ) {
 		// No message for a circle whose address was not found: the address has its message.
 		if ( ! waymorphic_map_clean_position( $lat, $lng ) && ( '' === $atts['address'] || ( '' !== $lat && '' !== $lng ) ) ) {
 			/* translators: 1: a latitude, 2: a longitude. */
-			waymorphic_map_problems( sprintf( __( 'A circle does not show: lat="%1$s" lng="%2$s" is not a position. The lat is a number from -90 to 90, the lng a number from -180 to 180.', 'free-maps' ), $lat, $lng ) );
+			waymorphic_map_problems( sprintf( __( 'A circle does not show: lat="%1$s" lng="%2$s" is not a position. The lat is a number from -90 to 90, the lng a number from -180 to 180.', 'free-maps-waymorphic-map' ), $lat, $lng ) );
 		}
 	} else {
 		$count = count( waymorphic_map_clean_points( $points, 5000 ) );
 		if ( $count < ( 'polygon' === $type ? 3 : ( 'heatmap' === $type || 'circle' === $type ? 1 : 2 ) ) ) {
 			/* translators: %s: the name of a shortcode, such as waymorphic_polygon. */
-			waymorphic_map_problems( sprintf( __( 'A shape does not show: [%s] does not have sufficient points that are positions. Write the points as "lat,lng; lat,lng" with a point as the decimal sign.', 'free-maps' ), $tag ) );
+			waymorphic_map_problems( sprintf( __( 'A shape does not show: [%s] does not have sufficient points that are positions. Write the points as "lat,lng; lat,lng" with a point as the decimal sign.', 'free-maps-waymorphic-map' ), $tag ) );
 		}
 	}
 
@@ -761,7 +761,7 @@ function waymorphic_map_file_shortcode( $atts ) {
 	$atts['url']      = waymorphic_map_attribute_text( $atts['url'] );
 
 	if ( '' === esc_url_raw( trim( $atts['url'] ), array( 'http', 'https' ) ) ) {
-		waymorphic_map_problems( __( 'A file does not show: the url of [waymorphic_file] must be an address that starts with http or https.', 'free-maps' ) );
+		waymorphic_map_problems( __( 'A file does not show: the url of [waymorphic_file] must be an address that starts with http or https.', 'free-maps-waymorphic-map' ) );
 	}
 	if ( '' !== trim( $atts['url'] ) ) {
 		waymorphic_map_marker_stack(

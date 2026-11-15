@@ -4,7 +4,7 @@ Free OpenStreetMap vector maps for WordPress sites, from [Waymorphic Map](https:
 
 ## Install
 
-Copy this folder to `wp-content/plugins/free-maps` and activate **Free Maps - Waymorphic Map & Custom Maps** on the Plugins screen. WordPress 6.3 or later, PHP 7.4 or later. There is no build step.
+Copy this folder to `wp-content/plugins/free-maps-waymorphic-map` and activate **Free Maps - Waymorphic Map & Custom Maps** on the Plugins screen. WordPress 6.3 or later, PHP 7.4 or later. There is no build step.
 
 ## Use
 
@@ -120,21 +120,21 @@ A heatmap point can have a weight as a third number. `[waymorphic_file]` shows t
 - JavaScript: each `.waymorphic-map` element has its MapLibre map in `element.waymorphicMap`. A map starts when it comes near the viewport: the element sends the `waymorphic-map:ready` event (it bubbles; the map is in `event.detail.map`) when its markers and shapes are there. `WaymorphicMap.init( root )` starts maps that you add to the page later. `WaymorphicMap.addShapes( map, WaymorphicMap.shapeFeatures( shapes ) )` adds shapes to a map whose style is ready (the points of the shapes are `[ lng, lat ]`). `WaymorphicMap.parseData( text, name )` reads the markers and shapes of a CSV, GeoJSON, KML or GPX file.
 
 ```
-free-maps.php           plugin header and hooks
-includes/options.php    options and input cleaning
-includes/render.php     assets, map markup, address lookup
-includes/shortcode.php  [waymorphic_map], [waymorphic_marker] and the shape shortcodes
-includes/block.php      block registration and render callback
-includes/settings.php   settings page
-block/                  block.json and the editor script
-assets/js, assets/css   front-end script and style
-assets/vendor           MapLibre GL JS 5.21.0 (BSD 3-Clause)
+free-maps-waymorphic-map.php  plugin header and hooks
+includes/options.php          options and input cleaning
+includes/render.php           assets, map markup, address lookup
+includes/shortcode.php        [waymorphic_map], [waymorphic_marker] and the shape shortcodes
+includes/block.php            block registration and render callback
+includes/settings.php         settings page
+block/                        block.json and the editor script
+assets/js, assets/css         front-end script and style
+assets/vendor                 MapLibre GL JS 5.21.0 (BSD 3-Clause)
 ```
 
 ## Release
 
-1. Set the same version in the plugin header and the `WAYMORPHIC_MAP_VERSION` constant in `free-maps.php`, and in `Stable tag` in `readme.txt`. Add a changelog entry in `readme.txt`.
-2. `bin/build-zip.sh` makes `build/free-maps.zip` from the last commit. The script stops if the three version numbers are different.
+1. Set the same version in the plugin header and the `WAYMORPHIC_MAP_VERSION` constant in `free-maps-waymorphic-map.php`, and in `Stable tag` in `readme.txt`. Add a changelog entry in `readme.txt`.
+2. `bin/build-zip.sh` makes `build/free-maps-waymorphic-map.zip` from the last commit. The script stops if the three version numbers are different.
 3. Push a tag such as `v1.0.0`. The Release workflow builds the zip and attaches it to a GitHub release. The release notes are the changelog entry of that version in `readme.txt`. The workflow stops if the tag and the plugin version are different, or if the changelog has no entry for the version.
 
 The CI workflow runs on each push and pull request: a PHP syntax check on PHP 7.4 and 8.3, and a build of the zip, which it keeps as an artifact.

@@ -674,7 +674,8 @@ function waymorphic_map_tools_space( $config, $width ) {
 			);
 		}
 		$parts .= sprintf(
-			'<form class="waymorphic-map__locator"><input type="search" class="waymorphic-map__locator-input" placeholder="%1$s" disabled><select class="waymorphic-map__locator-radius" disabled>%2$s</select><button type="button" class="waymorphic-map__button" disabled>%3$s</button><button type="button" class="waymorphic-map__button waymorphic-map__button--plain" disabled>%4$s</button><p class="waymorphic-map__status"></p></form>',
+			// A div, not a form: the map can be in a form of the page, and a form cannot be in a form.
+			'<div class="waymorphic-map__locator"><input type="search" class="waymorphic-map__locator-input" placeholder="%1$s" disabled><select class="waymorphic-map__locator-radius" disabled>%2$s</select><button type="button" class="waymorphic-map__button" disabled>%3$s</button><button type="button" class="waymorphic-map__button waymorphic-map__button--plain" disabled>%4$s</button><p class="waymorphic-map__status"></p></div>',
 			esc_attr__( 'Address, town or postcode', 'free-maps' ),
 			$options,
 			esc_html__( 'Search', 'free-maps' ),

@@ -1,12 +1,28 @@
-/* The Waymorphic Map block in the editor. */
+/* The Waymorphic Map block in the editor. Each map block has its own layers, and the selected block is
+   above the other blocks: the suggestions of its search are above the shield of the next map block. */
 .waymorphic-map-editor {
 	position: relative;
+	isolation: isolate;
 }
 
+/* A new block with its first-step card (the card can be higher than the block) is above the blocks
+   around it. The selected block is above that, and above the parts of a next block that have a
+   layer of their own (a spacer, a cover). These are the levels that the card (4) and the
+   suggestions of the search (6) had in the page before each block had its own layers. A block
+   that stays at the top of the window (10) is above them. */
+.waymorphic-map-editor.has-setup {
+	z-index: 4;
+}
+
+.waymorphic-map-editor.is-selected {
+	z-index: 6;
+}
+
+/* The first click on a block that is not selected selects it: the shield is above all parts of the map, also its popups. */
 .waymorphic-map-editor__shield {
 	position: absolute;
 	inset: 0;
-	z-index: 3;
+	z-index: 7;
 }
 
 .waymorphic-map-editor__search {
@@ -165,9 +181,33 @@
 	cursor: pointer;
 }
 
+/* A popup shows above the search field, not below it. For that, the layers of the map are not apart from the layers of the block. */
+.waymorphic-map-editor .waymorphic-map {
+	isolation: auto;
+}
+
+/* Three class names: this rule must be stronger than the rule of the page styles, which come after this file when the editor has no iframe. */
+.waymorphic-map-editor .waymorphic-map .maplibregl-popup {
+	z-index: 5;
+}
+
+/* While the suggestions of the search show, they are above the form of a marker. */
+.waymorphic-map-editor__search:has(.waymorphic-search__list) {
+	z-index: 6;
+}
+
+/* A browser that does not know :has(): while the search field is in use. */
+@supports not selector(:has(a)) {
+	.waymorphic-map-editor__search:focus-within {
+		z-index: 6;
+	}
+}
+
 /* The form in the popup of a marker. */
 .waymorphic-marker-form {
-	min-width: 200px;
+	/* Not wider than a narrow map (a map in one of three columns). */
+	width: 200px;
+	max-width: 100%;
 	font: 13px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 	color: #1e1e1e;
 }
@@ -204,9 +244,10 @@
 	display: block;
 	box-sizing: border-box;
 	width: 100%;
-	height: 40px;
+	/* The text can have two lines in a narrow block. */
+	min-height: 40px;
 	margin: 10px 0 0;
-	padding: 0 12px;
+	padding: 6px 12px;
 	border: 1px solid #3858e9;
 	border-radius: 4px;
 	background: #fff;
@@ -356,4 +397,26 @@
 	font: inherit;
 	color: inherit;
 	cursor: pointer;
+}
+
+/* The browser cannot show the map in the editor. The first-step card is in the flow of the block: the
+   block is as high as the card at each width, and the message is below the card. The message has no
+   layer of its own: the suggestions of a search show above it. The bar of a new shape is at the top
+   of the grey box, not on the message. */
+.waymorphic-map-editor.has-no-map .waymorphic-setup {
+	position: relative;
+	inset: auto;
+}
+
+.waymorphic-map-editor.has-no-map .waymorphic-map-editor__draw {
+	top: 10px;
+	bottom: auto;
+}
+
+.waymorphic-map-editor__error {
+	margin: 0;
+	padding: 12px 16px;
+	background: #fcf9e8;
+	color: #1e1e1e;
+	font: 13px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }

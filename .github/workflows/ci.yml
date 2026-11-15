@@ -40,13 +40,17 @@ jobs:
 
       - name: Check the contents of the zip
         run: |
-          unzip -l build/wp-free-maps.zip
-          unzip -l build/wp-free-maps.zip | grep -q ' wp-free-maps/wp-free-maps.php$'
-          unzip -l build/wp-free-maps.zip | grep -q ' wp-free-maps/readme.txt$'
-          ! unzip -l build/wp-free-maps.zip | grep -E ' wp-free-maps/(\.github|\.wordpress-org|bin)/'
+          unzip -l build/free-maps.zip
+          unzip -l build/free-maps.zip | grep -q ' free-maps/free-maps.php$'
+          unzip -l build/free-maps.zip | grep -q ' free-maps/readme.txt$'
+          # The files for development are not in the zip.
+          if unzip -l build/free-maps.zip | grep -E ' free-maps/(\.github|\.wordpress-org|bin)/| free-maps/(README\.md|\.gitignore|\.gitattributes)$'; then
+            echo "The zip has files that are for development only." >&2
+            exit 1
+          fi
 
       - uses: actions/upload-artifact@v4
         with:
-          name: wp-free-maps
-          path: build/wp-free-maps.zip
+          name: free-maps
+          path: build/free-maps.zip
           if-no-files-found: error

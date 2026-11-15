@@ -148,10 +148,45 @@ Map data © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributor
 
 == Installation ==
 
-1. Upload the `free-maps-waymorphic-map` folder to `/wp-content/plugins/`, or install the plugin from the Plugins screen.
-2. Activate the plugin.
-3. Add the "Waymorphic Map" block to a post or a page, or use the `[waymorphic_map]` shortcode.
-4. Optional: set the default style, height and zoom, and the map service of the directions link, in Settings > Waymorphic Map.
+= Install the plugin =
+
+From the plugin directory:
+
+1. In the administration of your site, go to Plugins > Add New Plugin.
+2. Search for "Waymorphic Map".
+3. Select "Install Now", then "Activate".
+
+From a zip file:
+
+1. Go to Plugins > Add New Plugin > Upload Plugin.
+2. Select the zip file of the plugin, then "Install Now".
+3. Select "Activate Plugin".
+
+The plugin has no account, no API key and no setup: you can add a map immediately.
+
+= Your first map with the block =
+
+1. Open a post or a page in the editor and add the "Waymorphic Map" block.
+2. The block asks "Where is your map?". Type an address, a town or a postcode, then select the place from the list. The map goes there and gets a marker.
+3. Click the marker and write its popup text. To add a marker, click the map at the point, then select "Add a marker here". To move a marker, drag it.
+4. In the sidebar of the block, the "Map" panel has the five map styles and the height. The "Features" panel has the list of the markers, the search for the nearest markers, the category buttons and the directions link.
+5. Save the page.
+
+= Your first map with the shortcode =
+
+1. Add a "Shortcode" block to a post or a page. The shortcode also operates in the classic editor, in a widget and in a template.
+2. Write the shortcode, for example `[waymorphic_map address="10 Downing Street, London" zoom="16"]`.
+3. Save the page. The section "The shortcode" of the description gives all the attributes.
+
+= Your first store locator =
+
+1. Add a map with a marker for each of your places. The first line of the popup text of a marker is its name in the list. Give each marker a category if you have different types of places.
+2. In the "Features" panel of the block, set "List of the markers below the map", "Search for the nearest markers", "Category buttons" and "Directions link" to on. On the shortcode, these are `list="true"`, `locator="true"`, `filter="true"` and `directions="true"`.
+3. Save the page. Visitors type an address, or use their location, and see the nearest places with the distances.
+
+= The settings =
+
+Settings > Waymorphic Map has the defaults for new maps: the style, the height, the zoom, and the map service of the directions link.
 
 == Frequently Asked Questions ==
 
@@ -209,10 +244,14 @@ Send an email to contact@waymorphic.com.
 
 == Screenshots ==
 
-1. A map with a marker and a popup on a page.
-2. A new block asks for the place. The search gives suggestions while you type.
-3. The block in the editor: the search field on the map, the text form of a marker, and the five styles in the sidebar.
-4. The settings page with the defaults for new maps.
+1. A map with a marker, a popup and a directions link on a page.
+2. A store locator: the visitor searches for a place, selects a category, and sees the nearest places in the list with their distances.
+3. The directions link: the visitor selects Google Maps, Apple Maps, Waze or OpenStreetMap.
+4. Shapes on the Bright style: an area, a line for a route, and a circle.
+5. Markers with a colour for each category, on the Dark style.
+6. A new block asks for the place. The search gives suggestions while you type.
+7. The block in the editor: the search field on the map, the markers, and the fields of a marker in the sidebar.
+8. The settings page with the defaults for new maps.
 
 == Changelog ==
 

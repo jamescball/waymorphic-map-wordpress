@@ -2,13 +2,66 @@
 
 Free OpenStreetMap vector maps for WordPress sites, from [Waymorphic Map](https://waymorphic.com/). A block and a shortcode, five styles, markers with popups, shapes, a marker list and a search for the nearest markers. No API key, no account.
 
+- **Plugin directory of WordPress:** <https://wordpress.org/plugins/free-maps-waymorphic-map/>. This page goes live when the review of the plugin is complete.
+- **Zip file of the latest release:** [free-maps-waymorphic-map.zip](https://github.com/jamescball/waymorphic-map-wordpress/releases/latest/download/free-maps-waymorphic-map.zip)
+- **Pictures and instructions on the Waymorphic site:** <https://waymorphic.com/wordpress>
+
+![A store locator on a page: a search field, category buttons, a map with coloured markers, and a list of the nearest places with their distances](.wordpress-org/screenshot-2.png)
+
+## Screenshots
+
+| | |
+| :---: | :---: |
+| ![A map with one marker and an open popup that has a directions link](.wordpress-org/screenshot-1.png)<br>A map with a marker, a popup and a directions link | ![The popup of a marker with the list of the map services](.wordpress-org/screenshot-3.png)<br>The visitor selects the map service of the directions |
+| ![A map with a green area, a red line and a blue circle](.wordpress-org/screenshot-4.png)<br>Shapes on the Bright style: an area, a route, a circle | ![A dark map with blue, red and green markers](.wordpress-org/screenshot-5.png)<br>A colour for each category, on the Dark style |
+| ![A new block in the editor with the question "Where is your map?" and a list of places for the text "Edinburgh"](.wordpress-org/screenshot-6.png)<br>A new block asks for the place | ![The block in the editor with ten markers, and the fields of a marker in the sidebar](.wordpress-org/screenshot-7.png)<br>The block in the editor |
+
+The settings page is in [screenshot-8.png](.wordpress-org/screenshot-8.png).
+
 ## Install
 
-Copy this folder to `wp-content/plugins/free-maps-waymorphic-map` and activate **Free Maps - Waymorphic Map & Custom Maps** on the Plugins screen. WordPress 6.3 or later, PHP 7.4 or later. There is no build step.
+WordPress 6.3 or later, PHP 7.4 or later. The plugin has no account, no API key and no setup.
+
+**From the plugin directory of WordPress** (when the page of the plugin is live):
+
+1. In the administration of your site, go to Plugins > Add New Plugin.
+2. Search for "Waymorphic Map".
+3. Select "Install Now", then "Activate".
+
+**From the zip file of a release:**
+
+1. Download [free-maps-waymorphic-map.zip](https://github.com/jamescball/waymorphic-map-wordpress/releases/latest/download/free-maps-waymorphic-map.zip).
+2. Go to Plugins > Add New Plugin > Upload Plugin.
+3. Select the zip file, then "Install Now".
+4. Select "Activate Plugin".
+
+**From the source:** copy this folder to `wp-content/plugins/free-maps-waymorphic-map` and activate **Free Maps - Waymorphic Map & Custom Maps** on the Plugins screen. There is no build step.
+
+## Quick start
+
+**A map with the block:**
+
+1. Open a post or a page in the editor and add the "Waymorphic Map" block.
+2. The block asks "Where is your map?". Type an address, a town or a postcode, then select the place from the list. The map goes there and gets a marker.
+3. Click the marker and write its popup text. To add a marker, click the map at the point, then select "Add a marker here". To move a marker, drag it.
+4. In the sidebar of the block, the "Map" panel has the five map styles and the height. The "Features" panel has the list of the markers, the search for the nearest markers, the category buttons and the directions link.
+5. Save the page.
+
+**A map with the shortcode:**
+
+1. Add a "Shortcode" block to a post or a page. The shortcode also operates in the classic editor, in a widget and in a template.
+2. Write the shortcode, for example `[waymorphic_map address="10 Downing Street, London" zoom="16"]`.
+3. Save the page.
+
+**A store locator:**
+
+1. Add a map with a marker for each of your places. The first line of the popup text of a marker is its name in the list. Give each marker a category if you have different types of places.
+2. In the "Features" panel of the block, set "List of the markers below the map", "Search for the nearest markers", "Category buttons" and "Directions link" to on. On the shortcode, these are `list="true"`, `locator="true"`, `filter="true"` and `directions="true"`.
+3. Save the page. Visitors type an address, or use their location, and see the nearest places with the distances.
 
 ## Use
 
-**Block.** Add the "Waymorphic Map" block. A new block asks "Where is your map?": type an address, a town or a postcode and select it from the list. The map goes there and gets a marker. "Use my location" does the same with the position that the browser gives. After that, the search field is on the map. Drag the map to set the view. Click the map to add a marker at that point. Drag a marker to move it, and click it to change its text or remove it. In the sidebar, select the style from the five swatches and set the height.
+**Block.** Add the "Waymorphic Map" block. A new block asks "Where is your map?": type an address, a town or a postcode and select it from the list. The map goes there and gets a marker. "Use my location" does the same with the position that the browser gives. After that, the search field is on the map. Drag the map to set the view. Click the map, then select "Add a marker here", to add a marker at that point. Drag a marker to move it, and click it to change its text or remove it. In the sidebar, select the style from the five swatches and set the height.
 
 **Shortcode.**
 

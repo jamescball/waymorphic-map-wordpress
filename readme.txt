@@ -1,4 +1,4 @@
-=== Waymorphic Map & Custom Maps - No signup required ===
+=== Waymorphic Map & Custom Maps ===
 Contributors: jamesb7
 Tags: map, openstreetmap, maps, maplibre, location
 Requires at least: 6.3
@@ -144,7 +144,7 @@ The directions link (`directions`) is a link to the map service that you select 
 
 The plugin sends nothing to these sites. The visitor goes there only with a click on the link, and the link has the position of the marker. The `waymorphic_map_directions_services` filter changes the list of the services.
 
-The server has no accounts, no cookies and no analytics. See the [fair use and privacy notes](https://waymorphic.com/#fair). The service is free and best effort: there is no uptime guarantee. If you run your own Waymorphic Map server, you can set its URL in Settings > Waymorphic Map.
+The server has no accounts, no cookies and no analytics. The terms of use of the service are its [fair use rules](https://waymorphic.com/#fair). Its privacy policy is at [waymorphic.com/privacy](https://waymorphic.com/privacy). The service is free and best effort: there is no uptime guarantee. If you run your own Waymorphic Map server, you can set its URL in Settings > Waymorphic Map.
 
 Map data © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, with the [OpenMapTiles](https://openmaptiles.org/) schema. The credit in the corner of each map is a licence requirement. Do not remove it.
 
@@ -258,7 +258,7 @@ Send an email to contact@waymorphic.com.
 == Changelog ==
 
 = 1.2.1 =
-* Change: the name of the plugin is now "Waymorphic Map & Custom Maps - No signup required". The plugin folder, the main file and the text domain are now `waymorphic-map`. The block, the shortcodes, the settings and the maps do not change.
+* Change: the name of the plugin is now "Waymorphic Map & Custom Maps". The plugin folder, the main file and the text domain are now `waymorphic-map`. The block, the shortcodes, the settings and the maps do not change.
 * Change: the plugin does not deactivate an older version of the plugin. When an older version is active too, a message on the Plugins screen, on the Dashboard and on the settings page of the plugin tells you which version to deactivate.
 * Upgrade: if you installed version 1.1.0 or 1.2.0 from a zip file, install and activate this version. Then deactivate the older version on the Plugins screen and delete it (the folder `wp-free-maps` or `free-maps-waymorphic-map`). Then empty your page cache. The settings and the maps stay. If you delete the older version before you activate this version, the settings go back to the defaults (the maps stay).
 * Fix: when two copies of this version are on a site, the removal of one copy does not remove the settings that the active copy uses.

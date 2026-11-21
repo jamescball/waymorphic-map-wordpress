@@ -1,4 +1,4 @@
-# Waymorphic Map & Custom Maps - No signup required
+# Waymorphic Map & Custom Maps
 
 Free OpenStreetMap vector maps for WordPress sites, from [Waymorphic Map](https://waymorphic.com/). A block and a shortcode, five styles, markers with popups, shapes, a marker list and a search for the nearest markers. No API key, no account.
 
@@ -35,7 +35,7 @@ WordPress 6.3 or later, PHP 7.4 or later. The plugin has no account, no API key 
 3. Select the zip file, then "Install Now".
 4. Select "Activate Plugin".
 
-**From the source:** copy this folder to `wp-content/plugins/waymorphic-map` and activate **Waymorphic Map & Custom Maps - No signup required** on the Plugins screen. There is no build step.
+**From the source:** copy this folder to `wp-content/plugins/waymorphic-map` and activate **Waymorphic Map & Custom Maps** on the Plugins screen. There is no build step.
 
 **Upgrade from version 1.1.0 or 1.2.0:** those versions had other folder names (`wp-free-maps` and `free-maps-waymorphic-map`), so WordPress installs this version as a second plugin. Install and activate this version. Then deactivate the older version on the Plugins screen and delete it. A message in the administration tells you which version to deactivate: the plugin does not deactivate it. Then empty your page cache. The settings and the maps stay.
 
@@ -199,7 +199,7 @@ The CI workflow runs on each push and pull request: a PHP syntax check on PHP 7.
 
 ## Service and credit
 
-Maps come from `https://tiles.waymorphic.com`. The service is free and best effort. Keep the credit on the map: map data © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, schema by [OpenMapTiles](https://openmaptiles.org/). See [fair use](https://waymorphic.com/#fair).
+Maps come from `https://tiles.waymorphic.com`. The service is free and best effort. Keep the credit on the map: map data © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, schema by [OpenMapTiles](https://openmaptiles.org/). See the [fair use rules](https://waymorphic.com/#fair) and the [privacy policy](https://waymorphic.com/privacy).
 
 ## Contact
 

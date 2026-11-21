@@ -31,10 +31,10 @@ jobs:
         run: |
           if gh release view "${GITHUB_REF_NAME}" > /dev/null 2>&1; then
             # The workflow ran again for the same tag: replace the zip.
-            gh release upload "${GITHUB_REF_NAME}" build/free-maps-waymorphic-map.zip --clobber
+            gh release upload "${GITHUB_REF_NAME}" build/waymorphic-map.zip --clobber
           else
-            gh release create "${GITHUB_REF_NAME}" build/free-maps-waymorphic-map.zip \
+            gh release create "${GITHUB_REF_NAME}" build/waymorphic-map.zip \
               --verify-tag \
-              --title "Free Maps ${GITHUB_REF_NAME#v}" \
+              --title "Waymorphic Map ${GITHUB_REF_NAME#v}" \
               --notes-file build/notes.md
           fi

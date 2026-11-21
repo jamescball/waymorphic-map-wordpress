@@ -1,10 +1,10 @@
-=== Free Maps - Waymorphic Map & Custom Maps ===
+=== Waymorphic Map & Custom Maps - No signup required ===
 Contributors: jamesb7
 Tags: map, openstreetmap, maps, maplibre, location
 Requires at least: 6.3
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.2.0
+Stable tag: 1.2.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -13,6 +13,8 @@ Free OpenStreetMap vector maps for WordPress. A block and a shortcode, five styl
 == Description ==
 
 Waymorphic Map adds interactive maps to your posts and pages. The maps are vector maps of the whole planet, made from OpenStreetMap data and served by [Waymorphic Map](https://waymorphic.com/). They are free. You do not need an account, an API key or a payment card.
+
+This is the official plugin of Waymorphic Map. The author of the plugin operates the map service.
 
 * **A block for the editor.** Type an address and select it from the suggestions: the map goes there and gets a marker. Click the map to add more markers, drag them into position, and click a marker to change its text. Select the map style from five swatches. The editor shows the map, its markers and its shapes. The list, the search, the groups and the category buttons show on the page.
 * **A shortcode** for the classic editor, widgets and templates.
@@ -126,7 +128,7 @@ In the block, "Import a file" in the Markers panel reads a file from your comput
 
 = External service =
 
-This plugin shows maps from the Waymorphic Map tile server, `https://tiles.waymorphic.com`.
+This plugin shows maps from the Waymorphic Map tile server, `https://tiles.waymorphic.com`. The author of this plugin operates this server.
 
 * When a visitor sees a map, the browser of the visitor gets the map style, map tiles, fonts and icons from that server. As with all web requests, the server sees the IP address and the browser of the visitor, and the tiles requested.
 * When you use an `address` in a shortcode, your WordPress site sends that address to the search of the server and keeps the position for one year. If the search does not find the address, the site asks again after one day. If the search does not answer, the site asks again after five minutes.
@@ -255,6 +257,12 @@ Send an email to contact@waymorphic.com.
 
 == Changelog ==
 
+= 1.2.1 =
+* Change: the name of the plugin is now "Waymorphic Map & Custom Maps - No signup required". The plugin folder, the main file and the text domain are now `waymorphic-map`. The block, the shortcodes, the settings and the maps do not change.
+* Change: the plugin does not deactivate an older version of the plugin. When an older version is active too, a message on the Plugins screen, on the Dashboard and on the settings page of the plugin tells you which version to deactivate.
+* Upgrade: if you installed version 1.1.0 or 1.2.0 from a zip file, install and activate this version. Then deactivate the older version on the Plugins screen and delete it (the folder `wp-free-maps` or `free-maps-waymorphic-map`). Then empty your page cache. The settings and the maps stay. If you delete the older version before you activate this version, the settings go back to the defaults (the maps stay).
+* Fix: when two copies of this version are on a site, the removal of one copy does not remove the settings that the active copy uses.
+
 = 1.2.0 =
 * New: a setting for the map service of the directions link: Google Maps, Apple Maps, Waze or OpenStreetMap. Or the visitor selects the service from a list. Each map can have its own value (`directions="google"`, or the "Features" panel of the block).
 * New: the list shows the row of the marker that has its popup open. A click on a marker shows its row in the list.
@@ -302,7 +310,7 @@ Send an email to contact@waymorphic.com.
 * Fix: `animation` on the map shortcode is for the markers of files too. The result text of the search shows the distance that the visitor selected ("12.5 km", not "13 km").
 * New: the units `dvh`, `svh`, `lvh`, `dvw`, `svw`, `lvw`, `vmin`, `vmax` and `ch` for the height and the width.
 * New for developers: the map element sends the `waymorphic-map:ready` event when its map is ready. `WaymorphicMap.addShapes()` adds shapes to a map that has shapes.
-* Change: the plugin folder, the main file and the text domain are now `free-maps-waymorphic-map`. This is the name of the plugin in the plugin directory of WordPress, which does not permit the name `wp-free-maps`. If you installed version 1.1.0 from a zip file: install and activate this version first (this deactivates version 1.1.0), then delete version 1.1.0 (the folder `wp-free-maps`), then empty your page cache. The settings and the maps stay. If you delete version 1.1.0 before you activate this version, the settings go back to the defaults (the maps stay).
+* Change: the plugin folder, the main file and the text domain are `free-maps-waymorphic-map` in this version. Version 1.1.0 had the name `wp-free-maps`. Version 1.2.1 changed the name again: see its entry for the upgrade steps.
 * Change: the popup of a marker that has a `title` now starts with the title, if the first line of the popup text does not have it. A marker with a title and no popup text now has a popup with its title. Set `popup_title="false"` on the map shortcode to turn this off.
 * Change: the name of a marker with no title (in the list, and for screen readers) is the first line of its popup text.
 
@@ -322,8 +330,8 @@ Send an email to contact@waymorphic.com.
 
 == Upgrade Notice ==
 
-= 1.2.0 =
-Security fixes, a setting for the map service of the directions link, and many fixes for the list and the search. The plugin folder is now `free-maps-waymorphic-map`. If you installed version 1.1.0 from a zip file, install and activate this version first, then delete version 1.1.0.
+= 1.2.1 =
+The plugin has a new name, and its folder is now `waymorphic-map`. If you installed version 1.1.0 or 1.2.0 from a zip file: activate this version, then deactivate the older version and delete it. The settings and the maps stay.
 
 == Third-party code ==
 

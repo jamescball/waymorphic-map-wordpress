@@ -16,11 +16,11 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 function waymorphic_map_styles() {
 	return array(
-		'positron' => __( 'Positron (light, muted)', 'free-maps-waymorphic-map' ),
-		'bright'   => __( 'Bright (full colour)', 'free-maps-waymorphic-map' ),
-		'liberty'  => __( 'Liberty (classic OpenStreetMap look)', 'free-maps-waymorphic-map' ),
-		'dark'     => __( 'Dark', 'free-maps-waymorphic-map' ),
-		'fiord'    => __( 'Fiord (dark, blue)', 'free-maps-waymorphic-map' ),
+		'positron' => __( 'Positron (light, muted)', 'waymorphic-map' ),
+		'bright'   => __( 'Bright (full colour)', 'waymorphic-map' ),
+		'liberty'  => __( 'Liberty (classic OpenStreetMap look)', 'waymorphic-map' ),
+		'dark'     => __( 'Dark', 'waymorphic-map' ),
+		'fiord'    => __( 'Fiord (dark, blue)', 'waymorphic-map' ),
 	);
 }
 
@@ -48,38 +48,33 @@ function waymorphic_map_options() {
 	$saved = get_option( 'waymorphic_map_options', null );
 	if ( ! is_array( $saved ) ) {
 		// Not there: see waymorphic_map_keep_options().
-		$saved = get_option( 'waymorphic_map_options_copy', null );
+		$saved = get_option( 'waymorphic_map_options_backup', null );
 	}
 	return array_merge( waymorphic_map_option_defaults(), is_array( $saved ) ? $saved : array() );
 }
 
 /**
- * Keeps a second copy of the options, with a name that version 1.1 does not
- * know. Version 1.1 of the plugin was in a folder with a different name
- * (wp-free-maps). When a user deletes that version, its uninstall code removes
- * the options, also when this version is active: the settings of the site
- * (the tile server, the style, the height) were lost. With the copy, they
- * come back. Runs in the administration pages.
+ * Keeps a second copy of the options, with a name that versions 1.1.0 and
+ * 1.2.0 do not know. Those versions were in folders with other names
+ * (wp-free-maps and free-maps-waymorphic-map). When a user deletes one of
+ * them, its uninstall code removes the options, also when this version is
+ * active: the settings of the site (the tile server, the style, the height)
+ * were lost. With the copy, they come back. Runs in the administration pages.
  */
 function waymorphic_map_keep_options() {
-	// Version 1.1 is active too (it was activated after this version, or this site is in a
-	// network): its copy does nothing but write PHP warnings. Deactivate it on this site.
-	$old = 'wp-free-maps/wp-free-maps.php';
-	if ( function_exists( 'is_plugin_active' ) && is_plugin_active( $old ) && ! is_plugin_active_for_network( $old ) ) {
-		deactivate_plugins( $old, true, false );
-	}
-
 	$saved = get_option( 'waymorphic_map_options', null );
-	$copy  = get_option( 'waymorphic_map_options_copy', null );
+	$copy  = get_option( 'waymorphic_map_options_backup', null );
 	if ( is_array( $saved ) ) {
 		if ( $saved !== $copy ) {
-			update_option( 'waymorphic_map_options_copy', $saved );
+			update_option( 'waymorphic_map_options_backup', $saved );
 		}
 	} elseif ( is_array( $copy ) ) {
 		update_option( 'waymorphic_map_options', $copy );
 	} else {
-		// A new site: with the two options in the database, a page view makes no query for them.
-		add_option( 'waymorphic_map_options', waymorphic_map_option_defaults() );
+		// A new site, or a site that has only the copy that version 1.2.0 kept. With the two
+		// options in the database, a page view makes no query for them.
+		$old = get_option( 'waymorphic_map_options_copy', null );
+		add_option( 'waymorphic_map_options', is_array( $old ) ? $old : waymorphic_map_option_defaults() );
 	}
 }
 
@@ -247,7 +242,7 @@ function waymorphic_map_sanitize_options( $input ) {
 			$tiles_url = $url;
 		} else {
 			$tiles_url = $saved['tiles_url'];
-			$tell( 'tiles_url', __( 'The address of the tile server is not valid, and was not changed. Use an address such as https://tiles.example.com, with no "?" and no "#".', 'free-maps-waymorphic-map' ) );
+			$tell( 'tiles_url', __( 'The address of the tile server is not valid, and was not changed. Use an address such as https://tiles.example.com, with no "?" and no "#".', 'waymorphic-map' ) );
 		}
 	}
 
@@ -255,7 +250,7 @@ function waymorphic_map_sanitize_options( $input ) {
 	if ( '' === $height ) {
 		$height = waymorphic_map_clean_length( $saved['height'], $defaults['height'], false );
 		if ( '' !== $text( 'height' ) ) {
-			$tell( 'height', __( 'The height is not valid, and was not changed. Use a number of pixels (400) or a value such as 60vh. A percentage is not permitted.', 'free-maps-waymorphic-map' ) );
+			$tell( 'height', __( 'The height is not valid, and was not changed. Use a number of pixels (400) or a value such as 60vh. A percentage is not permitted.', 'waymorphic-map' ) );
 		}
 	}
 
@@ -264,7 +259,7 @@ function waymorphic_map_sanitize_options( $input ) {
 		$zoom = waymorphic_map_clean_number( $saved['zoom'], 0, 22, true );
 		$zoom = null === $zoom ? $defaults['zoom'] : $zoom;
 		if ( '' !== $text( 'zoom' ) ) {
-			$tell( 'zoom', __( 'The zoom is not valid, and was not changed. Use a number from 0 to 22.', 'free-maps-waymorphic-map' ) );
+			$tell( 'zoom', __( 'The zoom is not valid, and was not changed. Use a number from 0 to 22.', 'waymorphic-map' ) );
 		}
 	}
 

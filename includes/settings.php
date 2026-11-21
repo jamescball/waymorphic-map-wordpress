@@ -23,14 +23,14 @@ function waymorphic_map_register_settings() {
 		)
 	);
 
-	add_settings_section( 'waymorphic_map_defaults', __( 'Defaults', 'free-maps-waymorphic-map' ), 'waymorphic_map_section_text', 'waymorphic_map' );
+	add_settings_section( 'waymorphic_map_defaults', __( 'Defaults', 'waymorphic-map' ), 'waymorphic_map_section_text', 'waymorphic_map' );
 
 	$fields = array(
-		'style'      => __( 'Map style', 'free-maps-waymorphic-map' ),
-		'height'     => __( 'Height', 'free-maps-waymorphic-map' ),
-		'zoom'       => __( 'Zoom', 'free-maps-waymorphic-map' ),
-		'directions' => __( 'Directions link', 'free-maps-waymorphic-map' ),
-		'tiles_url'  => __( 'Tile server URL', 'free-maps-waymorphic-map' ),
+		'style'      => __( 'Map style', 'waymorphic-map' ),
+		'height'     => __( 'Height', 'waymorphic-map' ),
+		'zoom'       => __( 'Zoom', 'waymorphic-map' ),
+		'directions' => __( 'Directions link', 'waymorphic-map' ),
+		'tiles_url'  => __( 'Tile server URL', 'waymorphic-map' ),
 	);
 	foreach ( $fields as $name => $label ) {
 		add_settings_field(
@@ -51,7 +51,7 @@ function waymorphic_map_register_settings() {
  * The text above the fields.
  */
 function waymorphic_map_section_text() {
-	echo '<p>' . esc_html__( 'A map uses these values when its block or shortcode does not set them.', 'free-maps-waymorphic-map' ) . '</p>';
+	echo '<p>' . esc_html__( 'A map uses these values when its block or shortcode does not set them.', 'waymorphic-map' ) . '</p>';
 }
 
 /**
@@ -76,12 +76,12 @@ function waymorphic_map_field( $args ) {
 
 		case 'height':
 			echo '<input type="text" class="small-text" style="width:7em" id="' . esc_attr( $id ) . '" name="' . esc_attr( $input ) . '" value="' . esc_attr( $options['height'] ) . '">';
-			echo '<p class="description">' . esc_html__( 'A CSS length, for example 400px or 60vh. A number without a unit is in pixels.', 'free-maps-waymorphic-map' ) . '</p>';
+			echo '<p class="description">' . esc_html__( 'A CSS length, for example 400px or 60vh. A number without a unit is in pixels.', 'waymorphic-map' ) . '</p>';
 			break;
 
 		case 'zoom':
 			echo '<input type="number" class="small-text" min="0" max="22" step="0.5" id="' . esc_attr( $id ) . '" name="' . esc_attr( $input ) . '" value="' . esc_attr( $options['zoom'] ) . '">';
-			echo '<p class="description">' . esc_html__( '0 shows the world, 12 a town, 16 a street.', 'free-maps-waymorphic-map' ) . '</p>';
+			echo '<p class="description">' . esc_html__( '0 shows the world, 12 a town, 16 a street.', 'waymorphic-map' ) . '</p>';
 			break;
 
 		case 'directions':
@@ -90,14 +90,14 @@ function waymorphic_map_field( $args ) {
 			foreach ( waymorphic_map_directions_services() as $value => $service ) {
 				echo '<option value="' . esc_attr( $value ) . '"' . selected( $current, $value, false ) . '>' . esc_html( $service['label'] ) . '</option>';
 			}
-			echo '<option value="choice"' . selected( $current, 'choice', false ) . '>' . esc_html__( 'The visitor selects (a list of the services)', 'free-maps-waymorphic-map' ) . '</option>';
+			echo '<option value="choice"' . selected( $current, 'choice', false ) . '>' . esc_html__( 'The visitor selects (a list of the services)', 'waymorphic-map' ) . '</option>';
 			echo '</select>';
-			echo '<p class="description">' . esc_html__( 'The map service that the directions link of a map opens. The link shows on the maps that have the directions link on. A map can have its own service.', 'free-maps-waymorphic-map' ) . '</p>';
+			echo '<p class="description">' . esc_html__( 'The map service that the directions link of a map opens. The link shows on the maps that have the directions link on. A map can have its own service.', 'waymorphic-map' ) . '</p>';
 			break;
 
 		case 'tiles_url':
 			echo '<input type="url" class="regular-text code" id="' . esc_attr( $id ) . '" name="' . esc_attr( $input ) . '" value="' . esc_attr( $options['tiles_url'] ) . '" placeholder="' . esc_attr( WAYMORPHIC_MAP_DEFAULT_TILES_URL ) . '">';
-			echo '<p class="description">' . esc_html__( 'Change this only if you run your own Waymorphic Map tile server.', 'free-maps-waymorphic-map' ) . '</p>';
+			echo '<p class="description">' . esc_html__( 'Change this only if you run your own Waymorphic Map tile server.', 'waymorphic-map' ) . '</p>';
 			break;
 	}
 }
@@ -107,8 +107,8 @@ function waymorphic_map_field( $args ) {
  */
 function waymorphic_map_add_settings_page() {
 	add_options_page(
-		__( 'Waymorphic Map', 'free-maps-waymorphic-map' ),
-		__( 'Waymorphic Map', 'free-maps-waymorphic-map' ),
+		__( 'Waymorphic Map', 'waymorphic-map' ),
+		__( 'Waymorphic Map', 'waymorphic-map' ),
 		'manage_options',
 		'waymorphic-map',
 		'waymorphic_map_settings_page'
@@ -126,7 +126,7 @@ function waymorphic_map_settings_page() {
 	<div class="wrap">
 		<h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
 		<p>
-			<?php esc_html_e( 'To add a map, insert the Waymorphic Map block in the editor, or use the shortcode:', 'free-maps-waymorphic-map' ); ?>
+			<?php esc_html_e( 'To add a map, insert the Waymorphic Map block in the editor, or use the shortcode:', 'waymorphic-map' ); ?>
 			<br><code>[waymorphic_map lat="51.5074" lng="-0.1276" zoom="11" label="London"]</code>
 		</p>
 		<form action="options.php" method="post">
@@ -141,7 +141,7 @@ function waymorphic_map_settings_page() {
 			echo wp_kses(
 				sprintf(
 					/* translators: 1: link to the fair use rules, 2: link to OpenStreetMap. */
-					__( 'The maps come from %1$s: free, with no API key. Keep the credit in the corner of the map; the licence of %2$s requires it.', 'free-maps-waymorphic-map' ),
+					__( 'The maps come from %1$s: free, with no API key. Keep the credit in the corner of the map; the licence of %2$s requires it.', 'waymorphic-map' ),
 					'<a href="https://waymorphic.com/#fair" target="_blank" rel="noopener">Waymorphic Map</a>',
 					'<a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'
 				),
@@ -156,7 +156,7 @@ function waymorphic_map_settings_page() {
 			?>
 		</p>
 		<p class="description">
-			<?php esc_html_e( 'Questions or problems? Contact:', 'free-maps-waymorphic-map' ); ?>
+			<?php esc_html_e( 'Questions or problems? Contact:', 'waymorphic-map' ); ?>
 			<a href="mailto:contact@waymorphic.com">contact@waymorphic.com</a>
 		</p>
 	</div>
@@ -172,7 +172,7 @@ function waymorphic_map_settings_page() {
 function waymorphic_map_action_links( $links ) {
 	array_unshift(
 		$links,
-		'<a href="' . esc_url( admin_url( 'options-general.php?page=waymorphic-map' ) ) . '">' . esc_html__( 'Settings', 'free-maps-waymorphic-map' ) . '</a>'
+		'<a href="' . esc_url( admin_url( 'options-general.php?page=waymorphic-map' ) ) . '">' . esc_html__( 'Settings', 'waymorphic-map' ) . '</a>'
 	);
 	return $links;
 }

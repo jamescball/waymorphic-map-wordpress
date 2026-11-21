@@ -1,9 +1,9 @@
-# Free Maps - Waymorphic Map & Custom Maps
+# Waymorphic Map & Custom Maps
 
 Free OpenStreetMap vector maps for WordPress sites, from [Waymorphic Map](https://waymorphic.com/). A block and a shortcode, five styles, markers with popups, shapes, a marker list and a search for the nearest markers. No API key, no account.
 
-- **Plugin directory of WordPress:** <https://wordpress.org/plugins/free-maps-waymorphic-map/>. This page goes live when the review of the plugin is complete.
-- **Zip file of the latest release:** [free-maps-waymorphic-map.zip](https://github.com/jamescball/waymorphic-map-wordpress/releases/latest/download/free-maps-waymorphic-map.zip)
+- **Plugin directory of WordPress:** <https://wordpress.org/plugins/waymorphic-map/>. This page goes live when the review of the plugin is complete.
+- **Zip file of the latest release:** [waymorphic-map.zip](https://github.com/jamescball/waymorphic-map-wordpress/releases/latest/download/waymorphic-map.zip)
 - **Pictures and instructions on the Waymorphic site:** <https://waymorphic.com/wordpress>
 
 ![A store locator on a page: a search field, category buttons, a map with coloured markers, and a list of the nearest places with their distances](.wordpress-org/screenshot-2.png)
@@ -30,12 +30,14 @@ WordPress 6.3 or later, PHP 7.4 or later. The plugin has no account, no API key 
 
 **From the zip file of a release:**
 
-1. Download [free-maps-waymorphic-map.zip](https://github.com/jamescball/waymorphic-map-wordpress/releases/latest/download/free-maps-waymorphic-map.zip).
+1. Download [waymorphic-map.zip](https://github.com/jamescball/waymorphic-map-wordpress/releases/latest/download/waymorphic-map.zip).
 2. Go to Plugins > Add New Plugin > Upload Plugin.
 3. Select the zip file, then "Install Now".
 4. Select "Activate Plugin".
 
-**From the source:** copy this folder to `wp-content/plugins/free-maps-waymorphic-map` and activate **Free Maps - Waymorphic Map & Custom Maps** on the Plugins screen. There is no build step.
+**From the source:** copy this folder to `wp-content/plugins/waymorphic-map` and activate **Waymorphic Map & Custom Maps** on the Plugins screen. There is no build step.
+
+**Upgrade from version 1.1.0 or 1.2.0:** those versions had other folder names (`wp-free-maps` and `free-maps-waymorphic-map`), so WordPress installs this version as a second plugin. Install and activate this version. Then deactivate the older version on the Plugins screen and delete it. A message in the administration tells you which version to deactivate: the plugin does not deactivate it. Then empty your page cache. The settings and the maps stay.
 
 ## Quick start
 
@@ -173,7 +175,8 @@ A heatmap point can have a weight as a third number. `[waymorphic_file]` shows t
 - JavaScript: each `.waymorphic-map` element has its MapLibre map in `element.waymorphicMap`. A map starts when it comes near the viewport: the element sends the `waymorphic-map:ready` event (it bubbles; the map is in `event.detail.map`) when its markers and shapes are there. `WaymorphicMap.init( root )` starts maps that you add to the page later. `WaymorphicMap.addShapes( map, WaymorphicMap.shapeFeatures( shapes ) )` adds shapes to a map whose style is ready (the points of the shapes are `[ lng, lat ]`). `WaymorphicMap.parseData( text, name )` reads the markers and shapes of a CSV, GeoJSON, KML or GPX file.
 
 ```
-free-maps-waymorphic-map.php  plugin header and hooks
+waymorphic-map.php            plugin header and hooks
+includes/copies.php           the notice when two copies of the plugin are active
 includes/options.php          options and input cleaning
 includes/render.php           assets, map markup, address lookup
 includes/shortcode.php        [waymorphic_map], [waymorphic_marker] and the shape shortcodes
@@ -186,8 +189,8 @@ assets/vendor                 MapLibre GL JS 5.21.0 (BSD 3-Clause)
 
 ## Release
 
-1. Set the same version in the plugin header and the `WAYMORPHIC_MAP_VERSION` constant in `free-maps-waymorphic-map.php`, and in `Stable tag` in `readme.txt`. Add a changelog entry in `readme.txt`.
-2. `bin/build-zip.sh` makes `build/free-maps-waymorphic-map.zip` from the last commit. The script stops if the three version numbers are different.
+1. Set the same version in the plugin header and the `WAYMORPHIC_MAP_VERSION` constant in `waymorphic-map.php`, and in `Stable tag` in `readme.txt`. Add a changelog entry in `readme.txt`.
+2. `bin/build-zip.sh` makes `build/waymorphic-map.zip` from the last commit. The script stops if the three version numbers are different.
 3. Push a tag such as `v1.0.0`. The Release workflow builds the zip and attaches it to a GitHub release. The release notes are the changelog entry of that version in `readme.txt`. The workflow stops if the tag and the plugin version are different, or if the changelog has no entry for the version.
 
 The CI workflow runs on each push and pull request: a PHP syntax check on PHP 7.4 and 8.3, and a build of the zip, which it keeps as an artifact.
@@ -196,7 +199,7 @@ The CI workflow runs on each push and pull request: a PHP syntax check on PHP 7.
 
 ## Service and credit
 
-Maps come from `https://tiles.waymorphic.com`. The service is free and best effort. Keep the credit on the map: map data © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, schema by [OpenMapTiles](https://openmaptiles.org/). See [fair use](https://waymorphic.com/#fair).
+Maps come from `https://tiles.waymorphic.com`. The service is free and best effort. Keep the credit on the map: map data © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, schema by [OpenMapTiles](https://openmaptiles.org/). See the [fair use rules](https://waymorphic.com/#fair) and the [privacy policy](https://waymorphic.com/privacy).
 
 ## Contact
 

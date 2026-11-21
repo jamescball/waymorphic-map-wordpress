@@ -20,7 +20,7 @@ function waymorphic_map_register_block() {
 		WAYMORPHIC_MAP_VERSION,
 		true
 	);
-	wp_set_script_translations( 'waymorphic-map-editor', 'free-maps-waymorphic-map' );
+	wp_set_script_translations( 'waymorphic-map-editor', 'waymorphic-map' );
 
 	wp_register_style( 'waymorphic-map-editor', plugins_url( 'block/editor.css', WAYMORPHIC_MAP_FILE ), array(), WAYMORPHIC_MAP_VERSION );
 
